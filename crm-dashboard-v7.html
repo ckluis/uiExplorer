@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v7: Relationship Graph</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #0a0a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Dashboard Layout ─── */
+.dashboard { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #fff; overflow: hidden; }
+
+/* ─── Role Toggle ─── */
+.role-bar { display: flex; align-items: center; gap: 6px; padding: 16px 20px 0; flex-shrink: 0; }
+.role-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin-right: 4px; }
+.role-pill { display: inline-block; padding: 5px 14px; border-radius: 16px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.04); color: #666; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.06); }
+.role-pill:hover { background: rgba(255,255,255,0.08); color: #aaa; }
+#role-solo:checked ~ .dashboard .role-bar label[for="role-solo"],
+#role-team:checked ~ .dashboard .role-bar label[for="role-team"],
+#role-admin:checked ~ .dashboard .role-bar label[for="role-admin"] { background: rgba(139, 156, 247, 0.2); color: #8b9cf7; border-color: rgba(139, 156, 247, 0.4); }
+
+/* ─── Left Detail Panel ─── */
+.detail-panel { width: 320px; min-width: 320px; background: #0f0f24; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; overflow: hidden; }
+.detail-panel .panel-header { padding: 20px; flex-shrink: 0; }
+.detail-panel .panel-header h2 { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+
+/* Search */
+.search-box { width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #999; font-size: 12px; font-family: 'Inter', sans-serif; outline: none; }
+
+/* Filters */
+.filter-row { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.filter-tag { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.04); color: #666; border: 1px solid rgba(255,255,255,0.06); }
+.filter-tag.active { background: rgba(99, 210, 151, 0.15); color: #63d297; border-color: rgba(99, 210, 151, 0.3); }
+
+/* Selected Contact Card */
+.contact-card { margin: 0 20px 16px; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; flex-shrink: 0; }
+.contact-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.contact-avatar-lg { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.contact-name { font-size: 16px; font-weight: 700; color: #fff; }
+.contact-role { font-size: 11px; color: #888; margin-top: 2px; }
+.contact-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.contact-stat { text-align: center; padding: 10px 6px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+.contact-stat .val { font-size: 18px; font-weight: 700; color: #fff; }
+.contact-stat .lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #666; margin-top: 2px; }
+.contact-connections { display: flex; flex-direction: column; gap: 6px; }
+.connection-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; font-size: 12px; color: #bbb; }
+.connection-item:hover { background: rgba(255,255,255,0.04); }
+.connection-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.connection-type { font-size: 9px; color: #666; margin-left: auto; }
+
+/* Sphere of Influence */
+.soi-section { padding: 0 20px 20px; }
+.soi-section h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 10px; }
+.soi-bar { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.soi-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8b9cf7, #63d297); }
+.soi-label { font-size: 11px; color: #888; display: flex; justify-content: space-between; }
+
+/* ─── Team/Admin extras ─── */
+.team-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; margin-left: 6px; }
+.team-hidden, .admin-hidden { display: none; }
+#role-team:checked ~ .dashboard .team-hidden { display: block; }
+#role-admin:checked ~ .dashboard .admin-hidden,
+#role-admin:checked ~ .dashboard .team-hidden { display: block; }
+
+/* Top connectors (admin only) */
+.top-connectors { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
+.top-connectors h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 10px; }
+.connector-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 4px; }
+.connector-row:hover { background: rgba(255,255,255,0.03); }
+.connector-rank { font-size: 12px; font-weight: 700; color: #555; width: 18px; text-align: center; }
+.connector-avatar-sm { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.connector-name { font-size: 12px; font-weight: 600; color: #ccc; }
+.connector-count { font-size: 11px; color: #666; margin-left: auto; }
+
+/* ─── Graph Area ─── */
+.graph-area { flex: 1; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 50%, #12122a 0%, #0a0a1a 70%); }
+
+/* Cluster halos */
+.cluster { position: absolute; border-radius: 50%; border: 1px solid; }
+.cluster-family { width: 240px; height: 220px; top: 180px; left: 120px; border-color: rgba(139, 156, 247, 0.12); background: radial-gradient(ellipse, rgba(139, 156, 247, 0.04) 0%, transparent 70%); }
+.cluster-work { width: 280px; height: 260px; top: 60px; right: 180px; border-color: rgba(99, 210, 151, 0.12); background: radial-gradient(ellipse, rgba(99, 210, 151, 0.04) 0%, transparent 70%); }
+.cluster-neighborhood { width: 260px; height: 240px; bottom: 80px; left: 380px; border-color: rgba(243, 156, 18, 0.12); background: radial-gradient(ellipse, rgba(243, 156, 18, 0.04) 0%, transparent 70%); }
+.cluster-label { position: absolute; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.3; }
+.cluster-family .cluster-label { color: #8b9cf7; top: 8px; left: 50%; transform: translateX(-50%); }
+.cluster-work .cluster-label { color: #63d297; top: 8px; left: 50%; transform: translateX(-50%); }
+.cluster-neighborhood .cluster-label { color: #f39c12; top: 8px; left: 50%; transform: translateX(-50%); }
+
+/* Graph header */
+.graph-header { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+.graph-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); }
+.graph-legend { display: flex; gap: 16px; font-size: 10px; color: #666; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-line { width: 20px; height: 0; border-top: 2px solid rgba(255,255,255,0.3); }
+.legend-line.dashed { border-top-style: dashed; }
+.legend-line.dotted { border-top-style: dotted; }
+
+/* ─── Nodes ─── */
+.node { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; cursor: default; transition: transform 0.3s, box-shadow 0.3s; z-index: 5; }
+.node::after { content: attr(data-name); position: absolute; top: 100%; margin-top: 6px; font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.5); white-space: nowrap; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.node:hover { transform: scale(1.15); z-index: 20; }
+.node:hover::after { opacity: 1; }
+
+/* Node tooltip on hover */
+.node .node-tooltip { position: absolute; bottom: 100%; margin-bottom: 10px; background: #1e1e3a; border: 1px solid rgba(139, 156, 247, 0.3); border-radius: 8px; padding: 10px 14px; min-width: 160px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 30; text-align: left; }
+.node:hover .node-tooltip { opacity: 1; }
+.node-tooltip .tt-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.node-tooltip .tt-role { font-size: 10px; color: #888; margin-bottom: 6px; }
+.node-tooltip .tt-stat { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; gap: 12px; }
+.node-tooltip .tt-val { color: #8b9cf7; font-weight: 600; }
+
+/* Orphan node */
+.node.orphan { border: 2px dashed rgba(255,255,255,0.2) !important; }
+
+/* Node sizes */
+.node-xl { width: 76px; height: 76px; font-size: 20px; }
+.node-lg { width: 62px; height: 62px; font-size: 17px; }
+.node-md { width: 50px; height: 50px; font-size: 14px; }
+.node-sm { width: 42px; height: 42px; font-size: 12px; }
+
+/* Node colors */
+.node-1 { background: linear-gradient(135deg, #8b9cf7, #6366f1); box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+.node-1:hover { box-shadow: 0 0 35px rgba(99, 102, 241, 0.6); }
+.node-2 { background: linear-gradient(135deg, #63d297, #10b981); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+.node-2:hover { box-shadow: 0 0 35px rgba(16, 185, 129, 0.6); }
+.node-3 { background: linear-gradient(135deg, #f7a58b, #ef4444); box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); }
+.node-3:hover { box-shadow: 0 0 35px rgba(239, 68, 68, 0.5); }
+.node-4 { background: linear-gradient(135deg, #f7d58b, #f59e0b); box-shadow: 0 0 20px rgba(245, 158, 11, 0.25); }
+.node-4:hover { box-shadow: 0 0 35px rgba(245, 158, 11, 0.5); }
+.node-5 { background: linear-gradient(135deg, #c58bf7, #a855f7); box-shadow: 0 0 20px rgba(168, 85, 247, 0.25); }
+.node-5:hover { box-shadow: 0 0 35px rgba(168, 85, 247, 0.5); }
+.node-6 { background: linear-gradient(135deg, #8be8f7, #06b6d4); box-shadow: 0 0 20px rgba(6, 182, 212, 0.25); }
+.node-6:hover { box-shadow: 0 0 35px rgba(6, 182, 212, 0.5); }
+.node-7 { background: linear-gradient(135deg, #f78bb4, #ec4899); box-shadow: 0 0 20px rgba(236, 72, 153, 0.25); }
+.node-7:hover { box-shadow: 0 0 35px rgba(236, 72, 153, 0.5); }
+
+/* ─── Edges (CSS lines via pseudo-elements on edge containers) ─── */
+.edge { position: absolute; height: 0; transform-origin: 0 0; z-index: 1; pointer-events: none; }
+.edge-solid { border-top: 1.5px solid rgba(255,255,255,0.12); }
+.edge-dashed { border-top: 1.5px dashed rgba(255,255,255,0.10); }
+.edge-dotted { border-top: 1.5px dotted rgba(255,255,255,0.07); }
+.edge-glow { border-top: 2px solid rgba(139, 156, 247, 0.35); filter: drop-shadow(0 0 4px rgba(139, 156, 247, 0.3)); }
+
+/* Time decay — opacity classes */
+.edge-recent { opacity: 1; }
+.edge-mid { opacity: 0.6; }
+.edge-old { opacity: 0.35; }
+
+/* Referral path glow */
+.edge-referral { border-top: 2px solid rgba(99, 210, 151, 0.4); filter: drop-shadow(0 0 6px rgba(99, 210, 151, 0.3)); }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .detail-panel { display: none; }
+#preview-mobile:checked ~ .window .graph-area { width: 100%; }
+#preview-mobile:checked ~ .window .cluster { transform: scale(0.6); }
+#preview-mobile:checked ~ .window .node { transform: scale(0.7); }
+#preview-mobile:checked ~ .window .role-bar { padding: 10px 12px 0; }
+
+/* ─── Role-based visibility ─── */
+.solo-only, .team-only, .admin-only { display: none; }
+#role-solo:checked ~ .dashboard .solo-only { display: block; }
+#role-team:checked ~ .dashboard .team-only { display: block; }
+#role-team:checked ~ .dashboard .solo-only { display: block; }
+#role-admin:checked ~ .dashboard .admin-only { display: block; }
+#role-admin:checked ~ .dashboard .team-only { display: block; }
+#role-admin:checked ~ .dashboard .solo-only { display: block; }
+
+/* Admin-only flex display for top connectors */
+#role-admin:checked ~ .dashboard .admin-flex { display: flex; }
+.admin-flex { display: none; flex-direction: column; }
+
+/* Team shared node indicator */
+.node-shared { border: 2px solid rgba(243, 156, 18, 0.6) !important; }
+
+/* Agent hub nodes (admin mode) */
+.node-hub::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px dashed rgba(139, 156, 247, 0.25); }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v7</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A relationship graph CRM for real estate agents that visualizes contacts as nodes and connections as edges. Reveals network structure, influence clusters, and referral paths through a constellation-style force-directed graph rendered entirely in CSS.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Web"</strong> &mdash; See who knows who. Contacts are nodes sized by value, relationships are edges styled by type, and proximity reveals influence clusters. Dark, contemplative, like a planetarium.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v7: "Web" — Relationship Graph</strong><br><br>
+        Tagline: "See who knows who."<br>
+        Core metaphor: A constellation map or neural network — contacts are nodes, relationships are edges, proximity reveals influence.<br><br>
+        Layout: Central area (~75%) is a force-directed-style graph in pure CSS — absolutely positioned circular nodes with CSS lines/borders connecting them. Left panel (~25%, ~320px) with detail card for selected node, search, and filters. Dark background to make graph elements pop.<br><br>
+        Key UI elements: Contact nodes sized by value (40-80px) with initials/gradient avatar. Relationship edges (solid=direct client, dashed=referral, dotted=weak). Cluster halos grouping related nodes. Node hover detail with glow. Detail panel with connections list. Orphan node indicators. Referral path highlighting. Time decay (fading edges).<br><br>
+        Color/mood: Dark background (#1a1a2e). Nodes in pastel-to-saturated palette. Edges in semi-transparent white. Low-opacity cluster halos. Contemplative, discovery-oriented, like a planetarium.<br><br>
+        Role toggle: Solo Agent shows personal network. Team Lead merges team networks with shared connection highlights. Brokerage Admin shows full brokerage network with agent hub nodes and top connectors ranking.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; Origination Prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Role radios -->
+      <input type="radio" name="role" id="role-solo" checked>
+      <input type="radio" name="role" id="role-team">
+      <input type="radio" name="role" id="role-admin">
+
+      <div class="dashboard">
+        <!-- Left Detail Panel -->
+        <div class="detail-panel">
+          <div class="panel-header">
+            <div class="role-bar" style="padding: 0 0 16px;">
+              <label for="role-solo" class="role-pill">Solo Agent</label>
+              <label for="role-team" class="role-pill">Team Lead</label>
+              <label for="role-admin" class="role-pill">Brokerage Admin</label>
+            </div>
+            <h2>Network Explorer</h2>
+            <input type="text" class="search-box" value="Search contacts..." readonly>
+            <div class="filter-row">
+              <span class="filter-tag active">All</span>
+              <span class="filter-tag">Clients</span>
+              <span class="filter-tag">Referrals</span>
+              <span class="filter-tag">Leads</span>
+              <span class="filter-tag">Past</span>
+            </div>
+          </div>
+
+          <!-- Selected Contact Card -->
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-avatar-lg node-1">MR</div>
+              <div>
+                <div class="contact-name">Maria Rodriguez</div>
+                <div class="contact-role">Active Client &middot; Seller</div>
+              </div>
+            </div>
+            <div class="contact-stats">
+              <div class="contact-stat">
+                <div class="val">12</div>
+                <div class="lbl">Connections</div>
+              </div>
+              <div class="contact-stat">
+                <div class="val">$1.2M</div>
+                <div class="lbl">Deal Value</div>
+              </div>
+              <div class="contact-stat">
+                <div class="val">4</div>
+                <div class="lbl">Referrals</div>
+              </div>
+            </div>
+            <div class="contact-connections">
+              <div class="connection-item">
+                <span class="connection-dot" style="background: #63d297;"></span>
+                James Chen
+                <span class="connection-type">Referred by</span>
+              </div>
+              <div class="connection-item">
+                <span class="connection-dot" style="background: #f59e0b;"></span>
+                David Park
+                <span class="connection-type">Neighbor</span>
+              </div>
+              <div class="connection-item">
+                <span class="connection-dot" style="background: #8b9cf7;"></span>
+                Lisa Thompson
+                <span class="connection-type">Colleague</span>
+              </div>
+              <div class="connection-item">
+                <span class="connection-dot" style="background: #ec4899;"></span>
+                Sarah Kim
+                <span class="connection-type">Family</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sphere of Influence -->
+          <div class="soi-section solo-only">
+            <h3>Sphere of Influence</h3>
+            <div class="soi-bar"><div class="soi-fill" style="width: 78%;"></div></div>
+            <div class="soi-label"><span>Score: 78/100</span><span>Top 15%</span></div>
+          </div>
+
+          <!-- Top Connectors (Admin) -->
+          <div class="top-connectors admin-flex">
+            <h3>Top Connectors</h3>
+            <div class="connector-row">
+              <span class="connector-rank">1</span>
+              <div class="connector-avatar-sm node-1">MR</div>
+              <span class="connector-name">Maria Rodriguez</span>
+              <span class="connector-count">12 connections</span>
+            </div>
+            <div class="connector-row">
+              <span class="connector-rank">2</span>
+              <div class="connector-avatar-sm node-2">JC</div>
+              <span class="connector-name">James Chen</span>
+              <span class="connector-count">9 connections</span>
+            </div>
+            <div class="connector-row">
+              <span class="connector-rank">3</span>
+              <div class="connector-avatar-sm node-4">DP</div>
+              <span class="connector-name">David Park</span>
+              <span class="connector-count">8 connections</span>
+            </div>
+            <div class="connector-row">
+              <span class="connector-rank">4</span>
+              <div class="connector-avatar-sm node-5">AW</div>
+              <span class="connector-name">Amy Wright</span>
+              <span class="connector-count">7 connections</span>
+            </div>
+            <div class="connector-row">
+              <span class="connector-rank">5</span>
+              <div class="connector-avatar-sm node-6">TN</div>
+              <span class="connector-name">Tom Nguyen</span>
+              <span class="connector-count">6 connections</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Graph Area -->
+        <div class="graph-area">
+          <!-- Legend -->
+          <div class="graph-header" style="padding: 16px 20px;">
+            <span class="graph-title">Relationship Graph</span>
+            <div class="graph-legend">
+              <div class="legend-item"><span class="legend-line"></span> Client</div>
+              <div class="legend-item"><span class="legend-line dashed"></span> Referral</div>
+              <div class="legend-item"><span class="legend-line dotted"></span> Weak</div>
+            </div>
+          </div>
+
+          <!-- Cluster Halos -->
+          <div class="cluster cluster-family"><span class="cluster-label">Family</span></div>
+          <div class="cluster cluster-work"><span class="cluster-label">Workplace</span></div>
+          <div class="cluster cluster-neighborhood"><span class="cluster-label">Neighborhood</span></div>
+
+          <!-- ═══ EDGES ═══ -->
+          <!-- MR(200,260) → JC(340,160) : solid, recent, referral glow -->
+          <div class="edge edge-referral edge-recent" style="left:238px; top:288px; width:167px; transform:rotate(-37deg);"></div>
+          <!-- MR(200,260) → SK(140,370) : solid, recent -->
+          <div class="edge edge-solid edge-recent" style="left:220px; top:298px; width:120px; transform:rotate(110deg);"></div>
+          <!-- MR(200,260) → DP(440,400) : solid, mid -->
+          <div class="edge edge-solid edge-mid" style="left:238px; top:298px; width:270px; transform:rotate(30deg);"></div>
+          <!-- MR(200,260) → LT(320,290) : dashed, recent -->
+          <div class="edge edge-dashed edge-recent" style="left:250px; top:288px; width:130px; transform:rotate(13deg);"></div>
+          <!-- JC(340,160) → AW(540,120) : solid, recent -->
+          <div class="edge edge-solid edge-recent" style="left:378px; top:185px; width:205px; transform:rotate(-12deg);"></div>
+          <!-- JC(340,160) → TN(490,220) : dashed, mid -->
+          <div class="edge edge-dashed edge-mid" style="left:372px; top:188px; width:165px; transform:rotate(22deg);"></div>
+          <!-- JC(340,160) → RH(230,110) : solid, old -->
+          <div class="edge edge-solid edge-old" style="left:340px; top:175px; width:120px; transform:rotate(-210deg);"></div>
+          <!-- AW(540,120) → KL(660,180) : solid, recent -->
+          <div class="edge edge-solid edge-recent" style="left:578px; top:148px; width:135px; transform:rotate(25deg);"></div>
+          <!-- AW(540,120) → TN(490,220) : dashed, recent -->
+          <div class="edge edge-dashed edge-recent" style="left:558px; top:148px; width:110px; transform:rotate(130deg);"></div>
+          <!-- DP(440,400) → NB(560,440) : solid, mid -->
+          <div class="edge edge-solid edge-mid" style="left:478px; top:425px; width:130px; transform:rotate(18deg);"></div>
+          <!-- DP(440,400) → LT(320,290) : dashed, old -->
+          <div class="edge edge-dashed edge-old" style="left:440px; top:418px; width:155px; transform:rotate(-215deg);"></div>
+          <!-- SK(140,370) → PG(80,480) : solid, recent -->
+          <div class="edge edge-solid edge-recent" style="left:155px; top:400px; width:100px; transform:rotate(110deg);"></div>
+          <!-- LT(320,290) → BF(400,340) : dotted, old -->
+          <div class="edge edge-dotted edge-old" style="left:352px; top:316px; width:95px; transform:rotate(32deg);"></div>
+          <!-- KL(660,180) → NB(560,440) : dashed, mid, referral glow -->
+          <div class="edge edge-referral edge-mid" style="left:680px; top:210px; width:270px; transform:rotate(110deg);"></div>
+          <!-- TN(490,220) → BF(400,340) : dotted, mid -->
+          <div class="edge edge-dotted edge-mid" style="left:508px; top:248px; width:145px; transform:rotate(145deg);"></div>
+          <!-- NB(560,440) → EV(680,500) : solid, recent -->
+          <div class="edge edge-solid edge-recent" style="left:595px; top:465px; width:130px; transform:rotate(25deg);"></div>
+          <!-- PG(80,480) → JM(180,560) : dashed, old -->
+          <div class="edge edge-dashed edge-old" style="left:105px; top:510px; width:120px; transform:rotate(42deg);"></div>
+
+          <!-- ═══ NODES ═══ -->
+          <!-- Maria Rodriguez — central hub, high value -->
+          <div class="node node-xl node-1" style="left:200px; top:260px;" data-name="Maria Rodriguez">
+            MR
+            <div class="node-tooltip">
+              <div class="tt-name">Maria Rodriguez</div>
+              <div class="tt-role">Active Client &middot; Seller</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$1.2M</span></div>
+              <div class="tt-stat"><span>Connections</span><span class="tt-val">12</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">2 days</span></div>
+            </div>
+          </div>
+
+          <!-- James Chen — large node, referral source -->
+          <div class="node node-lg node-2" style="left:340px; top:160px;" data-name="James Chen">
+            JC
+            <div class="node-tooltip">
+              <div class="tt-name">James Chen</div>
+              <div class="tt-role">Past Client &middot; Buyer</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$890K</span></div>
+              <div class="tt-stat"><span>Referrals Given</span><span class="tt-val">3</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">1 week</span></div>
+            </div>
+          </div>
+
+          <!-- Sarah Kim — family cluster -->
+          <div class="node node-md node-7" style="left:140px; top:370px;" data-name="Sarah Kim">
+            SK
+            <div class="node-tooltip">
+              <div class="tt-name">Sarah Kim</div>
+              <div class="tt-role">Active Lead</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$650K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">3 days</span></div>
+            </div>
+          </div>
+
+          <!-- David Park — neighborhood -->
+          <div class="node node-lg node-4" style="left:440px; top:400px;" data-name="David Park">
+            DP
+            <div class="node-tooltip">
+              <div class="tt-name">David Park</div>
+              <div class="tt-role">Active Client &middot; Buyer</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$720K</span></div>
+              <div class="tt-stat"><span>Connections</span><span class="tt-val">8</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">Yesterday</span></div>
+            </div>
+          </div>
+
+          <!-- Lisa Thompson — work cluster -->
+          <div class="node node-md node-5" style="left:320px; top:290px;" data-name="Lisa Thompson">
+            LT
+            <div class="node-tooltip">
+              <div class="tt-name">Lisa Thompson</div>
+              <div class="tt-role">Referral &middot; Colleague</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">$500K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">2 weeks</span></div>
+            </div>
+          </div>
+
+          <!-- Amy Wright — work cluster -->
+          <div class="node node-lg node-5" style="left:540px; top:120px;" data-name="Amy Wright">
+            AW
+            <div class="node-tooltip">
+              <div class="tt-name">Amy Wright</div>
+              <div class="tt-role">Past Client &middot; Seller</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$1.1M</span></div>
+              <div class="tt-stat"><span>Referrals Given</span><span class="tt-val">2</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">5 days</span></div>
+            </div>
+          </div>
+
+          <!-- Tom Nguyen -->
+          <div class="node node-md node-6" style="left:490px; top:220px;" data-name="Tom Nguyen">
+            TN
+            <div class="node-tooltip">
+              <div class="tt-name">Tom Nguyen</div>
+              <div class="tt-role">Active Lead</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$450K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">4 days</span></div>
+            </div>
+          </div>
+
+          <!-- Kevin Lee -->
+          <div class="node node-md node-3" style="left:660px; top:180px;" data-name="Kevin Lee">
+            KL
+            <div class="node-tooltip">
+              <div class="tt-name">Kevin Lee</div>
+              <div class="tt-role">Active Client &middot; Buyer</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$580K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">1 week</span></div>
+            </div>
+          </div>
+
+          <!-- Rachel Harris -->
+          <div class="node node-sm node-3" style="left:230px; top:110px;" data-name="Rachel Harris">
+            RH
+            <div class="node-tooltip">
+              <div class="tt-name">Rachel Harris</div>
+              <div class="tt-role">Past Client</div>
+              <div class="tt-stat"><span>Deal Value</span><span class="tt-val">$340K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">3 months</span></div>
+            </div>
+          </div>
+
+          <!-- Nick Brown — neighborhood -->
+          <div class="node node-md node-4" style="left:560px; top:440px;" data-name="Nick Brown">
+            NB
+            <div class="node-tooltip">
+              <div class="tt-name">Nick Brown</div>
+              <div class="tt-role">Referral Lead</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">$600K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">6 days</span></div>
+            </div>
+          </div>
+
+          <!-- Brian Foster — weak connection -->
+          <div class="node node-sm node-6" style="left:400px; top:340px;" data-name="Brian Foster">
+            BF
+            <div class="node-tooltip">
+              <div class="tt-name">Brian Foster</div>
+              <div class="tt-role">Acquaintance</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">Unknown</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">1 month</span></div>
+            </div>
+          </div>
+
+          <!-- Paul Garcia — family cluster -->
+          <div class="node node-sm node-1" style="left:80px; top:480px;" data-name="Paul Garcia">
+            PG
+            <div class="node-tooltip">
+              <div class="tt-name">Paul Garcia</div>
+              <div class="tt-role">Family Referral</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">$400K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">2 weeks</span></div>
+            </div>
+          </div>
+
+          <!-- Elena Vasquez -->
+          <div class="node node-md node-2" style="left:680px; top:500px;" data-name="Elena Vasquez">
+            EV
+            <div class="node-tooltip">
+              <div class="tt-name">Elena Vasquez</div>
+              <div class="tt-role">New Lead</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$750K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">Today</span></div>
+            </div>
+          </div>
+
+          <!-- Janet Moore — family edge -->
+          <div class="node node-sm node-7" style="left:180px; top:560px;" data-name="Janet Moore">
+            JM
+            <div class="node-tooltip">
+              <div class="tt-name">Janet Moore</div>
+              <div class="tt-role">Family Contact</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">$280K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">6 weeks</span></div>
+            </div>
+          </div>
+
+          <!-- Ryan Walsh — orphan node -->
+          <div class="node node-sm node-3 orphan" style="left:760px; top:340px;" data-name="Ryan Walsh">
+            RW
+            <div class="node-tooltip">
+              <div class="tt-name">Ryan Walsh</div>
+              <div class="tt-role">Cold Lead &middot; Orphan</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$500K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">2 months</span></div>
+            </div>
+          </div>
+
+          <!-- Mike Torres — orphan node -->
+          <div class="node node-sm node-4 orphan" style="left:800px; top:560px;" data-name="Mike Torres">
+            MT
+            <div class="node-tooltip">
+              <div class="tt-name">Mike Torres</div>
+              <div class="tt-role">Past Inquiry &middot; Orphan</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$320K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">4 months</span></div>
+            </div>
+          </div>
+
+          <!-- Wei Zhang — work cluster -->
+          <div class="node node-sm node-6" style="left:680px; top:80px;" data-name="Wei Zhang">
+            WZ
+            <div class="node-tooltip">
+              <div class="tt-name">Wei Zhang</div>
+              <div class="tt-role">Investor Lead</div>
+              <div class="tt-stat"><span>Interest</span><span class="tt-val">$2.1M</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">1 week</span></div>
+            </div>
+          </div>
+
+          <!-- Carla Diaz — neighborhood -->
+          <div class="node node-sm node-2" style="left:520px; top:540px;" data-name="Carla Diaz">
+            CD
+            <div class="node-tooltip">
+              <div class="tt-name">Carla Diaz</div>
+              <div class="tt-role">Neighborhood Contact</div>
+              <div class="tt-stat"><span>Potential</span><span class="tt-val">$380K</span></div>
+              <div class="tt-stat"><span>Last Contact</span><span class="tt-val">3 weeks</span></div>
+            </div>
+          </div>
+
+          <!-- Additional edges for WZ, CD -->
+          <!-- AW → WZ -->
+          <div class="edge edge-dashed edge-mid" style="left:578px; top:142px; width:140px; transform:rotate(-25deg);"></div>
+          <!-- NB → CD -->
+          <div class="edge edge-dotted edge-old" style="left:580px; top:468px; width:110px; transform:rotate(50deg);"></div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

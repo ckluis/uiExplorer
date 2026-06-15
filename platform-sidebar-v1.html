@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Sidebar — v1 | UI Explorations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --sidebar-w: 200px;
+    --module-w: 240px;
+    --page-w: 220px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration: 0.45s;
+    --bg: #f8f7f6;
+    --sidebar-bg: #1b1f2a;
+    --sidebar-text: #c0c4ce;
+    --sidebar-text-bright: #eaecf0;
+    --sidebar-hover: rgba(255,255,255,0.07);
+    --sidebar-active: rgba(255,255,255,0.12);
+    --module-bg: #f0eeeb;
+    --page-bg: #faf9f8;
+    --border: #e8e5e1;
+    --border-dark: rgba(255,255,255,0.08);
+    --text: #1a1a1a;
+    --text-muted: #8a8580;
+    --text-dim: #b0aba5;
+    --hover-bg: rgba(0,0,0,0.04);
+    --sf-blue: #0176d3;
+    --green: #2e844a;
+    --orange: #dd7a01;
+    --red: #ea001e;
+    --purple: #7526c4;
+    --teal: #0d9dda;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 24px 20px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block;
+    background: rgba(139, 156, 247, 0.15);
+    color: #8b9cf7;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 16px;
+  }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    color: #bbb;
+    font-style: italic;
+  }
+
+  .experiment-content {
+    flex: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ─── Hide all radios & checkbox ─── */
+  input[type="radio"],
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .window {
+    width: 1360px;
+    height: 820px;
+    background: var(--bg);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  /* ─── Focus Toggle (top-left) ─── */
+  .focus-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.15s, color 0.15s;
+    color: rgba(255,255,255,0.45);
+  }
+  .focus-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+  .focus-btn svg { width: 16px; height: 16px; }
+
+  #focus-toggle:checked ~ .window .focus-btn {
+    color: var(--text-dim);
+  }
+  #focus-toggle:checked ~ .window .focus-btn:hover {
+    background: var(--hover-bg); color: var(--text);
+  }
+
+  /* ════════════════════════════════════
+     LEFT SIDEBAR — Products
+     ════════════════════════════════════ */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    padding: 48px 0 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition:
+      width var(--duration) var(--ease),
+      min-width var(--duration) var(--ease),
+      opacity var(--duration) var(--ease),
+      transform var(--duration) var(--ease);
+    transform-origin: left center;
+  }
+
+  .sidebar-logo {
+    padding: 0 14px 14px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-bottom: 1px solid var(--border-dark);
+    margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 26px; height: 26px;
+    background: var(--sf-blue);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 12px; flex-shrink: 0;
+  }
+  .logo-text { font-size: 13px; font-weight: 600; color: var(--sidebar-text-bright); white-space: nowrap; }
+  .logo-sub { font-size: 10px; color: var(--sidebar-text); white-space: nowrap; }
+
+  .sb-section { padding: 0 8px; margin-bottom: 2px; }
+  .sb-heading {
+    font-size: 9.5px; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: 0.7px;
+    padding: 12px 8px 4px;
+  }
+
+  /* Product labels */
+  .sb-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 9px; border-radius: 5px;
+    font-size: 12.5px; color: var(--sidebar-text);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap; overflow: hidden;
+  }
+  .sb-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-bright); }
+
+  .sb-item .p-icon {
+    width: 18px; height: 18px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 10px; color: white; font-weight: 600;
+  }
+  .sb-item .badge {
+    margin-left: auto;
+    background: var(--red); color: white;
+    font-size: 9px; font-weight: 600;
+    padding: 1px 5px; border-radius: 9px; flex-shrink: 0;
+  }
+
+  .sb-divider { height: 1px; background: var(--border-dark); margin: 6px 14px; }
+
+  .sb-bottom {
+    margin-top: auto; padding: 6px 8px;
+    border-top: 1px solid var(--border-dark);
+  }
+  .sb-bottom .sb-item { font-size: 11.5px; opacity: 0.55; }
+
+  /* Active product highlighting */
+  #p-sales:checked   ~ .window label[for="p-sales"],
+  #p-service:checked ~ .window label[for="p-service"],
+  #p-mktg:checked    ~ .window label[for="p-mktg"],
+  #p-commerce:checked~ .window label[for="p-commerce"],
+  #p-analytics:checked~.window label[for="p-analytics"],
+  #p-exp:checked     ~ .window label[for="p-exp"] {
+    background: var(--sidebar-active);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* ════════════════════════════════════
+     MIDDLE PANEL — Modules
+     ════════════════════════════════════ */
+  .module-panel {
+    width: var(--module-w);
+    min-width: var(--module-w);
+    background: var(--module-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition:
+      width var(--duration) var(--ease),
+      min-width var(--duration) var(--ease),
+      opacity var(--duration) var(--ease),
+      transform var(--duration) var(--ease);
+    transform-origin: left center;
+  }
+
+  .mod-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--module-bg); z-index: 2;
+  }
+  .mod-header-product { font-size: 10px; color: var(--sf-blue); font-weight: 500; margin-bottom: 1px; }
+  .mod-header-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .mod-search {
+    margin: 6px 10px;
+    padding: 6px 9px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 5px;
+    font-size: 11px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .mod-group-label {
+    font-size: 9.5px; font-weight: 600; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 10px 14px 3px;
+  }
+
+  /* Module items (labels for radios) */
+  .mod-item {
+    display: flex; gap: 9px; align-items: center;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 2.5px solid transparent;
+  }
+  .mod-item:hover { background: rgba(0,0,0,0.04); }
+
+  .mod-item .mod-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    background: var(--text-dim);
+  }
+  .mod-item-content { flex: 1; min-width: 0; }
+  .mod-item-title { font-size: 12.5px; font-weight: 500; color: var(--text); }
+  .mod-item-desc { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+  .mod-item .count { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+
+  /* Module groups: hidden by default, shown by product radio */
+  .mod-group { display: none; }
+
+  #p-sales:checked    ~ .window .mod-group.sales    { display: contents; }
+  #p-service:checked  ~ .window .mod-group.service  { display: contents; }
+  #p-mktg:checked     ~ .window .mod-group.mktg     { display: contents; }
+  #p-commerce:checked ~ .window .mod-group.commerce  { display: contents; }
+  #p-analytics:checked~ .window .mod-group.analytics { display: contents; }
+  #p-exp:checked      ~ .window .mod-group.exp       { display: contents; }
+
+  /* Module header text swap */
+  .mod-header .mh-label { display: none; }
+  #p-sales:checked    ~ .window .mh-label.sales    { display: block; }
+  #p-service:checked  ~ .window .mh-label.service  { display: block; }
+  #p-mktg:checked     ~ .window .mh-label.mktg     { display: block; }
+  #p-commerce:checked ~ .window .mh-label.commerce  { display: block; }
+  #p-analytics:checked~ .window .mh-label.analytics { display: block; }
+  #p-exp:checked      ~ .window .mh-label.exp       { display: block; }
+
+  /* Active module highlighting */
+  #m-opps:checked     ~ .window label[for="m-opps"],
+  #m-accounts:checked ~ .window label[for="m-accounts"],
+  #m-contacts:checked ~ .window label[for="m-contacts"],
+  #m-leads:checked    ~ .window label[for="m-leads"],
+  #m-forecast:checked ~ .window label[for="m-forecast"],
+  #m-cases:checked    ~ .window label[for="m-cases"],
+  #m-knowledge:checked~ .window label[for="m-knowledge"],
+  #m-omni:checked     ~ .window label[for="m-omni"],
+  #m-field:checked    ~ .window label[for="m-field"],
+  #m-sla:checked      ~ .window label[for="m-sla"],
+  #m-campaigns:checked~ .window label[for="m-campaigns"],
+  #m-email:checked    ~ .window label[for="m-email"],
+  #m-journeys:checked ~ .window label[for="m-journeys"],
+  #m-audience:checked ~ .window label[for="m-audience"],
+  #m-storefront:checked~.window label[for="m-storefront"],
+  #m-orders:checked   ~ .window label[for="m-orders"],
+  #m-inventory:checked~ .window label[for="m-inventory"],
+  #m-promo:checked    ~ .window label[for="m-promo"],
+  #m-dashboards:checked~.window label[for="m-dashboards"],
+  #m-reports:checked  ~ .window label[for="m-reports"],
+  #m-datasets:checked ~ .window label[for="m-datasets"],
+  #m-sites:checked    ~ .window label[for="m-sites"],
+  #m-templates:checked~ .window label[for="m-templates"],
+  #m-cms:checked      ~ .window label[for="m-cms"] {
+    background: rgba(0,0,0,0.06);
+    border-left-color: var(--sf-blue);
+  }
+
+  /* ════════════════════════════════════
+     PAGE PANEL — Pages/Views
+     ════════════════════════════════════ */
+  .page-panel {
+    width: var(--page-w);
+    min-width: var(--page-w);
+    background: var(--page-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition:
+      width var(--duration) var(--ease),
+      min-width var(--duration) var(--ease),
+      opacity var(--duration) var(--ease),
+      transform var(--duration) var(--ease);
+    transform-origin: left center;
+  }
+
+  .pg-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--page-bg); z-index: 2;
+  }
+  .pg-header-module { font-size: 10px; color: var(--sf-blue); font-weight: 500; margin-bottom: 1px; }
+  .pg-header-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .pg-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    font-size: 12.5px; color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 2.5px solid transparent;
+  }
+  .pg-item:hover { background: var(--hover-bg); }
+
+  .pg-item .pg-icon {
+    font-size: 13px; color: var(--text-dim); flex-shrink: 0; width: 16px; text-align: center;
+  }
+  .pg-item .pg-count {
+    margin-left: auto; font-size: 10px; color: var(--text-dim);
+  }
+
+  /* Page groups: hidden by default */
+  .pg-group { display: none; }
+
+  #m-opps:checked      ~ .window .pg-group.opps      { display: contents; }
+  #m-accounts:checked  ~ .window .pg-group.accounts   { display: contents; }
+  #m-contacts:checked  ~ .window .pg-group.contacts   { display: contents; }
+  #m-leads:checked     ~ .window .pg-group.leads      { display: contents; }
+  #m-forecast:checked  ~ .window .pg-group.forecast    { display: contents; }
+  #m-cases:checked     ~ .window .pg-group.cases      { display: contents; }
+  #m-knowledge:checked ~ .window .pg-group.knowledge   { display: contents; }
+  #m-omni:checked      ~ .window .pg-group.omni       { display: contents; }
+  #m-field:checked     ~ .window .pg-group.field       { display: contents; }
+  #m-sla:checked       ~ .window .pg-group.sla        { display: contents; }
+  #m-campaigns:checked ~ .window .pg-group.campaigns   { display: contents; }
+  #m-email:checked     ~ .window .pg-group.email       { display: contents; }
+  #m-journeys:checked  ~ .window .pg-group.journeys    { display: contents; }
+  #m-audience:checked  ~ .window .pg-group.audience     { display: contents; }
+  #m-storefront:checked~ .window .pg-group.storefront   { display: contents; }
+  #m-orders:checked    ~ .window .pg-group.orders       { display: contents; }
+  #m-inventory:checked ~ .window .pg-group.inventory    { display: contents; }
+  #m-promo:checked     ~ .window .pg-group.promo        { display: contents; }
+  #m-dashboards:checked~ .window .pg-group.dashboards   { display: contents; }
+  #m-reports:checked   ~ .window .pg-group.reports      { display: contents; }
+  #m-datasets:checked  ~ .window .pg-group.datasets     { display: contents; }
+  #m-sites:checked     ~ .window .pg-group.sites        { display: contents; }
+  #m-templates:checked ~ .window .pg-group.templates    { display: contents; }
+  #m-cms:checked       ~ .window .pg-group.cms          { display: contents; }
+
+  /* Page header text swap */
+  .pg-header .ph-label { display: none; }
+  #m-opps:checked      ~ .window .ph-label.opps      { display: block; }
+  #m-accounts:checked  ~ .window .ph-label.accounts   { display: block; }
+  #m-contacts:checked  ~ .window .ph-label.contacts   { display: block; }
+  #m-leads:checked     ~ .window .ph-label.leads      { display: block; }
+  #m-forecast:checked  ~ .window .ph-label.forecast    { display: block; }
+  #m-cases:checked     ~ .window .ph-label.cases      { display: block; }
+  #m-knowledge:checked ~ .window .ph-label.knowledge   { display: block; }
+  #m-omni:checked      ~ .window .ph-label.omni       { display: block; }
+  #m-field:checked     ~ .window .ph-label.field       { display: block; }
+  #m-sla:checked       ~ .window .ph-label.sla        { display: block; }
+  #m-campaigns:checked ~ .window .ph-label.campaigns   { display: block; }
+  #m-email:checked     ~ .window .ph-label.email       { display: block; }
+  #m-journeys:checked  ~ .window .ph-label.journeys    { display: block; }
+  #m-audience:checked  ~ .window .ph-label.audience     { display: block; }
+  #m-storefront:checked~ .window .ph-label.storefront   { display: block; }
+  #m-orders:checked    ~ .window .ph-label.orders       { display: block; }
+  #m-inventory:checked ~ .window .ph-label.inventory    { display: block; }
+  #m-promo:checked     ~ .window .ph-label.promo        { display: block; }
+  #m-dashboards:checked~ .window .ph-label.dashboards   { display: block; }
+  #m-reports:checked   ~ .window .ph-label.reports      { display: block; }
+  #m-datasets:checked  ~ .window .ph-label.datasets     { display: block; }
+  #m-sites:checked     ~ .window .ph-label.sites        { display: block; }
+  #m-templates:checked ~ .window .ph-label.templates    { display: block; }
+  #m-cms:checked       ~ .window .ph-label.cms          { display: block; }
+
+  /* Active page highlighting */
+  .pg-item-active {
+    background: rgba(1,118,211,0.06);
+    border-left-color: var(--sf-blue);
+    font-weight: 500;
+  }
+
+  /* ════════════════════════════════════
+     MAIN CONTENT
+     ════════════════════════════════════ */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    min-width: 0;
+    transition: all var(--duration) var(--ease);
+  }
+
+  .main-header {
+    padding: 11px 20px;
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--border);
+    gap: 10px; background: white;
+  }
+
+  /* Dynamic breadcrumb via CSS */
+  .breadcrumb {
+    font-size: 12px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .bc-sep { color: var(--text-dim); font-size: 10px; }
+  .bc-item { display: none; }
+  .bc-current { display: none; color: var(--text); font-weight: 500; }
+
+  /* Product breadcrumb */
+  #p-sales:checked    ~ .window .bc-item.sales    { display: inline; }
+  #p-service:checked  ~ .window .bc-item.service  { display: inline; }
+  #p-mktg:checked     ~ .window .bc-item.mktg     { display: inline; }
+  #p-commerce:checked ~ .window .bc-item.commerce  { display: inline; }
+  #p-analytics:checked~ .window .bc-item.analytics { display: inline; }
+  #p-exp:checked      ~ .window .bc-item.exp       { display: inline; }
+
+  /* Module breadcrumb */
+  #m-opps:checked     ~ .window .bc-current.opps     { display: inline; }
+  #m-accounts:checked ~ .window .bc-current.accounts  { display: inline; }
+  #m-contacts:checked ~ .window .bc-current.contacts  { display: inline; }
+  #m-leads:checked    ~ .window .bc-current.leads     { display: inline; }
+  #m-forecast:checked ~ .window .bc-current.forecast   { display: inline; }
+  #m-cases:checked    ~ .window .bc-current.cases     { display: inline; }
+  #m-knowledge:checked~ .window .bc-current.knowledge  { display: inline; }
+  #m-omni:checked     ~ .window .bc-current.omni      { display: inline; }
+  #m-field:checked    ~ .window .bc-current.field      { display: inline; }
+  #m-sla:checked      ~ .window .bc-current.sla       { display: inline; }
+  #m-campaigns:checked~ .window .bc-current.campaigns  { display: inline; }
+  #m-email:checked    ~ .window .bc-current.email      { display: inline; }
+  #m-journeys:checked ~ .window .bc-current.journeys   { display: inline; }
+  #m-audience:checked ~ .window .bc-current.audience    { display: inline; }
+  #m-storefront:checked~.window .bc-current.storefront  { display: inline; }
+  #m-orders:checked   ~ .window .bc-current.orders      { display: inline; }
+  #m-inventory:checked~ .window .bc-current.inventory   { display: inline; }
+  #m-promo:checked    ~ .window .bc-current.promo       { display: inline; }
+  #m-dashboards:checked~.window .bc-current.dashboards  { display: inline; }
+  #m-reports:checked  ~ .window .bc-current.reports     { display: inline; }
+  #m-datasets:checked ~ .window .bc-current.datasets    { display: inline; }
+  #m-sites:checked    ~ .window .bc-current.sites       { display: inline; }
+  #m-templates:checked~ .window .bc-current.templates   { display: inline; }
+  #m-cms:checked      ~ .window .bc-current.cms         { display: inline; }
+
+  .main-header-actions {
+    margin-left: auto; display: flex; gap: 6px;
+  }
+  .header-btn {
+    padding: 5px 12px; border-radius: 5px; font-size: 11.5px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text);
+    transition: background 0.15s;
+  }
+  .header-btn:hover { background: #f5f4f2; }
+  .header-btn.primary { background: var(--sf-blue); color: white; border-color: var(--sf-blue); }
+  .header-btn.primary:hover { background: #0160b0; }
+
+  .main-body { flex: 1; padding: 20px; overflow-y: auto; }
+
+  /* Dashboard */
+  .dash-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-bottom: 20px;
+  }
+  .dash-card {
+    background: white; border-radius: 8px; padding: 16px; border: 1px solid var(--border);
+  }
+  .dash-card-label {
+    font-size: 10px; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 5px;
+  }
+  .dash-card-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+  .dash-card-change { font-size: 11px; margin-top: 5px; font-weight: 500; }
+  .dash-card-change.up { color: var(--green); }
+  .dash-card-change.down { color: var(--red); }
+
+  /* Table */
+  .data-table {
+    background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
+  }
+  .data-table-header {
+    padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-row {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 100px;
+    padding: 9px 16px; font-size: 12.5px;
+    border-bottom: 1px solid #f0eeeb; align-items: center;
+  }
+  .table-row.head {
+    font-size: 10px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px; background: #faf9f8;
+  }
+  .table-row:last-child { border-bottom: none; }
+  .table-row .name { font-weight: 500; color: var(--sf-blue); }
+  .status-pill {
+    font-size: 10px; padding: 2px 7px; border-radius: 9px;
+    font-weight: 500; display: inline-block; width: fit-content;
+  }
+  .status-pill.won { background: #e6f4ea; color: var(--green); }
+  .status-pill.open { background: #e3f0fc; color: var(--sf-blue); }
+  .status-pill.lost { background: #fde8e8; color: var(--red); }
+  .status-pill.pending { background: #fef3c7; color: var(--orange); }
+
+  /* ─── Collapse all three ─── */
+  #focus-toggle:checked ~ .window .sidebar {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; padding: 0;
+  }
+  #focus-toggle:checked ~ .window .module-panel {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; border-right-width: 0;
+  }
+  #focus-toggle:checked ~ .window .page-panel {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; border-right-width: 0;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+
+  /* ─── Preview Picker ─── */
+  .preview-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 0 8px;
+  }
+  .preview-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    transition: background 0.2s, color 0.2s;
+  }
+  .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+  .preview-btn svg { width: 20px; height: 20px; }
+
+  #preview-web:checked ~ .preview-bar label[for="preview-web"],
+  #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"] {
+    background: rgba(255,255,255,0.2);
+    color: white;
+  }
+
+  /* Mobile preview: shrink window */
+  #preview-mobile:checked ~ .window {
+    width: 375px;
+    height: 720px;
+  }
+  #preview-mobile:checked ~ .window .sidebar {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; padding: 0;
+  }
+  #preview-mobile:checked ~ .window .module-panel {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; border-right-width: 0;
+  }
+  #preview-mobile:checked ~ .window .page-panel {
+    width: 0; min-width: 0; opacity: 0;
+    transform: translateX(-20px);
+    overflow: hidden; border-right-width: 0;
+  }
+  #preview-mobile:checked ~ .window .dash-grid {
+    grid-template-columns: 1fr;
+  }
+  #preview-mobile:checked ~ .window .table-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  #preview-mobile:checked ~ .window .table-row.head span:nth-child(3),
+  #preview-mobile:checked ~ .window .table-row.head span:nth-child(4),
+  #preview-mobile:checked ~ .window .table-row span:nth-child(3),
+  #preview-mobile:checked ~ .window .table-row span:nth-child(4) {
+    display: none;
+  }
+
+  /* ─── Collapsed Brand ─── */
+  .collapsed-brand {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    margin-right: 8px;
+  }
+  .collapsed-brand .cb-icon {
+    width: 22px; height: 22px;
+    background: var(--sf-blue);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 10px; flex-shrink: 0;
+  }
+  .collapsed-brand .cb-text {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap;
+  }
+
+  #focus-toggle:checked ~ .window .collapsed-brand,
+  #preview-mobile:checked ~ .window .collapsed-brand {
+    display: flex;
+  }
+
+  /* When collapsed (desktop), hide absolute focus-btn and show header version */
+  .header-focus-btn {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-dim);
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .header-focus-btn:hover { background: var(--hover-bg); color: var(--text); }
+  .header-focus-btn svg { width: 16px; height: 16px; }
+
+  #focus-toggle:checked ~ .window .focus-btn { display: none; }
+  #focus-toggle:checked ~ .window .header-focus-btn { display: flex; }
+
+  /* In mobile, hide both focus btns */
+  #preview-mobile:checked ~ .window .focus-btn { display: none; }
+  #preview-mobile:checked ~ .window .header-focus-btn { display: none; }
+
+  /* Mobile hamburger menu button */
+  .mobile-menu-btn {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-dim);
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .mobile-menu-btn:hover { background: var(--hover-bg); color: var(--text); }
+  .mobile-menu-btn svg { width: 16px; height: 16px; }
+
+  #preview-mobile:checked ~ .window .mobile-menu-btn { display: flex; }
+
+  /* Mobile: hide header actions and simplify breadcrumb */
+  #preview-mobile:checked ~ .window .main-header-actions { display: none; }
+  #preview-mobile:checked ~ .window .breadcrumb .bc-item { display: none !important; }
+  #preview-mobile:checked ~ .window .breadcrumb .bc-sep { display: none; }
+  #preview-mobile:checked ~ .window .breadcrumb .bc-current {
+    font-size: 13px;
+  }
+
+  /* ─── Mobile Menu Overlay ─── */
+  .mobile-overlay {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 300;
+  }
+  .mobile-overlay-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 0;
+  }
+  .mob-nav {
+    position: relative; z-index: 1;
+    width: 280px;
+    height: 100%;
+    background: var(--sidebar-bg);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .mob-nav-header {
+    padding: 14px;
+    border-bottom: 1px solid var(--border-dark);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .mob-nav-header .logo-icon {
+    width: 26px; height: 26px;
+    background: var(--sf-blue);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 12px; flex-shrink: 0;
+  }
+  .mob-nav-header .logo-text { font-size: 13px; font-weight: 600; color: var(--sidebar-text-bright); }
+
+  .mob-back {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px;
+    font-size: 12px; color: var(--sf-blue); color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-dark);
+  }
+  .mob-back:hover { color: white; background: var(--sidebar-hover); }
+  .mob-back svg { width: 14px; height: 14px; }
+
+  .mob-section-label {
+    font-size: 9.5px; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: 0.7px;
+    padding: 12px 14px 4px;
+  }
+
+  .mob-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px 14px; border-radius: 0;
+    font-size: 13px; color: var(--sidebar-text);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mob-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-bright); }
+  .mob-item .p-icon {
+    width: 20px; height: 20px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 10px; color: white; font-weight: 600;
+  }
+  .mob-item .mob-arrow {
+    margin-left: auto; color: rgba(255,255,255,0.25); font-size: 14px;
+  }
+  .mob-item .mod-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .mob-item-desc {
+    font-size: 10.5px; color: rgba(255,255,255,0.35); margin-top: 1px;
+  }
+
+  /* Close overlay item */
+  .mob-item-page {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px; color: var(--sidebar-text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .mob-item-page:hover { background: var(--sidebar-hover); color: white; }
+
+  /* Split-label rows: name selects, arrow advances */
+  .mob-item-row {
+    display: flex; align-items: stretch;
+  }
+  .mob-item-row .mob-item {
+    flex: 1; border-radius: 0;
+  }
+  .mob-item-advance {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px;
+    color: rgba(255,255,255,0.25);
+    font-size: 20px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .mob-item-advance:hover { background: var(--sidebar-hover); color: white; }
+  .mob-item-page .pg-icon { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+  /* Mob nav levels: hidden by default */
+  .mob-level { display: none; flex-direction: column; flex: 1; }
+
+  #mob-products:checked ~ .window .mob-level.mob-level-products { display: flex; }
+  #mob-modules:checked ~ .window .mob-level.mob-level-modules { display: flex; }
+  #mob-pages:checked ~ .window .mob-level.mob-level-pages { display: flex; }
+
+  /* Reuse existing product/module selectors for overlay content */
+  .mob-level .mob-mod-group { display: none; }
+  #p-sales:checked    ~ .window .mob-mod-group.sales    { display: contents; }
+  #p-service:checked  ~ .window .mob-mod-group.service  { display: contents; }
+  #p-mktg:checked     ~ .window .mob-mod-group.mktg     { display: contents; }
+  #p-commerce:checked ~ .window .mob-mod-group.commerce  { display: contents; }
+  #p-analytics:checked~ .window .mob-mod-group.analytics { display: contents; }
+  #p-exp:checked      ~ .window .mob-mod-group.exp       { display: contents; }
+
+  .mob-level .mob-pg-group { display: none; }
+  #m-opps:checked      ~ .window .mob-pg-group.opps      { display: contents; }
+  #m-accounts:checked  ~ .window .mob-pg-group.accounts   { display: contents; }
+  #m-contacts:checked  ~ .window .mob-pg-group.contacts   { display: contents; }
+  #m-leads:checked     ~ .window .mob-pg-group.leads      { display: contents; }
+  #m-forecast:checked  ~ .window .mob-pg-group.forecast    { display: contents; }
+  #m-cases:checked     ~ .window .mob-pg-group.cases      { display: contents; }
+  #m-knowledge:checked ~ .window .mob-pg-group.knowledge   { display: contents; }
+  #m-omni:checked      ~ .window .mob-pg-group.omni       { display: contents; }
+  #m-field:checked     ~ .window .mob-pg-group.field       { display: contents; }
+  #m-sla:checked       ~ .window .mob-pg-group.sla        { display: contents; }
+  #m-campaigns:checked ~ .window .mob-pg-group.campaigns   { display: contents; }
+  #m-email:checked     ~ .window .mob-pg-group.email       { display: contents; }
+  #m-journeys:checked  ~ .window .mob-pg-group.journeys    { display: contents; }
+  #m-audience:checked  ~ .window .mob-pg-group.audience     { display: contents; }
+  #m-storefront:checked~ .window .mob-pg-group.storefront   { display: contents; }
+  #m-orders:checked    ~ .window .mob-pg-group.orders       { display: contents; }
+  #m-inventory:checked ~ .window .mob-pg-group.inventory    { display: contents; }
+  #m-promo:checked     ~ .window .mob-pg-group.promo        { display: contents; }
+  #m-dashboards:checked~ .window .mob-pg-group.dashboards   { display: contents; }
+  #m-reports:checked   ~ .window .mob-pg-group.reports      { display: contents; }
+  #m-datasets:checked  ~ .window .mob-pg-group.datasets     { display: contents; }
+  #m-sites:checked     ~ .window .mob-pg-group.sites        { display: contents; }
+  #m-templates:checked ~ .window .mob-pg-group.templates    { display: contents; }
+  #m-cms:checked       ~ .window .mob-pg-group.cms          { display: contents; }
+
+  /* Active product highlighting in mobile overlay */
+  #p-sales:checked    ~ .window .mob-level label[for="p-sales"],
+  #p-service:checked  ~ .window .mob-level label[for="p-service"],
+  #p-mktg:checked     ~ .window .mob-level label[for="p-mktg"],
+  #p-commerce:checked ~ .window .mob-level label[for="p-commerce"],
+  #p-analytics:checked~ .window .mob-level label[for="p-analytics"],
+  #p-exp:checked      ~ .window .mob-level label[for="p-exp"] {
+    background: var(--sidebar-active);
+    color: white;
+  }
+
+  /* Active module highlighting in mobile overlay */
+  #m-opps:checked      ~ .window .mob-level label[for="m-opps"],
+  #m-accounts:checked  ~ .window .mob-level label[for="m-accounts"],
+  #m-contacts:checked  ~ .window .mob-level label[for="m-contacts"],
+  #m-leads:checked     ~ .window .mob-level label[for="m-leads"],
+  #m-forecast:checked  ~ .window .mob-level label[for="m-forecast"],
+  #m-cases:checked     ~ .window .mob-level label[for="m-cases"],
+  #m-knowledge:checked ~ .window .mob-level label[for="m-knowledge"],
+  #m-omni:checked      ~ .window .mob-level label[for="m-omni"],
+  #m-field:checked     ~ .window .mob-level label[for="m-field"],
+  #m-sla:checked       ~ .window .mob-level label[for="m-sla"],
+  #m-campaigns:checked ~ .window .mob-level label[for="m-campaigns"],
+  #m-email:checked     ~ .window .mob-level label[for="m-email"],
+  #m-journeys:checked  ~ .window .mob-level label[for="m-journeys"],
+  #m-audience:checked  ~ .window .mob-level label[for="m-audience"],
+  #m-storefront:checked~ .window .mob-level label[for="m-storefront"],
+  #m-orders:checked    ~ .window .mob-level label[for="m-orders"],
+  #m-inventory:checked ~ .window .mob-level label[for="m-inventory"],
+  #m-promo:checked     ~ .window .mob-level label[for="m-promo"],
+  #m-dashboards:checked~ .window .mob-level label[for="m-dashboards"],
+  #m-reports:checked   ~ .window .mob-level label[for="m-reports"],
+  #m-datasets:checked  ~ .window .mob-level label[for="m-datasets"],
+  #m-sites:checked     ~ .window .mob-level label[for="m-sites"],
+  #m-templates:checked ~ .window .mob-level label[for="m-templates"],
+  #m-cms:checked       ~ .window .mob-level label[for="m-cms"] {
+    background: var(--sidebar-active);
+    color: white;
+  }
+
+  /* Show overlay when mobile-menu is checked AND in mobile mode */
+  #preview-mobile:checked ~ #mobile-menu:checked ~ .window .mobile-overlay {
+    display: flex;
+  }
+  /* Reset mob-level to products when overlay opens fresh */
+  #preview-mobile:checked ~ .window .mobile-overlay { display: none; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+
+<aside class="experiment-sidebar">
+  <div>
+    <a href="experiments.html" class="exp-back">← All Experiments</a>
+    <h1>Platform Sidebar</h1>
+    <span class="exp-version">v1</span>
+  </div>
+
+  <div class="exp-section">
+    <h2>Purpose</h2>
+    <p>Explore an enterprise triple-sidebar navigation pattern with collapsible panels, focus mode, and mobile-responsive layout — all in pure CSS using radio/checkbox state.</p>
+  </div>
+
+  <div class="exp-section">
+    <h2>Prompt</h2>
+    <div class="exp-prompt">
+      This experiment was developed through several iterative prompts before arriving at this design. It was not produced from a single prompt.
+    </div>
+  </div>
+
+  <div class="exp-section">
+    <h2>Versions</h2>
+    <div class="exp-versions-card">
+      <a href="platform-sidebar-v1.html" class="exp-vc-entry current">
+        <span class="exp-vc-v">v1</span>
+        <span class="exp-vc-desc">Triple-sidebar navigation</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<div class="experiment-content">
+
+<!-- ─── State: all inputs at top level ─── -->
+<input type="radio" name="preview" id="preview-web" checked>
+<input type="radio" name="preview" id="preview-mobile">
+<input type="checkbox" id="focus-toggle">
+<input type="checkbox" id="mobile-menu">
+<input type="radio" name="mob-level" id="mob-products">
+<input type="radio" name="mob-level" id="mob-modules" checked>
+<input type="radio" name="mob-level" id="mob-pages">
+
+<div class="preview-bar">
+  <label for="preview-web" class="preview-btn" title="Desktop view">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+    </svg>
+  </label>
+  <label for="preview-mobile" class="preview-btn" title="Mobile view">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2"/>
+      <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+    </svg>
+  </label>
+</div>
+
+<!-- Product radios -->
+<input type="radio" name="product" id="p-sales" checked>
+<input type="radio" name="product" id="p-service">
+<input type="radio" name="product" id="p-mktg">
+<input type="radio" name="product" id="p-commerce">
+<input type="radio" name="product" id="p-analytics">
+<input type="radio" name="product" id="p-exp">
+
+<!-- Module radios -->
+<input type="radio" name="module" id="m-opps" checked>
+<input type="radio" name="module" id="m-accounts">
+<input type="radio" name="module" id="m-contacts">
+<input type="radio" name="module" id="m-leads">
+<input type="radio" name="module" id="m-forecast">
+<input type="radio" name="module" id="m-cases">
+<input type="radio" name="module" id="m-knowledge">
+<input type="radio" name="module" id="m-omni">
+<input type="radio" name="module" id="m-field">
+<input type="radio" name="module" id="m-sla">
+<input type="radio" name="module" id="m-campaigns">
+<input type="radio" name="module" id="m-email">
+<input type="radio" name="module" id="m-journeys">
+<input type="radio" name="module" id="m-audience">
+<input type="radio" name="module" id="m-storefront">
+<input type="radio" name="module" id="m-orders">
+<input type="radio" name="module" id="m-inventory">
+<input type="radio" name="module" id="m-promo">
+<input type="radio" name="module" id="m-dashboards">
+<input type="radio" name="module" id="m-reports">
+<input type="radio" name="module" id="m-datasets">
+<input type="radio" name="module" id="m-sites">
+<input type="radio" name="module" id="m-templates">
+<input type="radio" name="module" id="m-cms">
+
+<div class="window">
+
+  <label for="focus-toggle" class="focus-btn" title="Toggle sidebars">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <rect x="2" y="2" width="16" height="16" rx="3"/>
+      <line x1="7" y1="2" x2="7" y2="18"/>
+      <line x1="12" y1="2" x2="12" y2="18"/>
+    </svg>
+  </label>
+
+  <!-- ═══ LEFT SIDEBAR: Products ═══ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">Sf</div>
+      <div><div class="logo-text">Salesforce</div><div class="logo-sub">Enterprise Suite</div></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-heading">Products</div>
+      <label for="p-sales" class="sb-item"><div class="p-icon" style="background:var(--sf-blue)">S</div>Sales Cloud<span class="badge">12</span></label>
+      <label for="p-service" class="sb-item"><div class="p-icon" style="background:var(--green)">Sv</div>Service Cloud</label>
+      <label for="p-mktg" class="sb-item"><div class="p-icon" style="background:var(--orange)">M</div>Marketing Cloud</label>
+      <label for="p-commerce" class="sb-item"><div class="p-icon" style="background:var(--purple)">C</div>Commerce Cloud</label>
+      <label for="p-analytics" class="sb-item"><div class="p-icon" style="background:var(--teal)">A</div>Analytics Cloud</label>
+      <label for="p-exp" class="sb-item"><div class="p-icon" style="background:#e84a8a">E</div>Experience Cloud</label>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-section">
+      <div class="sb-heading">Platform</div>
+      <div class="sb-item"><div class="p-icon" style="background:#5a6872">F</div>Flow Builder</div>
+      <div class="sb-item"><div class="p-icon" style="background:#444">A</div>App Builder</div>
+      <div class="sb-item"><div class="p-icon" style="background:#2e5aac">I</div>Integrations</div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-section">
+      <div class="sb-heading">AI</div>
+      <div class="sb-item"><div class="p-icon" style="background:linear-gradient(135deg,#6739C6,#1E3DA1)">E</div>Einstein GPT</div>
+      <div class="sb-item"><div class="p-icon" style="background:var(--teal)">D</div>Data Cloud</div>
+    </div>
+
+    <div class="sb-bottom">
+      <div class="sb-item">&#9881; Setup</div>
+      <div class="sb-item">&#9786; Admin</div>
+    </div>
+  </nav>
+
+  <!-- ═══ MIDDLE: Modules ═══ -->
+  <div class="module-panel">
+    <div class="mod-header">
+      <div class="mh-label sales"><div class="mod-header-product">Sales Cloud</div><div class="mod-header-title">Modules</div></div>
+      <div class="mh-label service"><div class="mod-header-product">Service Cloud</div><div class="mod-header-title">Modules</div></div>
+      <div class="mh-label mktg"><div class="mod-header-product">Marketing Cloud</div><div class="mod-header-title">Modules</div></div>
+      <div class="mh-label commerce"><div class="mod-header-product">Commerce Cloud</div><div class="mod-header-title">Modules</div></div>
+      <div class="mh-label analytics"><div class="mod-header-product">Analytics Cloud</div><div class="mod-header-title">Modules</div></div>
+      <div class="mh-label exp"><div class="mod-header-product">Experience Cloud</div><div class="mod-header-title">Modules</div></div>
+    </div>
+    <div class="mod-search">&#128269; Search modules...</div>
+
+    <!-- Sales modules -->
+    <div class="mod-group sales">
+      <div class="mod-group-label">Core CRM</div>
+      <label for="m-accounts" class="mod-item"><div class="mod-dot" style="background:var(--sf-blue)"></div><div class="mod-item-content"><div class="mod-item-title">Accounts</div><div class="mod-item-desc">Company records</div></div><div class="count">2.4k</div></label>
+      <label for="m-contacts" class="mod-item"><div class="mod-dot" style="background:var(--sf-blue)"></div><div class="mod-item-content"><div class="mod-item-title">Contacts</div><div class="mod-item-desc">People at accounts</div></div><div class="count">8.1k</div></label>
+      <label for="m-opps" class="mod-item"><div class="mod-dot" style="background:var(--sf-blue)"></div><div class="mod-item-content"><div class="mod-item-title">Opportunities</div><div class="mod-item-desc">Deals &amp; pipeline</div></div><div class="count">847</div></label>
+      <label for="m-leads" class="mod-item"><div class="mod-dot" style="background:var(--sf-blue)"></div><div class="mod-item-content"><div class="mod-item-title">Leads</div><div class="mod-item-desc">Prospect tracking</div></div><div class="count">3.2k</div></label>
+      <div class="mod-group-label">Pipeline</div>
+      <label for="m-forecast" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">Forecasting</div><div class="mod-item-desc">Revenue predictions</div></div></label>
+    </div>
+
+    <!-- Service modules -->
+    <div class="mod-group service">
+      <div class="mod-group-label">Support</div>
+      <label for="m-cases" class="mod-item"><div class="mod-dot" style="background:var(--green)"></div><div class="mod-item-content"><div class="mod-item-title">Cases</div><div class="mod-item-desc">Support tickets</div></div><div class="count">1.9k</div></label>
+      <label for="m-knowledge" class="mod-item"><div class="mod-dot" style="background:var(--green)"></div><div class="mod-item-content"><div class="mod-item-title">Knowledge Base</div><div class="mod-item-desc">Help articles</div></div><div class="count">342</div></label>
+      <div class="mod-group-label">Channels</div>
+      <label for="m-omni" class="mod-item"><div class="mod-dot" style="background:var(--teal)"></div><div class="mod-item-content"><div class="mod-item-title">Omni-Channel</div><div class="mod-item-desc">Routing &amp; queues</div></div></label>
+      <label for="m-field" class="mod-item"><div class="mod-dot" style="background:var(--teal)"></div><div class="mod-item-content"><div class="mod-item-title">Field Service</div><div class="mod-item-desc">On-site support</div></div></label>
+      <div class="mod-group-label">Quality</div>
+      <label for="m-sla" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">SLA Management</div><div class="mod-item-desc">Service level tracking</div></div></label>
+    </div>
+
+    <!-- Marketing modules -->
+    <div class="mod-group mktg">
+      <div class="mod-group-label">Outreach</div>
+      <label for="m-campaigns" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">Campaigns</div><div class="mod-item-desc">Multi-channel campaigns</div></div><div class="count">89</div></label>
+      <label for="m-email" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">Email Studio</div><div class="mod-item-desc">Email builder &amp; sends</div></div></label>
+      <div class="mod-group-label">Automation</div>
+      <label for="m-journeys" class="mod-item"><div class="mod-dot" style="background:var(--purple)"></div><div class="mod-item-content"><div class="mod-item-title">Journey Builder</div><div class="mod-item-desc">Customer journeys</div></div></label>
+      <label for="m-audience" class="mod-item"><div class="mod-dot" style="background:var(--purple)"></div><div class="mod-item-content"><div class="mod-item-title">Audiences</div><div class="mod-item-desc">Segmentation</div></div><div class="count">24</div></label>
+    </div>
+
+    <!-- Commerce modules -->
+    <div class="mod-group commerce">
+      <div class="mod-group-label">Storefront</div>
+      <label for="m-storefront" class="mod-item"><div class="mod-dot" style="background:var(--purple)"></div><div class="mod-item-content"><div class="mod-item-title">Storefronts</div><div class="mod-item-desc">Online stores</div></div><div class="count">3</div></label>
+      <label for="m-orders" class="mod-item"><div class="mod-dot" style="background:var(--purple)"></div><div class="mod-item-content"><div class="mod-item-title">Orders</div><div class="mod-item-desc">Order management</div></div><div class="count">12k</div></label>
+      <div class="mod-group-label">Catalog</div>
+      <label for="m-inventory" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">Inventory</div><div class="mod-item-desc">Stock tracking</div></div></label>
+      <label for="m-promo" class="mod-item"><div class="mod-dot" style="background:var(--orange)"></div><div class="mod-item-content"><div class="mod-item-title">Promotions</div><div class="mod-item-desc">Discounts &amp; coupons</div></div></label>
+    </div>
+
+    <!-- Analytics modules -->
+    <div class="mod-group analytics">
+      <div class="mod-group-label">Visualization</div>
+      <label for="m-dashboards" class="mod-item"><div class="mod-dot" style="background:var(--teal)"></div><div class="mod-item-content"><div class="mod-item-title">Dashboards</div><div class="mod-item-desc">Visual analytics</div></div><div class="count">47</div></label>
+      <label for="m-reports" class="mod-item"><div class="mod-dot" style="background:var(--teal)"></div><div class="mod-item-content"><div class="mod-item-title">Reports</div><div class="mod-item-desc">Report builder</div></div><div class="count">156</div></label>
+      <div class="mod-group-label">Data</div>
+      <label for="m-datasets" class="mod-item"><div class="mod-dot" style="background:var(--sf-blue)"></div><div class="mod-item-content"><div class="mod-item-title">Datasets</div><div class="mod-item-desc">Data sources</div></div></label>
+    </div>
+
+    <!-- Experience modules -->
+    <div class="mod-group exp">
+      <div class="mod-group-label">Digital</div>
+      <label for="m-sites" class="mod-item"><div class="mod-dot" style="background:#e84a8a"></div><div class="mod-item-content"><div class="mod-item-title">Sites</div><div class="mod-item-desc">Community portals</div></div><div class="count">5</div></label>
+      <label for="m-templates" class="mod-item"><div class="mod-dot" style="background:#e84a8a"></div><div class="mod-item-content"><div class="mod-item-title">Templates</div><div class="mod-item-desc">Page templates</div></div></label>
+      <label for="m-cms" class="mod-item"><div class="mod-dot" style="background:#e84a8a"></div><div class="mod-item-content"><div class="mod-item-title">CMS</div><div class="mod-item-desc">Content management</div></div></label>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE PANEL ═══ -->
+  <div class="page-panel">
+    <div class="pg-header">
+      <!-- Dynamic module name -->
+      <div class="ph-label opps"><div class="pg-header-module">Opportunities</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label accounts"><div class="pg-header-module">Accounts</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label contacts"><div class="pg-header-module">Contacts</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label leads"><div class="pg-header-module">Leads</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label forecast"><div class="pg-header-module">Forecasting</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label cases"><div class="pg-header-module">Cases</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label knowledge"><div class="pg-header-module">Knowledge Base</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label omni"><div class="pg-header-module">Omni-Channel</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label field"><div class="pg-header-module">Field Service</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label sla"><div class="pg-header-module">SLA Management</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label campaigns"><div class="pg-header-module">Campaigns</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label email"><div class="pg-header-module">Email Studio</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label journeys"><div class="pg-header-module">Journey Builder</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label audience"><div class="pg-header-module">Audiences</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label storefront"><div class="pg-header-module">Storefronts</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label orders"><div class="pg-header-module">Orders</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label inventory"><div class="pg-header-module">Inventory</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label promo"><div class="pg-header-module">Promotions</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label dashboards"><div class="pg-header-module">Dashboards</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label reports"><div class="pg-header-module">Reports</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label datasets"><div class="pg-header-module">Datasets</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label sites"><div class="pg-header-module">Sites</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label templates"><div class="pg-header-module">Templates</div><div class="pg-header-title">Pages</div></div>
+      <div class="ph-label cms"><div class="pg-header-module">CMS</div><div class="pg-header-title">Pages</div></div>
+    </div>
+
+    <!-- Opportunities pages -->
+    <div class="pg-group opps">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Opportunities <span class="pg-count">847</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9638;</span> Pipeline Board</div>
+      <div class="pg-item"><span class="pg-icon">&#10003;</span> Closed Won <span class="pg-count">214</span></div>
+      <div class="pg-item"><span class="pg-icon">&#10007;</span> Closed Lost <span class="pg-count">89</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> My Opportunities <span class="pg-count">32</span></div>
+    </div>
+    <div class="pg-group accounts">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Accounts <span class="pg-count">2.4k</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Key Accounts <span class="pg-count">48</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> Account Hierarchy</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Recently Viewed</div>
+    </div>
+    <div class="pg-group contacts">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Contacts <span class="pg-count">8.1k</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Decision Makers <span class="pg-count">312</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Recently Viewed</div>
+    </div>
+    <div class="pg-group leads">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Leads <span class="pg-count">3.2k</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Hot Leads <span class="pg-count">67</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> Lead Scoring</div>
+      <div class="pg-item"><span class="pg-icon">&#8634;</span> Conversion Queue</div>
+    </div>
+    <div class="pg-group forecast">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Forecast Overview</div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> By Quarter</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> By Rep</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Targets</div>
+    </div>
+    <div class="pg-group cases">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Cases <span class="pg-count">1.9k</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> My Queue <span class="pg-count">14</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> Escalations <span class="pg-count">3</span></div>
+      <div class="pg-item"><span class="pg-icon">&#10003;</span> Resolved Today <span class="pg-count">42</span></div>
+    </div>
+    <div class="pg-group knowledge">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Articles <span class="pg-count">342</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9998;</span> Drafts <span class="pg-count">12</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Most Viewed</div>
+    </div>
+    <div class="pg-group omni">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Channel Overview</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Routing Rules</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Agent Status</div>
+    </div>
+    <div class="pg-group field">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Work Orders</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Scheduling</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Territories</div>
+    </div>
+    <div class="pg-group sla">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> SLA Policies</div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> Compliance Report</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Milestones</div>
+    </div>
+    <div class="pg-group campaigns">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Campaigns <span class="pg-count">89</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Active <span class="pg-count">12</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Performance</div>
+    </div>
+    <div class="pg-group email">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Email Templates</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Send History</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> A/B Tests</div>
+    </div>
+    <div class="pg-group journeys">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Journeys</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Active Flows</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Builder</div>
+    </div>
+    <div class="pg-group audience">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Audiences <span class="pg-count">24</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Segments</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Lookalikes</div>
+    </div>
+    <div class="pg-group storefront">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Storefronts <span class="pg-count">3</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Theme Editor</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Navigation</div>
+    </div>
+    <div class="pg-group orders">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Orders <span class="pg-count">12k</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Pending <span class="pg-count">84</span></div>
+      <div class="pg-item"><span class="pg-icon">&#10003;</span> Fulfilled</div>
+      <div class="pg-item"><span class="pg-icon">&#8634;</span> Returns</div>
+    </div>
+    <div class="pg-group inventory">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Stock Levels</div>
+      <div class="pg-item"><span class="pg-icon">&#9650;</span> Low Stock Alerts</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Warehouses</div>
+    </div>
+    <div class="pg-group promo">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Promotions</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Active Coupons</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Performance</div>
+    </div>
+    <div class="pg-group dashboards">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Dashboards <span class="pg-count">47</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Favorites</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Shared</div>
+    </div>
+    <div class="pg-group reports">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Reports <span class="pg-count">156</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Scheduled</div>
+      <div class="pg-item"><span class="pg-icon">&#9998;</span> Builder</div>
+    </div>
+    <div class="pg-group datasets">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Datasets</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Connections</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Recipes</div>
+    </div>
+    <div class="pg-group sites">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Sites <span class="pg-count">5</span></div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Builder</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Members</div>
+    </div>
+    <div class="pg-group templates">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> All Templates</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Page Layouts</div>
+      <div class="pg-item"><span class="pg-icon">&#9733;</span> Components</div>
+    </div>
+    <div class="pg-group cms">
+      <div class="pg-item pg-item-active"><span class="pg-icon">&#9632;</span> Content Items</div>
+      <div class="pg-item"><span class="pg-icon">&#9679;</span> Collections</div>
+      <div class="pg-item"><span class="pg-icon">&#9998;</span> Media Library</div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div class="main-content">
+    <div class="main-header">
+      <label for="focus-toggle" class="header-focus-btn" title="Toggle sidebars">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect x="2" y="2" width="16" height="16" rx="3"/>
+          <line x1="7" y1="2" x2="7" y2="18"/>
+          <line x1="12" y1="2" x2="12" y2="18"/>
+        </svg>
+      </label>
+      <label for="mobile-menu" class="mobile-menu-btn" title="Open menu">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="3" y1="5" x2="17" y2="5"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+      </label>
+      <div class="collapsed-brand">
+        <div class="cb-icon">Sf</div>
+        <div class="cb-text">Salesforce</div>
+      </div>
+      <div class="breadcrumb">
+        <span class="bc-item sales">Sales Cloud</span>
+        <span class="bc-item service">Service Cloud</span>
+        <span class="bc-item mktg">Marketing Cloud</span>
+        <span class="bc-item commerce">Commerce Cloud</span>
+        <span class="bc-item analytics">Analytics Cloud</span>
+        <span class="bc-item exp">Experience Cloud</span>
+        <span class="bc-sep">/</span>
+        <span class="bc-current opps">Opportunities</span>
+        <span class="bc-current accounts">Accounts</span>
+        <span class="bc-current contacts">Contacts</span>
+        <span class="bc-current leads">Leads</span>
+        <span class="bc-current forecast">Forecasting</span>
+        <span class="bc-current cases">Cases</span>
+        <span class="bc-current knowledge">Knowledge Base</span>
+        <span class="bc-current omni">Omni-Channel</span>
+        <span class="bc-current field">Field Service</span>
+        <span class="bc-current sla">SLA Management</span>
+        <span class="bc-current campaigns">Campaigns</span>
+        <span class="bc-current email">Email Studio</span>
+        <span class="bc-current journeys">Journey Builder</span>
+        <span class="bc-current audience">Audiences</span>
+        <span class="bc-current storefront">Storefronts</span>
+        <span class="bc-current orders">Orders</span>
+        <span class="bc-current inventory">Inventory</span>
+        <span class="bc-current promo">Promotions</span>
+        <span class="bc-current dashboards">Dashboards</span>
+        <span class="bc-current reports">Reports</span>
+        <span class="bc-current datasets">Datasets</span>
+        <span class="bc-current sites">Sites</span>
+        <span class="bc-current templates">Templates</span>
+        <span class="bc-current cms">CMS</span>
+      </div>
+      <div class="main-header-actions">
+        <button class="header-btn">Export</button>
+        <button class="header-btn">Filter</button>
+        <button class="header-btn primary">+ New Record</button>
+      </div>
+    </div>
+
+    <div class="main-body">
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-card-label">Open Pipeline</div>
+          <div class="dash-card-value">$4.2M</div>
+          <div class="dash-card-change up">+12% vs last quarter</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Closed Won (YTD)</div>
+          <div class="dash-card-value">$2.8M</div>
+          <div class="dash-card-change up">+8% vs target</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Win Rate</div>
+          <div class="dash-card-value">34%</div>
+          <div class="dash-card-change down">-2% vs last quarter</div>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="data-table-header">
+          <span>Recent Records</span>
+          <span style="font-size:11px;color:var(--text-muted)">847 total</span>
+        </div>
+        <div class="table-row head">
+          <span>Name</span>
+          <span>Amount</span>
+          <span>Close Date</span>
+          <span>Stage</span>
+        </div>
+        <div class="table-row">
+          <span class="name">Acme Corp - Enterprise License</span>
+          <span>$450,000</span>
+          <span>Mar 15, 2026</span>
+          <span class="status-pill won">Closed Won</span>
+        </div>
+        <div class="table-row">
+          <span class="name">TechStart - Platform Migration</span>
+          <span>$280,000</span>
+          <span>Apr 02, 2026</span>
+          <span class="status-pill open">Negotiation</span>
+        </div>
+        <div class="table-row">
+          <span class="name">Global Retail - Service Expansion</span>
+          <span>$175,000</span>
+          <span>Mar 28, 2026</span>
+          <span class="status-pill pending">Proposal</span>
+        </div>
+        <div class="table-row">
+          <span class="name">FinServ Inc - Analytics Suite</span>
+          <span>$520,000</span>
+          <span>Feb 10, 2026</span>
+          <span class="status-pill won">Closed Won</span>
+        </div>
+        <div class="table-row">
+          <span class="name">MedTech - Compliance Module</span>
+          <span>$92,000</span>
+          <span>Apr 18, 2026</span>
+          <span class="status-pill open">Discovery</span>
+        </div>
+        <div class="table-row">
+          <span class="name">AutoDrive - Fleet Management</span>
+          <span>$340,000</span>
+          <span>Jan 22, 2026</span>
+          <span class="status-pill lost">Closed Lost</span>
+        </div>
+        <div class="table-row">
+          <span class="name">EduLearn - Student Portal</span>
+          <span>$165,000</span>
+          <span>May 01, 2026</span>
+          <span class="status-pill pending">Qualification</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile menu overlay -->
+  <div class="mobile-overlay">
+    <label for="mobile-menu" class="mobile-overlay-bg"></label>
+    <div class="mob-nav">
+      <div class="mob-nav-header">
+        <div class="logo-icon">Sf</div>
+        <div class="logo-text">Salesforce</div>
+      </div>
+
+      <!-- Level 1: Products -->
+      <div class="mob-level mob-level-products">
+        <div class="mob-section-label">Select a Product</div>
+        <div class="mob-item-row"><label for="p-sales" class="mob-item"><div class="p-icon" style="background:var(--sf-blue)">S</div>Sales Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+        <div class="mob-item-row"><label for="p-service" class="mob-item"><div class="p-icon" style="background:var(--green)">Sv</div>Service Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+        <div class="mob-item-row"><label for="p-mktg" class="mob-item"><div class="p-icon" style="background:var(--orange)">M</div>Marketing Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+        <div class="mob-item-row"><label for="p-commerce" class="mob-item"><div class="p-icon" style="background:var(--purple)">C</div>Commerce Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+        <div class="mob-item-row"><label for="p-analytics" class="mob-item"><div class="p-icon" style="background:var(--teal)">A</div>Analytics Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+        <div class="mob-item-row"><label for="p-exp" class="mob-item"><div class="p-icon" style="background:#e84a8a">E</div>Experience Cloud</label><label for="mob-modules" class="mob-item-advance">&#8250;</label></div>
+      </div>
+
+      <!-- Level 2: Modules (DEFAULT) -->
+      <div class="mob-level mob-level-modules">
+        <label for="mob-products" class="mob-back">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="12,4 6,10 12,16"/></svg>
+          Products
+        </label>
+        <div class="mob-mod-group sales">
+          <div class="mob-section-label">Sales Cloud</div>
+          <div class="mob-item-row"><label for="m-accounts" class="mob-item"><div class="mod-dot" style="background:var(--sf-blue)"></div>Accounts</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-contacts" class="mob-item"><div class="mod-dot" style="background:var(--sf-blue)"></div>Contacts</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-opps" class="mob-item"><div class="mod-dot" style="background:var(--sf-blue)"></div>Opportunities</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-leads" class="mob-item"><div class="mod-dot" style="background:var(--sf-blue)"></div>Leads</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-forecast" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>Forecasting</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+        <div class="mob-mod-group service">
+          <div class="mob-section-label">Service Cloud</div>
+          <div class="mob-item-row"><label for="m-cases" class="mob-item"><div class="mod-dot" style="background:var(--green)"></div>Cases</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-knowledge" class="mob-item"><div class="mod-dot" style="background:var(--green)"></div>Knowledge Base</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-omni" class="mob-item"><div class="mod-dot" style="background:var(--teal)"></div>Omni-Channel</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-field" class="mob-item"><div class="mod-dot" style="background:var(--teal)"></div>Field Service</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-sla" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>SLA Management</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+        <div class="mob-mod-group mktg">
+          <div class="mob-section-label">Marketing Cloud</div>
+          <div class="mob-item-row"><label for="m-campaigns" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>Campaigns</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-email" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>Email Studio</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-journeys" class="mob-item"><div class="mod-dot" style="background:var(--purple)"></div>Journey Builder</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-audience" class="mob-item"><div class="mod-dot" style="background:var(--purple)"></div>Audiences</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+        <div class="mob-mod-group commerce">
+          <div class="mob-section-label">Commerce Cloud</div>
+          <div class="mob-item-row"><label for="m-storefront" class="mob-item"><div class="mod-dot" style="background:var(--purple)"></div>Storefronts</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-orders" class="mob-item"><div class="mod-dot" style="background:var(--purple)"></div>Orders</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-inventory" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>Inventory</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-promo" class="mob-item"><div class="mod-dot" style="background:var(--orange)"></div>Promotions</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+        <div class="mob-mod-group analytics">
+          <div class="mob-section-label">Analytics Cloud</div>
+          <div class="mob-item-row"><label for="m-dashboards" class="mob-item"><div class="mod-dot" style="background:var(--teal)"></div>Dashboards</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-reports" class="mob-item"><div class="mod-dot" style="background:var(--teal)"></div>Reports</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-datasets" class="mob-item"><div class="mod-dot" style="background:var(--sf-blue)"></div>Datasets</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+        <div class="mob-mod-group exp">
+          <div class="mob-section-label">Experience Cloud</div>
+          <div class="mob-item-row"><label for="m-sites" class="mob-item"><div class="mod-dot" style="background:#e84a8a"></div>Sites</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-templates" class="mob-item"><div class="mod-dot" style="background:#e84a8a"></div>Templates</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+          <div class="mob-item-row"><label for="m-cms" class="mob-item"><div class="mod-dot" style="background:#e84a8a"></div>CMS</label><label for="mob-pages" class="mob-item-advance">&#8250;</label></div>
+        </div>
+      </div>
+
+      <!-- Level 3: Pages -->
+      <div class="mob-level mob-level-pages">
+        <label for="mob-modules" class="mob-back">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="12,4 6,10 12,16"/></svg>
+          Modules
+        </label>
+        <div class="mob-pg-group opps">
+          <div class="mob-section-label">Opportunities — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Opportunities</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9638;</span> Pipeline Board</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#10003;</span> Closed Won</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#10007;</span> Closed Lost</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> My Opportunities</label>
+        </div>
+        <div class="mob-pg-group accounts">
+          <div class="mob-section-label">Accounts — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Accounts</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> Key Accounts</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> Account Hierarchy</label>
+        </div>
+        <div class="mob-pg-group contacts">
+          <div class="mob-section-label">Contacts — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Contacts</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> Decision Makers</label>
+        </div>
+        <div class="mob-pg-group leads">
+          <div class="mob-section-label">Leads — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Leads</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> Hot Leads</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> Lead Scoring</label>
+        </div>
+        <div class="mob-pg-group forecast">
+          <div class="mob-section-label">Forecasting — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Forecast Overview</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> By Quarter</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> By Rep</label>
+        </div>
+        <div class="mob-pg-group cases">
+          <div class="mob-section-label">Cases — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Cases</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> My Queue</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> Escalations</label>
+        </div>
+        <div class="mob-pg-group knowledge">
+          <div class="mob-section-label">Knowledge Base — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Articles</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9998;</span> Drafts</label>
+        </div>
+        <div class="mob-pg-group omni">
+          <div class="mob-section-label">Omni-Channel — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Channel Overview</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Routing Rules</label>
+        </div>
+        <div class="mob-pg-group field">
+          <div class="mob-section-label">Field Service — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Work Orders</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Scheduling</label>
+        </div>
+        <div class="mob-pg-group sla">
+          <div class="mob-section-label">SLA Management — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> SLA Policies</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> Compliance Report</label>
+        </div>
+        <div class="mob-pg-group campaigns">
+          <div class="mob-section-label">Campaigns — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Campaigns</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Active</label>
+        </div>
+        <div class="mob-pg-group email">
+          <div class="mob-section-label">Email Studio — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Email Templates</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Send History</label>
+        </div>
+        <div class="mob-pg-group journeys">
+          <div class="mob-section-label">Journey Builder — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Journeys</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Active Flows</label>
+        </div>
+        <div class="mob-pg-group audience">
+          <div class="mob-section-label">Audiences — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Audiences</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Segments</label>
+        </div>
+        <div class="mob-pg-group storefront">
+          <div class="mob-section-label">Storefronts — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Storefronts</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Theme Editor</label>
+        </div>
+        <div class="mob-pg-group orders">
+          <div class="mob-section-label">Orders — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Orders</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Pending</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#10003;</span> Fulfilled</label>
+        </div>
+        <div class="mob-pg-group inventory">
+          <div class="mob-section-label">Inventory — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Stock Levels</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9650;</span> Low Stock Alerts</label>
+        </div>
+        <div class="mob-pg-group promo">
+          <div class="mob-section-label">Promotions — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Promotions</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Active Coupons</label>
+        </div>
+        <div class="mob-pg-group dashboards">
+          <div class="mob-section-label">Dashboards — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Dashboards</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9733;</span> Favorites</label>
+        </div>
+        <div class="mob-pg-group reports">
+          <div class="mob-section-label">Reports — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Reports</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Scheduled</label>
+        </div>
+        <div class="mob-pg-group datasets">
+          <div class="mob-section-label">Datasets — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Datasets</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Connections</label>
+        </div>
+        <div class="mob-pg-group sites">
+          <div class="mob-section-label">Sites — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Sites</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Builder</label>
+        </div>
+        <div class="mob-pg-group templates">
+          <div class="mob-section-label">Templates — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> All Templates</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Page Layouts</label>
+        </div>
+        <div class="mob-pg-group cms">
+          <div class="mob-section-label">CMS — Pages</div>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9632;</span> Content Items</label>
+          <label for="mobile-menu" class="mob-item-page"><span class="pg-icon">&#9679;</span> Collections</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /experiment-content -->
+
+</body>
+</html>

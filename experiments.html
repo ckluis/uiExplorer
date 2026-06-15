@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Explorations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  /* ═══════════════════════════════════════════════════════════
+     THE UI LAB — "Lab Instrument" design system
+     Shared tokens across index.html, experiments.html, changelog.html
+     ═══════════════════════════════════════════════════════════ */
+  :root {
+    --bg:        #0a0c10;
+    --surface-1: #0f1217;
+    --surface-2: #141821;
+    --surface-3: #1a1f2a;
+    --line:        rgba(255,255,255,0.07);
+    --line-strong: rgba(255,255,255,0.13);
+    --ink:       #e6e9ef;
+    --ink-dim:   #9aa4b2;
+    --ink-faint: #6b7480;
+    --accent:     #2ee6c6;   /* mint/cyan — the instrument signal */
+    --accent-2:   #38bdf8;   /* electric blue */
+    --accent-dim: rgba(46,230,198,0.12);
+    --accent-line:rgba(46,230,198,0.30);
+    --opus:   #e5a63b;
+    --sonnet: #8b9cf7;
+    --haiku:  #5ec4d4;
+    --auto:   #f5a623;
+    --orig:   #2ecc71;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    /* faint engineering grid */
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  ::selection { background: var(--accent-dim); color: #fff; }
+
+  /* ─── Top Nav (shared shell chrome) ─── */
+  .lab-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 28px;
+    background: rgba(10,12,16,0.82);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .lab-nav .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-decoration: none;
+  }
+  .lab-nav .brand .blip {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 10px var(--accent);
+    animation: blip 2.4s ease-in-out infinite;
+  }
+  @keyframes blip { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .lab-nav .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .lab-nav .nav-links a {
+    color: var(--ink-dim);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
+  .lab-nav .nav-links a.current { color: var(--accent); }
+  .lab-nav .nav-links a.ext::after { content: ' ↗'; opacity: 0.5; }
+
+  /* ─── Hero ─── */
+  .hero {
+    position: relative;
+    padding: 64px 32px 48px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: 50%;
+    transform: translateX(-50%);
+    width: 720px; height: 420px;
+    background: radial-gradient(ellipse, rgba(46,230,198,0.10) 0%, rgba(56,189,248,0.05) 40%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero .eyebrow {
+    position: relative;
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero .eyebrow::before { content: '┌ '; color: var(--ink-faint); }
+  .hero .eyebrow::after  { content: ' ┐'; color: var(--ink-faint); }
+  .hero h1 {
+    font-size: 46px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.03em;
+    position: relative;
+    line-height: 1.02;
+  }
+  .hero .tagline {
+    font-size: 15px;
+    color: var(--ink-dim);
+    margin-top: 14px;
+    line-height: 1.6;
+    position: relative;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero .stats {
+    display: inline-flex;
+    gap: 8px;
+    margin-top: 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-dim);
+    position: relative;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero .stats span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface-1);
+  }
+  .hero .stats .dot {
+    width: 6px; height: 6px;
+    border-radius: 1px;
+    background: var(--accent);
+    opacity: 0.8;
+  }
+
+  /* ─── Masonry Grid ─── */
+  .container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 8px 32px 80px;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 8px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .grid {
+    column-count: 3;
+    column-gap: 16px;
+  }
+
+  /* ─── Card ─── */
+  .card {
+    break-inside: avoid;
+    position: relative;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.25s cubic-bezier(0.4,0,0.2,1),
+                border-color 0.25s;
+  }
+  /* corner tick marks — instrument bracket */
+  .card::before, .card::after {
+    content: '';
+    position: absolute;
+    width: 9px; height: 9px;
+    border-color: var(--accent-line);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .card::before { top: 8px; left: 8px; border-top: 1px solid; border-left: 1px solid; }
+  .card::after  { bottom: 8px; right: 8px; border-bottom: 1px solid; border-right: 1px solid; }
+  .card:hover::before, .card:hover::after { opacity: 1; }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.4), 0 0 0 1px var(--accent-line);
+    border-color: var(--accent-line);
+  }
+
+  /* Accent bar — auto-colored via nth-child */
+  .card-accent { height: 3px; }
+  .card:nth-child(8n+1) .card-accent { background: linear-gradient(90deg, #2ee6c6, #38bdf8); }
+  .card:nth-child(8n+2) .card-accent { background: linear-gradient(90deg, #8b9cf7, #c084fc); }
+  .card:nth-child(8n+3) .card-accent { background: linear-gradient(90deg, #38bdf8, #2ee6c6); }
+  .card:nth-child(8n+4) .card-accent { background: linear-gradient(90deg, #2ecc71, #2ee6c6); }
+  .card:nth-child(8n+5) .card-accent { background: linear-gradient(90deg, #e5a63b, #f5a623); }
+  .card:nth-child(8n+6) .card-accent { background: linear-gradient(90deg, #5ec4d4, #38bdf8); }
+  .card:nth-child(8n+7) .card-accent { background: linear-gradient(90deg, #f093fb, #8b9cf7); }
+  .card:nth-child(8n+8) .card-accent { background: linear-gradient(90deg, #fa709a, #e5a63b); }
+
+  /* Card body */
+  .card-body { padding: 16px 18px 18px; }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .card-body h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge-updated { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-line); }
+  .badge-versions { background: rgba(255,255,255,0.06); color: var(--ink-dim); }
+
+  .card-body .desc {
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  /* Tags */
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    color: var(--ink-faint);
+    border: 1px solid var(--line);
+  }
+  .tag::before { content: '#'; opacity: 0.5; }
+
+  /* Changelog (in-card version list) */
+  .changelog {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .changelog-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+  }
+  .changelog-entry:last-of-type { border-bottom: none; }
+  .changelog-entry:hover {
+    background: rgba(46,230,198,0.04);
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 4px;
+  }
+  .changelog-v {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-dim);
+    min-width: 26px;
+    flex-shrink: 0;
+  }
+  .changelog-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    min-width: 76px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .changelog-desc {
+    font-size: 11px;
+    color: var(--accent);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .changelog-entry.latest .changelog-v { color: #fff; font-weight: 800; }
+
+  /* Hover tooltip for changelog details */
+  .changelog-detail {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0; right: 0;
+    margin-bottom: 4px;
+    background: var(--surface-3);
+    border: 1px solid var(--accent-line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    white-space: normal;
+    pointer-events: none;
+  }
+  .changelog-entry:hover .changelog-detail { display: block; }
+
+  .view-latest {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    margin-top: 10px;
+    transition: gap 0.2s;
+  }
+  .card:hover .view-latest { gap: 8px; }
+
+  /* ─── Footer ─── */
+  .site-footer {
+    text-align: center;
+    padding: 40px 32px;
+    border-top: 1px solid var(--line);
+  }
+  .site-footer .craft-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-dim);
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--surface-1);
+  }
+  .site-footer .craft-dot {
+    width: 5px; height: 5px;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+  .site-footer a {
+    color: var(--accent);
+    text-decoration: none;
+    margin-left: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .site-footer a:hover { text-decoration: underline; }
+
+  /* ─── Autonomous Badge ─── */
+  .badge-autonomous { background: rgba(245,166,35,0.12); color: var(--auto); border: 1px solid rgba(245,166,35,0.25); }
+  .changelog-entry.autonomous .changelog-v { color: var(--auto); }
+  .changelog-entry.autonomous.latest .changelog-v { color: #fff; }
+  .changelog-desc.autonomous { color: var(--auto); }
+
+  /* ─── Collaborative (default) ─── */
+  .changelog-entry.collaborative .changelog-v { color: var(--accent); }
+  .changelog-entry.collaborative.latest .changelog-v { color: #fff; }
+
+  /* ─── Model Indicator in Changelog ─── */
+  .changelog-model {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .changelog-model.opus   { background: rgba(229,166,59,0.12); color: var(--opus); }
+  .changelog-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+  .changelog-model.haiku  { background: rgba(94,196,212,0.12); color: var(--haiku); }
+
+  /* ─── Page Layout with About Sidebar ─── */
+  .page-frame { display: flex; min-height: 100vh; }
+
+  .about-sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: var(--surface-1);
+    color: var(--ink);
+    padding: 36px 26px;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .about-sidebar h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .about-sidebar .about-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    margin-bottom: -12px;
+  }
+  .about-sidebar p { margin: 0; color: var(--ink-dim); }
+  .about-sidebar .about-section {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+  }
+  .about-sidebar .about-section h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin: 0 0 12px 0;
+  }
+  .about-sidebar .about-section a { color: var(--accent); text-decoration: none; }
+  .about-sidebar .about-section a:hover { text-decoration: underline; }
+  .about-legend { display: flex; flex-direction: column; gap: 10px; }
+  .about-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .about-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .about-legend-swatch.collaborative { background: var(--accent); }
+  .about-legend-swatch.autonomous { background: var(--auto); }
+  .about-legend-swatch.origination { background: var(--orig); }
+  .about-legend-swatch.latest-swatch { background: #fff; }
+  .about-sidebar .about-footer {
+    margin-top: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    line-height: 1.7;
+  }
+
+  .page-main { flex: 1; overflow-y: auto; min-width: 0; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ─── Origination Series Styling ─── */
+  .badge-origination { background: rgba(46,204,113,0.12); color: var(--orig); border: 1px solid rgba(46,204,113,0.25); }
+  .card-origination { border-color: rgba(46,204,113,0.18); }
+
+  /* ─── Multi-Origination Changelog Dividers ─── */
+  .changelog-origination-divider {
+    background: rgba(46,204,113,0.07);
+    border: 1px solid rgba(46,204,113,0.2);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+  }
+  .changelog-origination-divider .cod-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--orig);
+    flex-shrink: 0;
+  }
+  .changelog-origination-divider .cod-link {
+    font-size: 11px;
+    color: var(--orig);
+    text-decoration: none;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .changelog-origination-divider .cod-link:hover { text-decoration: underline; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 1100px) {
+    .about-sidebar { width: 260px; min-width: 260px; padding: 28px 18px; }
+  }
+  @media (max-width: 900px) {
+    .page-frame { flex-direction: column; }
+    .about-sidebar {
+      width: 100%;
+      min-width: unset;
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 28px 28px 24px;
+    }
+    .grid { column-count: 2; }
+    .lab-nav .nav-links a.label-home { display: none; }
+  }
+  @media (max-width: 600px) {
+    .grid { column-count: 1; }
+    .hero h1 { font-size: 33px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+
+<aside class="about-sidebar" aria-label="About this project">
+  <div>
+    <p class="about-subtitle">The example lab</p>
+  </div>
+  <h2>The UI Lab</h2>
+
+  <p>A living collection of interface experiments built at the intersection of human creativity and AI capability — all in pure HTML and CSS, no JavaScript involved. This is the showcase; <a href="index.html">the framework</a> is the point.</p>
+
+  <div class="about-section">
+    <h3>Run your own lab</h3>
+    <p>This whole system is forkable. Clone the repo, run the <code>/uiExperiment</code> commands, and every experiment you create documents its own making. <a href="index.html">See how →</a></p>
+  </div>
+
+  <div class="about-section">
+    <h3>How It Works</h3>
+    <p>Some experiments are born from collaboration — a human and an agent trading ideas, each prompt refining the last. Others are fully autonomous: an agent given a direction and left to run, iterating on its own without human intervention.</p>
+  </div>
+
+  <div class="about-section">
+    <h3>On Documentation</h3>
+    <p>Every experiment tries to document its own making — the prompts, the decisions, the creative back-and-forth. For collaborative sessions, this provenance is precise. For autonomous runs, the documentation captures the spirit of what was explored, even when the exact prompt trail is more summary than transcript.</p>
+  </div>
+
+  <div class="about-section">
+    <h3>What You're Looking At</h3>
+    <p>Think of it as a creative lab notebook: part portfolio, part process archive, part proof-of-concept for what happens when humans and agents experiment together — or when agents experiment alone.</p>
+  </div>
+
+  <div class="about-section">
+    <h3>Legend</h3>
+    <div class="about-legend">
+      <div class="about-legend-item">
+        <span class="about-legend-swatch autonomous"></span>
+        Fully autonomous — no humans involved
+      </div>
+      <div class="about-legend-item">
+        <span class="about-legend-swatch origination"></span>
+        Origination series — research-driven parallel variants
+      </div>
+      <div class="about-legend-item">
+        <span class="about-legend-swatch latest-swatch"></span>
+        Most recent version (bold)
+      </div>
+      <div class="about-legend-item">
+        <span class="about-legend-swatch collaborative"></span>
+        Human + Agent collaboration (default)
+      </div>
+    </div>
+  </div>
+
+  <div class="about-footer">
+    Pure HTML/CSS · No JavaScript · Built with Claude
+  </div>
+</aside>
+
+<div class="page-main">
+
+<nav class="lab-nav">
+  <a href="index.html" class="brand"><span class="blip"></span>THE UI LAB</a>
+  <div class="nav-links">
+    <a href="index.html" class="label-home">Home</a>
+    <a href="experiments.html" class="current">Lab</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/ckluis/uiExplorer" class="ext">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <p class="eyebrow">The Example Lab</p>
+  <h1>UI Explorations</h1>
+  <p class="tagline">A showcase of what the framework produces — provenance-first interface experiments in pure HTML/CSS. No JavaScript. Every prompt preserved.</p>
+  <div class="stats">
+    <span><span class="dot"></span> 22 experiments</span>
+    <span><span class="dot"></span> 132 versions</span>
+    <span><span class="dot"></span> 3 origination series</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="section-label">Experiments · the showcase</div>
+  <div class="grid">
+
+    <!-- Everything App -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Everything App</h3>
+          <span class="badge badge-updated">Latest</span>
+          <span class="badge badge-versions">21 versions</span>
+        </div>
+        <p class="desc">A complete company operating system in a single CSS-only file — 22 modules spanning chat, email, forums, wiki, CRM, projects, calendar, HR, support, analytics, finance, dev IDE, office/drive, recruitment, LMS, ITSM, RSS, time tracking, calls, marketing, and settings. ~58K lines of pure HTML/CSS.</p>
+        <div class="tags">
+          <span class="tag">operating-system</span>
+          <span class="tag">modules</span>
+          <span class="tag">light-theme</span>
+          <span class="tag">ai-agents</span>
+          <span class="tag">css-only</span>
+        </div>
+        <div class="changelog">
+          <a href="everything-app-v21.html" class="changelog-entry latest">
+            <span class="changelog-v">v21</span>
+            <span class="changelog-time">2/12 11:59pm</span>
+            <span class="changelog-desc">Drill-in details, Marketing expansion, Calls 3-panel</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Added drill-in detail views to 8 modules (LMS, ITSM, RSS, Marketing, Office, Time, Calls, Analytics). Marketing gets audience builder and advertising manager. Calls gets 3-panel transcript layout. Fixed broken sub-view switching for 7 modules. Removed builder comments. ~58K lines.</span>
+          </a>
+          <a href="everything-app-v20.html" class="changelog-entry">
+            <span class="changelog-v">v20</span>
+            <span class="changelog-time">2/12 11:45pm</span>
+            <span class="changelog-desc">Fix module overlap — CSS specificity</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Fixed v19 overlap bug where Dev, LMS, and Time Tracking modules were always visible. Root cause: standalone display: flex rules on .mod-dev-content, .mod-lms-content, .mod-time-content overrode the base .mod-content display: none due to CSS cascade order. Removed the offending declarations. Pure structural fix.</span>
+          </a>
+          <a href="everything-app-v19.html" class="changelog-entry">
+            <span class="changelog-v">v19</span>
+            <span class="changelog-time">2/12 9:30pm</span>
+            <span class="changelog-desc autonomous">Mega expansion — 11 new modules, enhancements</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Massive expansion from 11 to 22 modules. Added Analytics/BI, Finance, Dev IDE, Office/Drive, Recruitment/ATS, LMS, ITSM, RSS/News, Time Tracking, Calls/Video, and Marketing. Enhanced CRM with Clay-style enrichment panels and battlecards, Home with cross-app widgets, Support with NPS scoring, Projects with time/budget tracking. Nav restructured into 6 grouped categories. ~49K lines. Built via 12 parallel Opus agents (11 builders + 1 enhancer).</span>
+          </a>
+          <a href="everything-app-v18.html" class="changelog-entry">
+            <span class="changelog-v">v18</span>
+            <span class="changelog-time">2/12 6:30pm</span>
+            <span class="changelog-desc">Cmd+K palette, expanded settings, HR sidebar fix</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Full CSS-only Cmd+K command palette with context-aware navigation for all 13 modules (55+ commands). Expanded Settings with 10 module-specific configuration panels (Chat, Email, Forum, Wiki, CRM, Projects, Calendar, People/HR, Support, AI). Fixed People/HR sidebar class mismatches (39 corrections). Built via 3 parallel builders + 2 synthesis agents.</span>
+          </a>
+          <a href="everything-app-v17.html" class="changelog-entry">
+            <span class="changelog-v">v17</span>
+            <span class="changelog-time">2/11 11:45pm</span>
+            <span class="changelog-desc">Calendar + HR/People + Support/Helpdesk</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Adds 3 new CRM-depth modules — Calendar (HEY.com weekly timeline, 22 events, 8 views), HR/People (198-employee directory, org chart, profiles, 13 views), Support (Zendesk-style tickets, SLA tracking, 12 views). Expands NovaCorp from 50-person to 200-person org. ~8,600 new lines.</span>
+          </a>
+          <a href="everything-app-v16.html" class="changelog-entry">
+            <span class="changelog-v">v16</span>
+            <span class="changelog-time">2/11 7:30pm</span>
+            <span class="changelog-desc">Projects module rebuild — Linear-quality</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Complete from-scratch rebuild of the Projects module, cloning the CRM's proven CSS view-switching architecture. 13 radio buttons, Linear-quality board with priority SVG icons, 7-column list view, Gantt timeline, task detail views. 33 tasks across Phoenix v2.1 and Mobile Scanner projects.</span>
+          </a>
+          <a href="everything-app-v15.html" class="changelog-entry">
+            <span class="changelog-v">v15</span>
+            <span class="changelog-time">2/11 3:45pm</span>
+            <span class="changelog-desc">Projects fix — clean single-view switching</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Rewrote Projects view-switching CSS architecture to eliminate the persistent multi-view rendering bug. Added proj-sub class to Phoenix Board, set checked default radio, replaced 40-line specificity war with 11 clean show-only rules matching the working CRM pattern.</span>
+          </a>
+          <a href="everything-app-v14.html" class="changelog-entry">
+            <span class="changelog-v">v14</span>
+            <span class="changelog-time">2/11 12:15pm</span>
+            <span class="changelog-desc">Projects fix — sidebar, views, drill-down linking</span>
+            <span class="changelog-detail">Fixed CSS specificity bug causing Mobile Board to show alongside all views. Aligned Projects sidebar to CRM styling (matching padding, typography, uppercase group labels). Redesigned board/list/timeline for 660px width with horizontal scroll. Added drill-down linking to all kanban cards, list rows, timeline rows, and dashboard items. Enhanced task details with breadcrumb nav, entity links, and related tasks.</span>
+          </a>
+          <a href="everything-app-v13.html" class="changelog-entry">
+            <span class="changelog-v">v13</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">Projects restructure — clean views, no CRM Pipeline</span>
+            <span class="changelog-detail">Removed CRM Pipeline project, added + buttons to project group headers (CRM pattern), added Mobile Scanner Timeline view, enforced clean view separation (AI analysis only on overviews), made tasks clickable across board/list views, and updated All Projects dashboard stats.</span>
+          </a>
+          <a href="everything-app-v12.html" class="changelog-entry">
+            <span class="changelog-v">v12</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">Projects module overhaul — Linear-quality</span>
+            <span class="changelog-detail">Complete Projects module rebuild: grouped sidebar with 3 project groups, per-project Overview dashboards with sprint stats and team workload, full kanban boards for Mobile Scanner and CRM Pipeline (replacing placeholders), list views, task detail views with subtask checklists and comment threads, and an All Projects dashboard with health cards and AI insights.</span>
+          </a>
+          <a href="everything-app-v11.html" class="changelog-entry">
+            <span class="changelog-v">v11</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">CRM company &amp; deal detail views</span>
+            <span class="changelog-detail">Added company and deal detail views with full cross-linking. Click into Acme Corp from companies table, Acme Corp Platform License from deals table. Contact detail now links to associated company and deals. All three entity types navigate between each other like a real CRM.</span>
+          </a>
+          <a href="everything-app-v10.html" class="changelog-entry">
+            <span class="changelog-v">v10</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">CRM grouped sidebar &amp; filtered views</span>
+            <span class="changelog-detail">Restructured CRM sidebar into grouped sections (Contacts, Companies, Deals) with filtered sub-views (fresh/stale contacts, pipeline value filters, deal overview dashboard) and "add a view" buttons. Moved pipeline kanban into a deal kanban view with toolbar.</span>
+          </a>
+          <a href="everything-app-v9.html" class="changelog-entry">
+            <span class="changelog-v">v9</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">Wiki single-scroll &amp; tree sidebar</span>
+            <span class="changelog-detail">Fixed wiki page scrolling — removed nested scroll containers so pages scroll as a single unit with sticky tabs. Converted flat wiki sidebar into a collapsible tree with CSS-only expand/collapse supporting 3+ levels of depth.</span>
+          </a>
+          <a href="everything-app-v8.html" class="changelog-entry">
+            <span class="changelog-v">v8</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">VS Code wiki tabs &amp; single-scroll home</span>
+            <span class="changelog-detail">Overhauled wiki tabs to VS Code-style with close (×) buttons. Redesigned Wiki Home as a clean single-scroll page with clickable section cards and list items that navigate to wiki pages in the tab bar.</span>
+          </a>
+          <a href="everything-app-v7.html" class="changelog-entry">
+            <span class="changelog-v">v7</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">Fix email sub-view switching</span>
+            <span class="changelog-detail">Fixed email module showing all views (Inbox, Sent, Drafts) simultaneously. Removed inline display styles that overrode CSS hide rules, moved flex properties into stylesheet.</span>
+          </a>
+          <a href="everything-app-v6.html" class="changelog-entry">
+            <span class="changelog-v">v6</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">List+detail layout for Email &amp; Forum</span>
+            <span class="changelog-detail">Applied consistent two-panel list+detail layout to Email Sent/Drafts views and restructured Forum module with thread list alongside detail pane.</span>
+          </a>
+          <a href="everything-app-v5.html" class="changelog-entry">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/10 11:59pm</span>
+            <span class="changelog-desc">Multi-panel chat with toggle &amp; horizontal scroll</span>
+            <span class="changelog-detail">Transformed chat from single-channel radio switching to multi-panel checkbox toggling. Clicking a channel or DM opens it side-by-side; clicking again closes it. Each panel has 570px min-width with horizontal scroll and gradient affordance when multiple are open.</span>
+          </a>
+          <a href="everything-app-v4.html" class="changelog-entry">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/10 11:30pm</span>
+            <span class="changelog-desc">Remove topbar, integrate search + notifications into sidebar</span>
+            <span class="changelog-detail">Eliminated the 44px top nav bar entirely. Moved search (as a compact Slack-style search bar below the logo) and notifications (as a nav item in the utility group) into the sidebar. Gains full vertical space for content area.</span>
+          </a>
+          <a href="everything-app-v3.html" class="changelog-entry">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/10 9:45pm</span>
+            <span class="changelog-desc">Surgical UX fixes — 5 module improvements</span>
+            <span class="changelog-detail">Five targeted fixes: chat headers restructured (title + count top row, description below), forum thread detail view with replies, wiki IDE-style tab bar synced to sidebar, CRM contact detail record with timeline, and Intercom-style nested projects sidebar with overview + 3 projects.</span>
+          </a>
+          <a href="everything-app-v2.html" class="changelog-entry">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/10 6:15pm</span>
+            <span class="changelog-desc">Light theme, expanded nav, standardized sidebars</span>
+            <span class="changelog-detail">Full light-theme redesign with WCAG AA contrast. App selector expanded from 56px icons to 200px with labels. CRM, Forum, Projects, and Home converted from top-bar tabs to standardized left sidebars. Chat message text upgraded for readability. Built via orchestrator with 8 parallel sub-agents.</span>
+          </a>
+          <a href="everything-app-v1.html" class="changelog-entry">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/10 4:00pm</span>
+            <span class="changelog-desc">Initial — 8-module company OS with AI agents</span>
+            <span class="changelog-detail">CSS-only company operating system with 8 navigable modules (Home, Chat, Email, Forum, Wiki, CRM, Projects, Settings), sub-view switching within each module, slide-out AI panel, device preview, and realistic NovaCorp mock data. Built via parallel agent swarm (8 agents simultaneously).</span>
+          </a>
+          <a href="everything-app-v21.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Dashboard -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Platform Dashboard</h3>
+          <span class="badge badge-versions">8 versions</span>
+        </div>
+        <p class="desc">Cross-product ERP dashboard with AI-derived insights, Apple Store-style carousels, stat cards, and per-module todo lists.</p>
+        <div class="tags">
+          <span class="tag">dashboard</span>
+          <span class="tag">responsive</span>
+          <span class="tag">mobile</span>
+          <span class="tag">enterprise</span>
+        </div>
+        <div class="changelog">
+          <a href="platform-dashboard-v8.html" class="changelog-entry latest">
+            <span class="changelog-v">v8</span>
+            <span class="changelog-time">2/10 1:30pm</span>
+            <span class="changelog-desc">Contact card modal polish</span>
+            <span class="changelog-detail">Compact contact trigger cards (280px) with stacked avatars that open elegant CSS-only modals on click. Reduces visual clutter while preserving all contact information.</span>
+          </a>
+          <a href="platform-dashboard-v7.html" class="changelog-entry">
+            <span class="changelog-v">v7</span>
+            <span class="changelog-time">2/10 10:15am</span>
+            <span class="changelog-desc">Contact team cards per product line</span>
+            <span class="changelog-detail">Added premium "Your Team" contact cards as the first card in each product carousel, showing dedicated contacts (Account Management, Customer Success, Implementation, Support, Executive Escalation) with names, emails, and phones.</span>
+          </a>
+          <a href="platform-dashboard-v6.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v6</span>
+            <span class="changelog-time">2/1 9:39am</span>
+            <span class="changelog-desc collaborative">Fullscreen mode, mock header &amp; window alignment</span>
+            <span class="changelog-detail">Aligned window positioning with platform-sidebar, added fullscreen preview toggle, and added a mock SaaS header (Acme Platform) with nav, search, bell, and user avatar for contextual framing.</span>
+          </a>
+          <a href="platform-dashboard-v5.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:28am</span>
+            <span class="changelog-desc collaborative">Device preview switcher &amp; mobile layout</span>
+            <span class="changelog-detail">Added monitor/mobile preview switcher, fixed trackpad carousel swiping, implemented full mobile-responsive dashboard layout, and added version history with prompt hover tooltips.</span>
+          </a>
+          <a href="platform-dashboard-v4.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:27am</span>
+            <span class="changelog-desc collaborative">Insights carousel &amp; wider hero card</span>
+            <span class="changelog-detail">Converted the insights grid into a horizontal carousel matching product carousels below. Made the hero card wider instead of taller to eliminate whitespace.</span>
+          </a>
+          <a href="platform-dashboard-v3.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:27am</span>
+            <span class="changelog-desc collaborative">Fixed carousel dots &amp; insight card details</span>
+            <span class="changelog-detail">Fixed carousel dots to show one per card instead of a fixed 3. Filled empty whitespace in insight cards by adding detail breakdowns below charts.</span>
+          </a>
+          <a href="platform-dashboard-v2.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:26am</span>
+            <span class="changelog-desc collaborative">Sparklines, working carousels, feedback animations</span>
+            <span class="changelog-detail">Improved insight card contrast with sparkline visualizations, gradient backgrounds, and accent borders. Implemented working CSS-only carousel navigation with dot indicators and arrows via radio inputs. Moved todo cards to first position.</span>
+          </a>
+          <a href="platform-dashboard-v1.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:03am</span>
+            <span class="changelog-desc collaborative">Initial — ERP dashboard with AI insights &amp; carousels</span>
+            <span class="changelog-detail">Cross-product ERP dashboard with AI-derived insights (thumbs up/down/bookmark feedback), Apple Store-style horizontal carousels per product line with stat cards, action cards, and todo lists.</span>
+          </a>
+          <a href="platform-dashboard-v8.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Sidebar -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Platform Sidebar</h3>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">Enterprise triple-sidebar navigation with collapsible panels, focus mode, and mobile-responsive layout — entirely CSS-driven.</p>
+        <div class="tags">
+          <span class="tag">navigation</span>
+          <span class="tag">sidebar</span>
+          <span class="tag">enterprise</span>
+        </div>
+        <div class="changelog">
+          <a href="platform-sidebar-v1.html" class="changelog-entry collaborative latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:07am</span>
+            <span class="changelog-desc collaborative">Initial — Triple-sidebar with collapsible panels</span>
+            <span class="changelog-detail">Enterprise triple-sidebar navigation with collapsible panels, focus mode, and mobile-responsive layout — all in pure CSS using radio/checkbox state. Developed through multiple iterative prompts.</span>
+          </a>
+          <a href="platform-sidebar-v1.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Innovative Cards -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Innovative Cards</h3>
+          <span class="badge badge-versions">2 versions</span>
+        </div>
+        <p class="desc">7 card archetypes (e-commerce, pricing, recipe, map, profile, music, news) each with 3-4 CSS-only iterations exploring hover reveals, flip animations, radio toggles, waveforms, and more. Now with 14 switchable themes.</p>
+        <div class="tags">
+          <span class="tag">cards</span>
+          <span class="tag">interactions</span>
+          <span class="tag">css-only</span>
+          <span class="tag">animations</span>
+          <span class="tag">themes</span>
+        </div>
+        <div class="changelog">
+          <a href="innovative-cards-v2.html" class="changelog-entry collaborative latest">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:26am</span>
+            <span class="changelog-desc collaborative">14-theme switcher — brutalism to vaporwave</span>
+            <span class="changelog-detail">Added in-page theme switcher with 14 CSS-only themes: default, brutalism, maximalism, minimalism, psychedelic, acid trip, modern, apple-esque, cybernetic, sci-fi, surreal, vaporwave, newspaper, and bauhaus. All via radio buttons and CSS custom properties.</span>
+          </a>
+          <a href="innovative-cards-v1.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:06am</span>
+            <span class="changelog-desc collaborative">Initial — 7 card types × 4 iterations with CSS interactions</span>
+            <span class="changelog-detail">28 card variations across e-commerce, SaaS pricing, recipe, map/directions, profile, music, and news. Interactions include hover reveals, checkbox flips, radio toggles, animated waveforms, vinyl spin, breaking-news pulse, and ingredient checklists.</span>
+          </a>
+          <a href="innovative-cards-v2.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TUI ERP -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>TUI ERP</h3>
+          <span class="badge badge-versions">2 versions</span>
+        </div>
+        <p class="desc">The platform-dashboard ERP reimagined as a terminal user interface — monospace type, box-drawing borders, ANSI colors, ASCII progress bars, and keyboard shortcuts everywhere.</p>
+        <div class="tags">
+          <span class="tag">tui</span>
+          <span class="tag">terminal</span>
+          <span class="tag">erp</span>
+          <span class="tag">keyboard-first</span>
+        </div>
+        <div class="changelog">
+          <a href="tui-erp-v2.html" class="changelog-entry collaborative latest">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:26am</span>
+            <span class="changelog-desc collaborative">Tab switching, help overlay, focus mode, all 4 modules</span>
+            <span class="changelog-detail">CSS-only module tab switching (Finance/Supply/HR/Sales), terminal help overlay, focus/zoom mode, confirm dialog, cursor row selection, breadcrumb bar, and full content for all four ERP modules with unique data and color coding.</span>
+          </a>
+          <a href="tui-erp-v1.html" class="changelog-entry collaborative">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:06am</span>
+            <span class="changelog-desc collaborative">Initial — TUI reimagining of ERP dashboard</span>
+            <span class="changelog-detail">Three-panel tmux-style layout with status bar, tab bar, vim mode indicator, ASCII tables, block-char progress bars, sparklines, activity log, and keyboard shortcut hints throughout. Finance module view with revenue breakdown, AR aging, and budget utilization.</span>
+          </a>
+          <a href="tui-erp-v2.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Command Palette</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Spotlight/&#8984;K style command palette overlay with categorized results, keyboard shortcut badges, and CSS-only open/close interaction via checkbox toggle.</p>
+        <div class="tags">
+          <span class="tag">command-palette</span>
+          <span class="tag">overlay</span>
+          <span class="tag">search</span>
+          <span class="tag">css-only</span>
+        </div>
+        <div class="changelog">
+          <a href="command-palette-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:08am</span>
+            <span class="changelog-desc autonomous">Production polish — animations, micro-interactions, mobile layout</span>
+            <span class="changelog-detail">Refined palette with improved scale+slide+fade animations, dot-grid background, elevated keyboard hint badges, and mobile-optimized layout that hides shortcuts.</span>
+          </a>
+          <a href="command-palette-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:08am</span>
+            <span class="changelog-desc autonomous">Breadcrumb trail, nested navigation, mobile layout</span>
+            <span class="changelog-detail">Added breadcrumb trail for nested navigation, drill-in arrows, and improved mobile layout.</span>
+          </a>
+          <a href="command-palette-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:08am</span>
+            <span class="changelog-desc autonomous">Category tabs, item descriptions, empty state</span>
+            <span class="changelog-detail">Added category tabs via radio buttons, item descriptions, and empty state pattern.</span>
+          </a>
+          <a href="command-palette-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:08am</span>
+            <span class="changelog-desc autonomous">Slide-down animations, colored icons, backdrop blur</span>
+            <span class="changelog-detail">Added slide-down/fade animations, colored icon backgrounds, and backdrop blur.</span>
+          </a>
+          <a href="command-palette-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:07am</span>
+            <span class="changelog-desc autonomous">Initial — Command palette with search &amp; keyboard hints</span>
+            <span class="changelog-detail">Basic command palette with search, categorized results, keyboard hints, and checkbox toggle.</span>
+          </a>
+          <a href="command-palette-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding Flow -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Onboarding Flow</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Multi-step onboarding wizard driven entirely by CSS radio buttons with smooth step transitions, progress indicators, and form layouts — no JavaScript.</p>
+        <div class="tags">
+          <span class="tag">wizard</span>
+          <span class="tag">onboarding</span>
+          <span class="tag">forms</span>
+          <span class="tag">steps</span>
+        </div>
+        <div class="changelog">
+          <a href="onboarding-flow-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:11am</span>
+            <span class="changelog-desc autonomous">Confetti animation, refined typography, micro-interactions</span>
+            <span class="changelog-detail">Final polish with celebration confetti animation on completion, refined typography, and micro-interactions on hover/focus for buttons, chips, inputs, and illustrations.</span>
+          </a>
+          <a href="onboarding-flow-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:11am</span>
+            <span class="changelog-desc autonomous">Branching paths, skip buttons, mobile layout</span>
+            <span class="changelog-detail">Branching path with skip buttons for optional steps, improved mobile layout.</span>
+          </a>
+          <a href="onboarding-flow-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:11am</span>
+            <span class="changelog-desc autonomous">Two-column layout with CSS illustrations</span>
+            <span class="changelog-detail">Two-column layout with CSS illustrations and improved form styling.</span>
+          </a>
+          <a href="onboarding-flow-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:11am</span>
+            <span class="changelog-desc autonomous">Numbered step circles, slide transitions</span>
+            <span class="changelog-detail">Numbered step circles with connecting lines, slide transitions.</span>
+          </a>
+          <a href="onboarding-flow-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — 4-step wizard with progress bar</span>
+            <span class="changelog-detail">Basic 4-step wizard with progress bar and dot indicators.</span>
+          </a>
+          <a href="onboarding-flow-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Notification Center</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Slide-out notification panel with grouped items, read/unread states, category filters, and checkbox-driven open/close toggle — pure CSS panel animation.</p>
+        <div class="tags">
+          <span class="tag">notifications</span>
+          <span class="tag">panel</span>
+          <span class="tag">slide-out</span>
+          <span class="tag">filters</span>
+        </div>
+        <div class="changelog">
+          <a href="notification-center-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:15am</span>
+            <span class="changelog-desc autonomous">Production polish — toast notifications, gradient avatars, backdrop blur</span>
+            <span class="changelog-detail">Toast-style inline notifications with progress bars, gradient avatars, refined unread indicator, backdrop blur on overlay, and micro-interactions throughout.</span>
+          </a>
+          <a href="notification-center-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:15am</span>
+            <span class="changelog-desc autonomous">Density toggle, mark-all-read, smoother transitions</span>
+            <span class="changelog-detail">Added density toggle (comfortable/compact), translateX animation, "Mark all read" button, and smoother transitions.</span>
+          </a>
+          <a href="notification-center-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:15am</span>
+            <span class="changelog-desc autonomous">Hover actions, empty state, mobile actions</span>
+            <span class="changelog-detail">Added hover actions (mark read, dismiss), empty state design, and always-visible actions on mobile.</span>
+          </a>
+          <a href="notification-center-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:15am</span>
+            <span class="changelog-desc autonomous">Category filters, avatars, context previews</span>
+            <span class="changelog-detail">Added category filter tabs, avatars with sub-icons, sender/time layout, and context preview blocks.</span>
+          </a>
+          <a href="notification-center-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — Slide-out panel with grouped notifications</span>
+            <span class="changelog-detail">Basic slide-out panel with grouped items, checkbox toggle, and read/unread states.</span>
+          </a>
+          <a href="notification-center-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Data Table</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Enterprise data table with status badges, row hover states, CSS-only pagination, expandable details, density toggles, and table/card view switching.</p>
+        <div class="tags">
+          <span class="tag">table</span>
+          <span class="tag">data</span>
+          <span class="tag">enterprise</span>
+          <span class="tag">sortable</span>
+        </div>
+        <div class="changelog">
+          <a href="data-table-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:17am</span>
+            <span class="changelog-desc autonomous">Production polish — frozen header, stripe patterns, refined animations</span>
+            <span class="changelog-detail">Frozen header with scroll shadow, stripe patterns, refined animations, status badge dots, card hover effects, and a comprehensive feature set combining v1-v4.</span>
+          </a>
+          <a href="data-table-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:17am</span>
+            <span class="changelog-desc autonomous">Table/card view toggle, auto-card on mobile</span>
+            <span class="changelog-detail">Added table/card view toggle and auto-card on mobile.</span>
+          </a>
+          <a href="data-table-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:16am</span>
+            <span class="changelog-desc autonomous">Density toggle, bulk selection, action bar</span>
+            <span class="changelog-detail">Added density toggle, bulk row selection with action bar, and row count.</span>
+          </a>
+          <a href="data-table-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:16am</span>
+            <span class="changelog-desc autonomous">Expandable rows, sort indicators, toolbar search</span>
+            <span class="changelog-detail">Added expandable row details, sort indicators, and toolbar with search.</span>
+          </a>
+          <a href="data-table-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — Data table with status badges &amp; pagination</span>
+            <span class="changelog-detail">Basic table with status badges, hover states, and CSS-only pagination.</span>
+          </a>
+          <a href="data-table-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Feed -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Timeline Feed</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Vertical activity timeline with event nodes colored by type, expandable detail cards, category filtering, and alternating left/right layout with centered spine.</p>
+        <div class="tags">
+          <span class="tag">timeline</span>
+          <span class="tag">activity</span>
+          <span class="tag">feed</span>
+          <span class="tag">events</span>
+        </div>
+        <div class="changelog">
+          <a href="timeline-feed-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:18am</span>
+            <span class="changelog-desc autonomous">Production polish — pulse animations, app shell, gradient avatars</span>
+            <span class="changelog-detail">Production-quality timeline with pulse animations on latest events, app-shell layout with side nav, gradient avatar nodes, and polished card interactions.</span>
+          </a>
+          <a href="timeline-feed-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:18am</span>
+            <span class="changelog-desc autonomous">Alternating layout, centered spine, date separators</span>
+            <span class="changelog-detail">Alternating left/right layout with centered spine, date separators, connection arms.</span>
+          </a>
+          <a href="timeline-feed-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:18am</span>
+            <span class="changelog-desc autonomous">Category filtering via checkboxes, node hover animations</span>
+            <span class="changelog-detail">CSS-only category filtering via checkboxes, node hover animations.</span>
+          </a>
+          <a href="timeline-feed-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:17am</span>
+            <span class="changelog-desc autonomous">Expandable detail cards, avatar circles</span>
+            <span class="changelog-detail">Expandable detail cards and avatar circles with author initials.</span>
+          </a>
+          <a href="timeline-feed-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — Vertical timeline with colored nodes</span>
+            <span class="changelog-detail">Basic vertical timeline with colored nodes, type badges, timestamps.</span>
+          </a>
+          <a href="timeline-feed-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Settings Panel</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">macOS System Preferences-style settings panel with icon grid navigation, CSS-only toggle switches, segmented controls, and nested sub-sections with danger zone.</p>
+        <div class="tags">
+          <span class="tag">settings</span>
+          <span class="tag">preferences</span>
+          <span class="tag">forms</span>
+          <span class="tag">toggles</span>
+        </div>
+        <div class="changelog">
+          <a href="settings-panel-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:19am</span>
+            <span class="changelog-desc autonomous">Production polish — animations, storage bar, micro-interactions</span>
+            <span class="changelog-detail">Production-quality refinement with improved animations, pixel-perfect form styling, refined color palette, status indicators, a visual storage bar, and polished micro-interactions.</span>
+          </a>
+          <a href="settings-panel-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:19am</span>
+            <span class="changelog-desc autonomous">User profile header, search bar, mobile layout</span>
+            <span class="changelog-detail">Added user profile header, search bar, and refined mobile layout.</span>
+          </a>
+          <a href="settings-panel-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:19am</span>
+            <span class="changelog-desc autonomous">Nested sub-sections, danger zone, breadcrumbs</span>
+            <span class="changelog-detail">Nested sub-sections, danger zone with red-tinted styling, breadcrumb navigation.</span>
+          </a>
+          <a href="settings-panel-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:18am</span>
+            <span class="changelog-desc autonomous">Segmented controls, improved toggles, descriptions</span>
+            <span class="changelog-detail">Added segmented controls, improved toggle design, and section descriptions.</span>
+          </a>
+          <a href="settings-panel-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — Icon grid with 8 categories &amp; toggles</span>
+            <span class="changelog-detail">Icon grid with 8 categories, detail panels with toggles and form groups.</span>
+          </a>
+          <a href="settings-panel-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Page -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Pricing Page</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">SaaS pricing page with 3-tier cards, monthly/annual billing toggle, feature comparison matrix, add-on selector, testimonials, and FAQ accordion.</p>
+        <div class="tags">
+          <span class="tag">pricing</span>
+          <span class="tag">saas</span>
+          <span class="tag">tiers</span>
+          <span class="tag">comparison</span>
+        </div>
+        <div class="changelog">
+          <a href="pricing-page-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:21am</span>
+            <span class="changelog-desc autonomous">Production polish — gradient accents, CTA banner, micro-interactions</span>
+            <span class="changelog-detail">Gradient accents, refined typography with gradient text, micro-interactions on all interactive elements, a CTA banner section, and improved visual hierarchy.</span>
+          </a>
+          <a href="pricing-page-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:21am</span>
+            <span class="changelog-desc autonomous">Testimonials section, FAQ accordion</span>
+            <span class="changelog-detail">Added testimonials section and CSS-only FAQ accordion with checkbox toggles.</span>
+          </a>
+          <a href="pricing-page-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:21am</span>
+            <span class="changelog-desc autonomous">Add-on checkboxes, price calculator summary</span>
+            <span class="changelog-detail">Added add-on selector checkboxes and price calculator summary section.</span>
+          </a>
+          <a href="pricing-page-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:20am</span>
+            <span class="changelog-desc autonomous">Feature comparison matrix, card hover animations</span>
+            <span class="changelog-detail">Added feature comparison matrix and improved card hover animations.</span>
+          </a>
+          <a href="pricing-page-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — 3-tier pricing with billing toggle</span>
+            <span class="changelog-detail">Basic 3-tier pricing cards with monthly/annual toggle and Most Popular badge.</span>
+          </a>
+          <a href="pricing-page-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email Client -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Email Client</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Classic 3-pane email client layout (folder list, message list, reading pane) using CSS radio buttons for state management, with compose overlay, threading, and label system.</p>
+        <div class="tags">
+          <span class="tag">email</span>
+          <span class="tag">3-pane</span>
+          <span class="tag">client</span>
+          <span class="tag">compose</span>
+        </div>
+        <div class="changelog">
+          <a href="email-client-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:22am</span>
+            <span class="changelog-desc autonomous">Production polish — formatting toolbar, gradient avatars, action buttons</span>
+            <span class="changelog-detail">Rich formatting toolbar in compose, polished typography, gradient avatars, action buttons in reading pane (Reply, Forward, Archive), and improved visual hierarchy.</span>
+          </a>
+          <a href="email-client-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:21am</span>
+            <span class="changelog-desc autonomous">Compact mode, horizontal split, colored labels</span>
+            <span class="changelog-detail">Added compact mode toggle, horizontal split orientation, and colored label/tag system.</span>
+          </a>
+          <a href="email-client-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:21am</span>
+            <span class="changelog-desc autonomous">Conversation threading, search bar, thread counts</span>
+            <span class="changelog-detail">Added conversation threading, search bar, and thread count indicators.</span>
+          </a>
+          <a href="email-client-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:20am</span>
+            <span class="changelog-desc autonomous">Star/flag checkboxes, sender avatars, compose overlay</span>
+            <span class="changelog-detail">Added star/flag checkboxes, sender avatars, and compose overlay.</span>
+          </a>
+          <a href="email-client-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — 3-pane layout with folder navigation</span>
+            <span class="changelog-detail">Basic 3-pane layout with folder radio buttons, message list, and reading pane.</span>
+          </a>
+          <a href="email-client-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Kanban Board</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Project management kanban board with 4 columns, task cards with assignee avatars and priority badges, filters, theme toggle, and collapsible columns.</p>
+        <div class="tags">
+          <span class="tag">kanban</span>
+          <span class="tag">project</span>
+          <span class="tag">cards</span>
+          <span class="tag">columns</span>
+        </div>
+        <div class="changelog">
+          <a href="kanban-board-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:24am</span>
+            <span class="changelog-desc autonomous">Production polish — shadows, project header, subtask progress</span>
+            <span class="changelog-detail">Refined shadows and hover states with subtle transforms, project header with team avatars and stats, subtask progress bars, custom scrollbars, and gradient avatars.</span>
+          </a>
+          <a href="kanban-board-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:23am</span>
+            <span class="changelog-desc autonomous">Filter by assignee/priority, collapsible columns, mobile</span>
+            <span class="changelog-detail">Added filter by assignee/priority, collapsible columns, and mobile stacking.</span>
+          </a>
+          <a href="kanban-board-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:23am</span>
+            <span class="changelog-desc autonomous">Theme toggle, card labels, due dates</span>
+            <span class="changelog-detail">Added theme toggle (light/dark/colorful), card labels, and due dates.</span>
+          </a>
+          <a href="kanban-board-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:22am</span>
+            <span class="changelog-desc autonomous">Expandable card details, swimlane tabs, WIP limits</span>
+            <span class="changelog-detail">Added expandable card details, swimlane tabs, and WIP limit warnings.</span>
+          </a>
+          <a href="kanban-board-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — 4-column kanban with cards &amp; avatars</span>
+            <span class="changelog-detail">Basic 4-column kanban with cards, avatars, and priority badges.</span>
+          </a>
+          <a href="kanban-board-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Music Dashboard -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Music Dashboard</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 versions</span>
+        </div>
+        <p class="desc">Spotify-inspired music dashboard with playlist navigation, album grid with CSS gradient cover art, genre filtering, equalizer animation, mood color themes, and now-playing bar.</p>
+        <div class="tags">
+          <span class="tag">music</span>
+          <span class="tag">dashboard</span>
+          <span class="tag">player</span>
+          <span class="tag">equalizer</span>
+        </div>
+        <div class="changelog">
+          <a href="music-dashboard-v5.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 9:25am</span>
+            <span class="changelog-desc autonomous">Production polish — vinyl spin, equalizer keyframes, glow effects</span>
+            <span class="changelog-detail">Vinyl record spin animation on album hover, refined multi-stop gradients for cover art, unique per-bar equalizer keyframes, now-playing vinyl peek, and glow effects on accent elements.</span>
+          </a>
+          <a href="music-dashboard-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:25am</span>
+            <span class="changelog-desc autonomous">Mood color themes via CSS custom properties, mobile layout</span>
+            <span class="changelog-detail">Mood color themes (Chill/blue, Energy/orange, Dark/purple) via CSS custom properties, enhanced mobile layout.</span>
+          </a>
+          <a href="music-dashboard-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 9:24am</span>
+            <span class="changelog-desc autonomous">Artist detail view, queue/up-next panel</span>
+            <span class="changelog-detail">Artist detail view with radio toggle and queue/up-next panel alongside album grid.</span>
+          </a>
+          <a href="music-dashboard-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 9:22am</span>
+            <span class="changelog-desc autonomous">CSS equalizer, album hover overlays, improved now-playing</span>
+            <span class="changelog-detail">CSS equalizer animation, album hover overlays with play button, improved now-playing bar.</span>
+          </a>
+          <a href="music-dashboard-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:05am</span>
+            <span class="changelog-desc autonomous">Initial — Music dashboard with playlist sidebar &amp; album grid</span>
+            <span class="changelog-detail">Basic layout with playlist sidebar, album grid with gradient cover art, now-playing bar, and genre filters.</span>
+          </a>
+          <a href="music-dashboard-v5.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRM Dashboard (Origination Series) -->
+    <div class="card card-origination">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>CRM Dashboard</h3>
+          <span class="badge badge-origination">Origination Series</span>
+          <span class="badge badge-versions">10 variants</span>
+        </div>
+        <p class="desc">A research-driven exploration of CRM interfaces for real estate agents across 10 autonomous variants, each a radically different UI paradigm — from pipeline kanban to invisible email overlays to terminal-style power tools.</p>
+        <div class="tags">
+          <span class="tag">crm</span>
+          <span class="tag">real-estate</span>
+          <span class="tag">dashboard</span>
+          <span class="tag">research-series</span>
+        </div>
+        <div class="changelog">
+          <a href="crm-dashboard-v10.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v10</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Triage — Card Stack/Mobile-First</span>
+            <span class="changelog-detail">Tinder-like card triage metaphor with stacked deck, rapid action buttons, and progress tracking for daily lead processing.</span>
+          </a>
+          <a href="crm-dashboard-v9.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v9</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Schedule — Calendar-First CRM</span>
+            <span class="changelog-detail">Week-view calendar as the primary interface with rich event blocks, unscheduled queue, and time-block zones.</span>
+          </a>
+          <a href="crm-dashboard-v8.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v8</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Forecast — AI Predictive CRM</span>
+            <span class="changelog-detail">Prediction-driven dashboard with priority action cards, deal probability scores, pipeline health gauge, and smart signals.</span>
+          </a>
+          <a href="crm-dashboard-v7.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v7</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Web — Relationship Graph</span>
+            <span class="changelog-detail">Network visualization showing contacts as nodes and relationships as edges on a dark constellation-style canvas.</span>
+          </a>
+          <a href="crm-dashboard-v6.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v6</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Terminal — Command-Line CRM</span>
+            <span class="changelog-detail">Bloomberg Terminal-inspired dark interface with monospace tables, command bar, blinking cursor, and dense data visualization.</span>
+          </a>
+          <a href="crm-dashboard-v5.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Context Layer — Ambient/Invisible CRM</span>
+            <span class="changelog-detail">CRM intelligence layered over a Gmail-like inbox with contact enrichment badges, contextual sidebars, and ghost notifications.</span>
+          </a>
+          <a href="crm-dashboard-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Territory — Map-Centric CRM</span>
+            <span class="changelog-detail">Geography-first interface with an abstract CSS map, positioned pins for leads/listings/deals, and farm area zones.</span>
+          </a>
+          <a href="crm-dashboard-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Stream — Timeline/Activity Feed</span>
+            <span class="changelog-detail">Chronological activity stream across all contacts and deals with filter chips, date separators, and milestone markers.</span>
+          </a>
+          <a href="crm-dashboard-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Chat Flow — Conversational CRM</span>
+            <span class="changelog-detail">Slack-like interface where every client relationship is a conversation thread with inline CRM actions and system events.</span>
+          </a>
+          <a href="crm-dashboard-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 9:41am</span>
+            <span class="changelog-desc autonomous">Deal Flow Board — Pipeline Kanban</span>
+            <span class="changelog-detail">Visual deal stages with property thumbnail cards, urgency indicators, and role-based views for solo agents, team leads, and brokerage admins.</span>
+          </a>
+          <a href="crm-dashboard.html" class="view-latest">View origination prompt &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Human/Agent Orchestration (Origination Series) -->
+    <div class="card card-origination">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Human/Agent Orchestration</h3>
+          <span class="badge badge-origination">Origination Series</span>
+          <span class="badge badge-versions">20 variants</span>
+        </div>
+        <p class="desc">A research-driven exploration of radically different UI paradigms for human/agent interaction — from mycelium networks and geological strata to orchestra scores and particle chambers — each visualizing orchestration, sub-agents, and the AskUserQuestion pattern through a unique metaphor.</p>
+        <div class="tags">
+          <span class="tag">agent-orchestration</span>
+          <span class="tag">human-ai</span>
+          <span class="tag">interaction-design</span>
+          <span class="tag">research-series</span>
+        </div>
+        <div class="changelog">
+          <a href="agent-orchestration-v20.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v20</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Terrarium (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, organism flow checkboxes, hover symbiosis reveals, and day/night cycle radios.</span>
+          </a>
+          <a href="agent-orchestration-v19.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v19</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Weaving Loom (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, pattern card radios, hover thread paths, and weft thread checkboxes.</span>
+          </a>
+          <a href="agent-orchestration-v18.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v18</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Particle Chamber (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, animation toggle checkbox, hover particle trails, and collision type radios.</span>
+          </a>
+          <a href="agent-orchestration-v17.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v17</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Cartographic Expedition (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, expedition phase radios, hover map notes, and pigeon trail checkboxes.</span>
+          </a>
+          <a href="agent-orchestration-v16.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v16</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Kitchen Brigade (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, station ticket checkboxes, hover task/urgency, and service phase radios.</span>
+          </a>
+          <a href="agent-orchestration-v15.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v15</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Tidal Pool (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, depth zone radios, hover creature status tooltips, and signal chain checkboxes.</span>
+          </a>
+          <a href="agent-orchestration-v14.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v14</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Mission Control (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, radio station selection, hover telemetry panels, and CAPCOM toggle.</span>
+          </a>
+          <a href="agent-orchestration-v13.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v13</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Orchestra Score (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, checkbox instrument muting, hover note tooltips, and time scrubbing radios.</span>
+          </a>
+          <a href="agent-orchestration-v12.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v12</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Geological Strata (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, radio layer scrubber, hover annotations, and checkbox geyser toggles.</span>
+          </a>
+          <a href="agent-orchestration-v11.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v11</span>
+            <span class="changelog-time">2/1 3:30pm</span>
+            <span class="changelog-desc autonomous">Mycelium Network (Enhanced)</span>
+            <span class="changelog-detail">Enhanced with device preview framework, checkbox node expansion, hover glow on hyphae threads, and bioluminescent tooltips.</span>
+          </a>
+          <div class="changelog-origination-divider">
+            <span class="cod-label">Origination #2</span>
+            <a href="agent-orchestration.html#origination-2" class="cod-link">Enhanced with preview framework &amp; interactions &rarr;</a>
+          </div>
+          <a href="agent-orchestration-v10.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v10</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Terrarium — Glass Ecosystem</span>
+            <span class="changelog-detail">Glass terrarium with symbiotic organisms as agents. Resource cycling visible. Plants turn toward glass (human) when they need input.</span>
+          </a>
+          <a href="agent-orchestration-v9.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v9</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Weaving Loom — Jacquard Tapestry</span>
+            <span class="changelog-detail">Warp = timeline, weft = agents weaving into emergent pattern. Pattern card = human intent. Gaps in weave = questions needing answers.</span>
+          </a>
+          <a href="agent-orchestration-v8.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v8</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Particle Chamber — Bubble Chamber</span>
+            <span class="changelog-detail">Circular dark chamber where prompts enter as particles, decaying into sub-particles (agents) spiraling outward. Questions are reflected particles.</span>
+          </a>
+          <a href="agent-orchestration-v7.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v7</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Cartographic Expedition — Age of Exploration</span>
+            <span class="changelog-detail">Parchment map drawn in real-time. Known world = completed work, frontier = in-progress, "Here Be Dragons" = unexplored. Messenger pigeons carry questions.</span>
+          </a>
+          <a href="agent-orchestration-v6.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v6</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Kitchen Brigade — Restaurant Floor</span>
+            <span class="changelog-detail">Top-down kitchen floor plan with Chef at the pass, station chefs as sub-agents, commis as sub-sub-agents. Ticket rail shows task decomposition.</span>
+          </a>
+          <a href="agent-orchestration-v5.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Tidal Pool — Ocean Depth Zones</span>
+            <span class="changelog-detail">Vertical ocean cross-section from surface to abyss. Bioluminescent signal chains carry questions upward through depth zones.</span>
+          </a>
+          <a href="agent-orchestration-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Mission Control — NASA Ops Room</span>
+            <span class="changelog-detail">Dense dark dashboard with console stations in rows. Flight Director at top, specialists below. CAPCOM relay handles human questions.</span>
+          </a>
+          <a href="agent-orchestration-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Orchestra Score — Musical Notation</span>
+            <span class="changelog-detail">Horizontal timeline with instrument staves per agent. Notes = actions, rests = waiting, chords = parallel work. Questions are fermatas and cadenzas.</span>
+          </a>
+          <a href="agent-orchestration-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Geological Strata — Core Sample</span>
+            <span class="changelog-detail">Cross-section of earth with orchestration layers as geological strata. Deeper = more specialized. Questions erupt as geysers through fault lines.</span>
+          </a>
+          <a href="agent-orchestration-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 8:55am</span>
+            <span class="changelog-desc autonomous">Mycelium Network — Fungal Web</span>
+            <span class="changelog-detail">Dark canvas with glowing nodes and pulsing hyphae threads. Agents branch organically downward; questions travel back up as bioluminescent pulses.</span>
+          </a>
+          <div class="changelog-origination-divider">
+            <span class="cod-label">Origination #1</span>
+            <a href="agent-orchestration.html#origination-1" class="cod-link">10 unique metaphors for orchestration &rarr;</a>
+          </div>
+          <a href="agent-orchestration-v20.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Columns -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Agent Columns</h3>
+          <span class="badge badge-versions">4 versions</span>
+        </div>
+        <p class="desc">Linear.com-inspired orchestration dashboard with manager description cards, cross-column dependency badges, parallel/sequential phase grouping, and modern CSS flourishes.</p>
+        <div class="tags">
+          <span class="tag">agent-orchestration</span>
+          <span class="tag">dashboard</span>
+          <span class="tag">linear</span>
+          <span class="tag">dependencies</span>
+        </div>
+        <div class="changelog">
+          <a href="agent-columns-v4.html" class="changelog-entry latest">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/1 9:45pm</span>
+            <span class="changelog-desc">Obsessive calm — simplified cards, model color borders</span>
+            <span class="changelog-detail">Radical card simplification: model identity as colored left borders (no badges), costs/descriptions discoverable on hover, phase labels removed, softer palette, manager headers reduced to name + progress bar with detail on hover.</span>
+          </a>
+          <a href="agent-columns-v3.html" class="changelog-entry">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/1 8:30pm</span>
+            <span class="changelog-desc">Model badges, token/cost tracking with rollups</span>
+            <span class="changelog-detail">Per-agent model badges (Opus/Sonnet/Haiku) with color coding, token counts and costs using realistic Anthropic API pricing, manager-level cost summaries, and orchestrator total — all math verified to roll up correctly.</span>
+          </a>
+          <a href="agent-columns-v2.html" class="changelog-entry">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/1 7:15pm</span>
+            <span class="changelog-desc">Dependencies, phase groups, manager cards</span>
+            <span class="changelog-detail">Richer manager header cards with role descriptions and I/O badges, cross-column dependency visualization via color-coded expanding badges, parallel/sequential phase grouping, glassmorphism headers, and refined hover micro-interactions.</span>
+          </a>
+          <a href="agent-columns-v1.html" class="changelog-entry">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/1 6:30pm</span>
+            <span class="changelog-desc">Initial — Column-based orchestrator</span>
+            <span class="changelog-detail">Light theme, 5 manager columns (Layout, Components, Theme, Animation, Icons), detail toggle, device preview switcher.</span>
+          </a>
+          <a href="agent-columns-v4.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guided Checklists (Origination Series) -->
+    <div class="card card-origination">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Guided Checklists</h3>
+          <span class="badge badge-origination">Origination Series</span>
+          <span class="badge badge-versions">10 variants</span>
+        </div>
+        <p class="desc">A research-driven exploration of "bolt-on" guided checklists for enterprise software where problems on one page are caused by configs/rules/states on other pages — from command-center power tools to AI collaborators to ambient auto-fix systems.</p>
+        <div class="tags">
+          <span class="tag">enterprise</span>
+          <span class="tag">checklists</span>
+          <span class="tag">ai-feedback</span>
+          <span class="tag">research-series</span>
+        </div>
+        <div class="changelog">
+          <a href="guided-checklists-v10.html" class="changelog-entry autonomous latest">
+            <span class="changelog-v">v10</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Ambient Intelligence</span>
+            <span class="changelog-detail">Auto-remediation with undo toasts — minimal friction for users who hate interruptions.</span>
+          </a>
+          <a href="guided-checklists-v9.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v9</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Task Triage</span>
+            <span class="changelog-detail">Swipeable card stack — gamified batch processing with streak indicators.</span>
+          </a>
+          <a href="guided-checklists-v8.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v8</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Proactive Monitor</span>
+            <span class="changelog-detail">Notification drawer with predictions — early warnings before problems occur.</span>
+          </a>
+          <a href="guided-checklists-v7.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v7</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Support Toolkit</span>
+            <span class="changelog-detail">Split-pane with customer context — support agent view with history and scripts.</span>
+          </a>
+          <a href="guided-checklists-v6.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v6</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Contextual Whisper</span>
+            <span class="changelog-detail">Inline indicators with popovers — non-intrusive hints discovered while working.</span>
+          </a>
+          <a href="guided-checklists-v5.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Executive Dashboard</span>
+            <span class="changelog-detail">Full-page health view — strategic overview with delegation and confidence scores.</span>
+          </a>
+          <a href="guided-checklists-v4.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">AI Collaborator</span>
+            <span class="changelog-detail">Conversational chat drawer — collaborative diagnosis with reasoning traces.</span>
+          </a>
+          <a href="guided-checklists-v3.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Mobile Fixer</span>
+            <span class="changelog-detail">Bottom sheet with one-tap fixes — thumb-zone optimized for field workers.</span>
+          </a>
+          <a href="guided-checklists-v2.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Gentle Guide</span>
+            <span class="changelog-detail">Stepped modal wizard — educational onboarding with celebration states.</span>
+          </a>
+          <a href="guided-checklists-v1.html" class="changelog-entry autonomous">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/6 12:00pm</span>
+            <span class="changelog-desc autonomous">Command Center</span>
+            <span class="changelog-detail">Side panel with keyboard shortcuts — power admin interface for batch issue management.</span>
+          </a>
+          <a href="guided-checklists.html" class="view-latest">View origination prompt &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Observatory -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Analytics Observatory</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">A Stripe-quality SaaS analytics dashboard with CSS-only data visualization: area charts via clip-path, donut charts via conic-gradient, heatmap grids, sparklines, and time-range switching. Light theme, typography-forward stats.</p>
+        <div class="tags">
+          <span class="tag">dashboard</span>
+          <span class="tag">data-visualization</span>
+          <span class="tag">analytics</span>
+          <span class="tag">charts</span>
+        </div>
+        <div class="changelog">
+          <a href="analytics-observatory-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/11 9:30pm</span>
+            <span class="changelog-desc autonomous">Initial — CSS-only analytics dashboard</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Complete SaaS analytics dashboard with 4 tabs (Overview/Revenue/Usage/Cohorts), area charts, donut charts, heatmap grids, sparklines, bar charts, and cohort retention tables — all pure CSS.</span>
+          </a>
+          <a href="analytics-observatory-v1.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Design System Playground -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Design System Playground</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">An interactive component specimen gallery — Storybook meets Radix Themes. Browse UI components and toggle through variants, sizes, states, and themes in real time. A living design system that IS the interface.</p>
+        <div class="tags">
+          <span class="tag">design-system</span>
+          <span class="tag">components</span>
+          <span class="tag">theming</span>
+          <span class="tag">meta-tooling</span>
+        </div>
+        <div class="changelog">
+          <a href="design-system-playground-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/11 9:30pm</span>
+            <span class="changelog-desc autonomous">Initial — Interactive component browser</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Three-column component browser with 6 specimen types (Button, Badge, Card, Input, Toggle, Progress), variant/size/state property panel, and Light/Dark/High Contrast theme switching via CSS custom property cascade.</span>
+          </a>
+          <a href="design-system-playground-v1.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flight Tracker -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Flight Tracker</h3>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">FlightRadar24 meets NASA Mission Control — a dark-mode flight tracking dashboard with a CSS-only world map (clip-path continents), animated flight paths, split-flap departure board, and conic-gradient instrument gauges.</p>
+        <div class="tags">
+          <span class="tag">dashboard</span>
+          <span class="tag">dark-theme</span>
+          <span class="tag">spatial-visualization</span>
+          <span class="tag">transportation</span>
+        </div>
+        <div class="changelog">
+          <a href="flight-tracker-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">2/11 9:30pm</span>
+            <span class="changelog-desc autonomous">Initial — Dark-mode flight dashboard</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Dual-panel flight tracker with CSS-only world map (clip-path continents, glowing airports), 6 selectable flights, monospace departure board, conic-gradient altitude/speed/heading gauges, and weather panels.</span>
+          </a>
+          <a href="flight-tracker-v1.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<footer class="site-footer">
+  <span class="craft-badge">
+    <span class="craft-dot"></span>
+    Pure HTML/CSS · No JavaScript
+  </span>
+  <a href="changelog.html">View changelog →</a>
+</footer>
+
+</div><!-- .page-main -->
+</div><!-- .page-frame -->
+
+</body>
+</html>

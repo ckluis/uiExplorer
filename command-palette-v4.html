@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Palette — v4</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    input[type="radio"]:not([name="tab"]):not([name="scope"]), input[type="checkbox"] { display: none; }
+    input[name="tab"], input[name="scope"] { display: none; }
+
+    /* ─── Experiment Info Sidebar ─── */
+    .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+    .experiment-sidebar {
+      width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+      padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px;
+    }
+    .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+    .experiment-sidebar a:hover { text-decoration: underline; }
+    .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+    .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+    .experiment-sidebar .exp-version {
+      display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+    }
+    .experiment-sidebar .exp-autonomous {
+      display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+    }
+    .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+    .experiment-sidebar .exp-section h2 {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #888; margin: 0 0 8px 0;
+    }
+    .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+    .experiment-sidebar .exp-prompt {
+      background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+      font-size: 12px; color: #bbb; font-style: italic;
+    }
+
+    /* ─── Sidebar Versions Card ─── */
+    .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+    .experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+    .experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+    .experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+    .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+    .experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+    .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+    .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+    /* ─── Device Preview Switcher ─── */
+    .experiment-content {
+      flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+    .preview-btn {
+      display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+      border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+    }
+    .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+    .preview-btn svg { width: 20px; height: 20px; }
+    #preview-web:checked ~ .preview-bar label[for="preview-web"],
+    #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+    #preview-full:checked ~ .preview-bar label[for="preview-full"] {
+      background: rgba(255,255,255,0.2); color: white;
+    }
+    .window {
+      width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+      position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+    #preview-full:checked ~ .preview-bar {
+      position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+    }
+    #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+    /* ─── Command Palette v4 ─── */
+    .window { --bg: #1e1e2e; display: flex; flex-direction: column; }
+
+    .app-bg {
+      flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #cdd6f4;
+    }
+    .app-bg h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    .app-bg p { font-size: 14px; color: #6c7086; margin-bottom: 24px; }
+    .app-bg .shortcut-hint {
+      display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 16px;
+      font-size: 13px; color: #a6adc8;
+    }
+    .app-bg .kbd {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 600; color: #cdd6f4;
+    }
+
+    /* Toggle */
+    #palette-toggle:checked ~ .window .palette-backdrop { opacity: 1; pointer-events: auto; }
+    #palette-toggle:checked ~ .window .palette { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+    .palette-trigger { position: absolute; top: 16px; right: 16px; z-index: 5; }
+    .palette-trigger label {
+      display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 14px;
+      font-size: 12px; color: #a6adc8; cursor: pointer; transition: background 0.15s;
+    }
+    .palette-trigger label:hover { background: rgba(255,255,255,0.12); }
+    .palette-trigger .kbd {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600; color: #cdd6f4;
+    }
+
+    .palette-backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.55); z-index: 10;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    }
+    .palette-backdrop label { display: block; width: 100%; height: 100%; cursor: default; }
+
+    .palette {
+      position: absolute; top: 70px; left: 50%; transform: translateX(-50%) translateY(-16px);
+      width: 620px; max-height: 540px; background: #313244;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,156,247,0.08);
+      z-index: 20; opacity: 0; pointer-events: none; overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Breadcrumb trail */
+    .palette-breadcrumb {
+      display: none; align-items: center; gap: 4px; padding: 10px 18px 0;
+      font-size: 11px; color: #6c7086;
+    }
+    .palette-breadcrumb-item {
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .palette-breadcrumb-item label {
+      color: #8b9cf7; cursor: pointer; font-size: 11px;
+    }
+    .palette-breadcrumb-item label:hover { text-decoration: underline; }
+    .palette-breadcrumb-sep { color: #45475a; }
+    .palette-breadcrumb-current { color: #cdd6f4; font-weight: 500; }
+
+    /* Show breadcrumb in nested scope */
+    #scope-settings:checked ~ .window .palette-breadcrumb { display: flex; }
+
+    /* Search */
+    .palette-search {
+      display: flex; align-items: center; gap: 10px; padding: 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .palette-search svg { width: 18px; height: 18px; color: #6c7086; flex-shrink: 0; }
+    .palette-search-input { flex: 1; font-size: 15px; color: #cdd6f4; }
+    .palette-search .palette-esc {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #6c7086; font-weight: 500;
+    }
+
+    /* Category Tabs */
+    .palette-tabs {
+      display: flex; gap: 2px; padding: 8px 18px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .palette-tabs label {
+      font-size: 11px; font-weight: 500; color: #6c7086; padding: 6px 12px 8px;
+      border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s;
+      margin-bottom: -1px;
+    }
+    .palette-tabs label:hover { color: #a6adc8; }
+
+    #tab-all:checked ~ .window .palette-tabs label[for="tab-all"],
+    #tab-actions:checked ~ .window .palette-tabs label[for="tab-actions"],
+    #tab-nav:checked ~ .window .palette-tabs label[for="tab-nav"],
+    #tab-settings:checked ~ .window .palette-tabs label[for="tab-settings"] {
+      color: #cdd6f4; border-bottom-color: #8b9cf7;
+    }
+
+    /* Hide tabs in nested scope */
+    #scope-settings:checked ~ .window .palette-tabs { display: none; }
+
+    /* Scope visibility */
+    .palette-scope-root { display: block; }
+    .palette-scope-settings { display: none; }
+    #scope-settings:checked ~ .window .palette-scope-root { display: none; }
+    #scope-settings:checked ~ .window .palette-scope-settings { display: block; }
+
+    /* Tab content visibility */
+    .palette-tab-content { display: none; }
+    #tab-all:checked ~ .window .palette-tab-all,
+    #tab-actions:checked ~ .window .palette-tab-actions,
+    #tab-nav:checked ~ .window .palette-tab-nav,
+    #tab-settings:checked ~ .window .palette-tab-settings { display: block; }
+
+    /* Results */
+    .palette-results { overflow-y: auto; padding: 8px; flex: 1; }
+    .palette-group { margin-bottom: 4px; }
+    .palette-group-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #6c7086; padding: 8px 8px 4px;
+    }
+
+    .palette-item {
+      display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px;
+      color: #cdd6f4; font-size: 13px; cursor: default; transition: background 0.12s;
+    }
+    .palette-item:hover { background: rgba(139,156,247,0.12); }
+    .palette-item.selected { background: rgba(139,156,247,0.18); }
+
+    .palette-item-icon {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; flex-shrink: 0;
+    }
+    .palette-item-icon svg { width: 16px; height: 16px; }
+    .palette-item-icon.icon-blue { background: rgba(137,180,250,0.15); color: #89b4fa; }
+    .palette-item-icon.icon-green { background: rgba(166,227,161,0.15); color: #a6e3a1; }
+    .palette-item-icon.icon-mauve { background: rgba(203,166,247,0.15); color: #cba6f7; }
+    .palette-item-icon.icon-peach { background: rgba(250,179,135,0.15); color: #fab387; }
+    .palette-item-icon.icon-pink { background: rgba(245,194,231,0.15); color: #f5c2e7; }
+    .palette-item-icon.icon-yellow { background: rgba(249,226,175,0.15); color: #f9e2af; }
+    .palette-item-icon.icon-teal { background: rgba(148,226,213,0.15); color: #94e2d5; }
+    .palette-item-icon.icon-red { background: rgba(243,139,168,0.15); color: #f38ba8; }
+
+    .palette-item-text { flex: 1; min-width: 0; }
+    .palette-item-label { display: block; font-weight: 500; }
+    .palette-item-desc { display: block; font-size: 11px; color: #6c7086; margin-top: 1px; }
+
+    .palette-item-shortcut { display: flex; gap: 3px; flex-shrink: 0; }
+    .palette-item-shortcut .kbd {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 500; color: #6c7086;
+    }
+
+    /* Drill-in arrow for nested items */
+    .palette-item-arrow {
+      color: #45475a; flex-shrink: 0;
+    }
+    .palette-item-arrow svg { width: 14px; height: 14px; }
+    .palette-item:hover .palette-item-arrow { color: #6c7086; }
+
+    /* Make nested item labels into clickable labels */
+    .palette-item label {
+      display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1;
+    }
+
+    /* Empty state */
+    .palette-empty {
+      padding: 40px 20px; text-align: center; color: #6c7086;
+    }
+    .palette-empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .palette-empty p { font-size: 13px; }
+    .palette-empty .palette-empty-hint { font-size: 11px; margin-top: 6px; color: #585b70; }
+
+    /* Footer */
+    .palette-footer {
+      border-top: 1px solid rgba(255,255,255,0.08); padding: 10px 18px;
+      display: flex; align-items: center; gap: 16px; font-size: 11px; color: #6c7086;
+    }
+    .palette-footer span { display: flex; align-items: center; gap: 4px; }
+    .palette-footer .kbd {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 3px; padding: 0px 4px; font-size: 10px; font-weight: 500;
+    }
+
+    /* ─── Mobile overrides ─── */
+    #preview-mobile:checked ~ .window .palette {
+      width: calc(100% - 24px); top: 40px; left: 12px; transform: none; max-height: 85%;
+    }
+    #preview-mobile:checked ~ .window .app-bg h2 { font-size: 20px; }
+    #preview-mobile:checked ~ .window .app-bg p { font-size: 12px; }
+    #preview-mobile:checked ~ .window .palette-footer { flex-wrap: wrap; gap: 8px; }
+    #preview-mobile:checked ~ .window .palette-item-icon { width: 28px; height: 28px; }
+    #preview-mobile:checked ~ .window .palette-tabs { padding: 6px 12px 0; gap: 0; }
+    #preview-mobile:checked ~ .window .palette-tabs label { padding: 5px 8px 6px; font-size: 10px; }
+    #preview-mobile:checked ~ .window .palette-breadcrumb { padding: 8px 12px 0; font-size: 10px; }
+    #preview-mobile:checked ~ .window .palette-item { padding: 8px 10px; gap: 10px; }
+    #preview-mobile:checked ~ .window .palette-item-desc { font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="experiment-frame">
+    <aside class="experiment-sidebar">
+      <div>
+        <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+        <h1>Command Palette</h1>
+        <span class="exp-version">v4</span>
+        <span class="exp-autonomous">Fully Autonomous</span>
+      </div>
+
+      <div class="exp-section">
+        <h2>Purpose</h2>
+        <p>Adds a breadcrumb trail for nested navigation (drill into Settings sub-commands), improves mobile layout with tighter spacing, and adds drill-in arrow indicators on items that lead to sub-menus.</p>
+      </div>
+
+      <div class="exp-section">
+        <h2>Prompt</h2>
+        <div class="exp-prompt">
+          This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+          Add breadcrumb navigation for nested command scopes. Clicking a "Settings" item drills into a sub-view with settings-specific commands, showing a breadcrumb trail (Home > Settings) at the top. Add chevron arrows on drillable items. Improve mobile spacing with smaller icons and tighter padding. Use CSS radio buttons for scope state.
+        </div>
+      </div>
+
+      <div class="exp-section">
+        <h2>Versions</h2>
+        <div class="exp-versions-card">
+          <a href="command-palette-v5.html" class="exp-vc-entry">
+            <span class="exp-vc-v">v5</span>
+            <span class="exp-vc-desc">Production polish</span>
+          </a>
+          <a href="command-palette-v4.html" class="exp-vc-entry current">
+            <span class="exp-vc-v">v4</span>
+            <span class="exp-vc-desc">Breadcrumb trail</span>
+          </a>
+          <a href="command-palette-v3.html" class="exp-vc-entry">
+            <span class="exp-vc-v">v3</span>
+            <span class="exp-vc-desc">Category tabs</span>
+          </a>
+          <a href="command-palette-v2.html" class="exp-vc-entry">
+            <span class="exp-vc-v">v2</span>
+            <span class="exp-vc-desc">Slide-down animations</span>
+          </a>
+          <a href="command-palette-v1.html" class="exp-vc-entry">
+            <span class="exp-vc-v">v1</span>
+            <span class="exp-vc-desc">Initial command palette</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="experiment-content">
+      <input type="radio" name="preview" id="preview-web" checked>
+      <input type="radio" name="preview" id="preview-mobile">
+      <input type="radio" name="preview" id="preview-full">
+      <input type="checkbox" id="palette-toggle">
+      <input type="radio" name="tab" id="tab-all" checked>
+      <input type="radio" name="tab" id="tab-actions">
+      <input type="radio" name="tab" id="tab-nav">
+      <input type="radio" name="tab" id="tab-settings">
+      <input type="radio" name="scope" id="scope-root" checked>
+      <input type="radio" name="scope" id="scope-settings">
+
+      <div class="preview-bar">
+        <label for="preview-web" class="preview-btn" title="Desktop view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </label>
+        <label for="preview-mobile" class="preview-btn" title="Mobile view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+        </label>
+        <label for="preview-full" class="preview-btn" title="Fullscreen view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </label>
+      </div>
+
+      <div class="window">
+        <div class="palette-backdrop"><label for="palette-toggle"></label></div>
+
+        <div class="palette-trigger">
+          <label for="palette-toggle">
+            Search commands&hellip;
+            <span class="kbd">&#8984;K</span>
+          </label>
+        </div>
+
+        <div class="app-bg">
+          <h2>Your Workspace</h2>
+          <p>Press the button to open the command palette. Try drilling into Settings.</p>
+          <div class="shortcut-hint">
+            <span class="kbd">&#8984;</span><span class="kbd">K</span> to open command palette
+          </div>
+        </div>
+
+        <div class="palette">
+          <!-- Breadcrumb -->
+          <div class="palette-breadcrumb">
+            <div class="palette-breadcrumb-item">
+              <label for="scope-root">Home</label>
+            </div>
+            <span class="palette-breadcrumb-sep">/</span>
+            <span class="palette-breadcrumb-current">Settings</span>
+          </div>
+
+          <div class="palette-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <div class="palette-search-input">Type a command or search&hellip;</div>
+            <span class="palette-esc">ESC</span>
+          </div>
+
+          <!-- Tabs (hidden in nested scope) -->
+          <div class="palette-tabs">
+            <label for="tab-all">All</label>
+            <label for="tab-actions">Actions</label>
+            <label for="tab-nav">Navigation</label>
+            <label for="tab-settings">Settings</label>
+          </div>
+
+          <div class="palette-results">
+            <!-- Root scope -->
+            <div class="palette-scope-root">
+              <!-- All tab -->
+              <div class="palette-tab-content palette-tab-all">
+                <div class="palette-group">
+                  <div class="palette-group-label">Recent</div>
+                  <div class="palette-item selected">
+                    <div class="palette-item-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Open Recent File</span>
+                      <span class="palette-item-desc">Browse and open recently edited files</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">P</span></div>
+                  </div>
+                </div>
+
+                <div class="palette-group">
+                  <div class="palette-group-label">Actions</div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Toggle Terminal</span>
+                      <span class="palette-item-desc">Show or hide the integrated terminal panel</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">`</span></div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Find in Files</span>
+                      <span class="palette-item-desc">Search across all workspace files</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">&#8679;</span><span class="kbd">F</span></div>
+                  </div>
+                </div>
+
+                <div class="palette-group">
+                  <div class="palette-group-label">Navigation</div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Go to Dashboard</span>
+                      <span class="palette-item-desc">View project overview and quick stats</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="palette-group">
+                  <div class="palette-group-label">Settings</div>
+                  <div class="palette-item">
+                    <label for="scope-settings">
+                      <div class="palette-item-icon icon-peach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                      <div class="palette-item-text">
+                        <span class="palette-item-label">Settings</span>
+                        <span class="palette-item-desc">Editor preferences, themes, and extensions</span>
+                      </div>
+                    </label>
+                    <div class="palette-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions tab -->
+              <div class="palette-tab-content palette-tab-actions">
+                <div class="palette-group">
+                  <div class="palette-item selected">
+                    <div class="palette-item-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Toggle Terminal</span>
+                      <span class="palette-item-desc">Show or hide the integrated terminal panel</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">`</span></div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Save All Files</span>
+                      <span class="palette-item-desc">Save all open modified files at once</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">&#8679;</span><span class="kbd">S</span></div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Find in Files</span>
+                      <span class="palette-item-desc">Search across all workspace files</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">&#8679;</span><span class="kbd">F</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Navigation tab -->
+              <div class="palette-tab-content palette-tab-nav">
+                <div class="palette-group">
+                  <div class="palette-item selected">
+                    <div class="palette-item-icon icon-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Go to Dashboard</span>
+                      <span class="palette-item-desc">View project overview and quick stats</span>
+                    </div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Go to Team Members</span>
+                      <span class="palette-item-desc">Manage team roles and permissions</span>
+                    </div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-peach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Go to Projects</span>
+                      <span class="palette-item-desc">Browse all active and archived projects</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Settings tab -->
+              <div class="palette-tab-content palette-tab-settings">
+                <div class="palette-group">
+                  <div class="palette-item selected">
+                    <div class="palette-item-icon icon-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Toggle Dark Mode</span>
+                      <span class="palette-item-desc">Switch between light and dark themes</span>
+                    </div>
+                  </div>
+                  <div class="palette-item">
+                    <div class="palette-item-icon icon-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+                    <div class="palette-item-text">
+                      <span class="palette-item-label">Keyboard Shortcuts</span>
+                      <span class="palette-item-desc">View and customize key bindings</span>
+                    </div>
+                    <div class="palette-item-shortcut"><span class="kbd">&#8984;</span><span class="kbd">K</span><span class="kbd">S</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settings scope (nested) -->
+            <div class="palette-scope-settings">
+              <div class="palette-group">
+                <div class="palette-group-label">Appearance</div>
+                <div class="palette-item selected">
+                  <div class="palette-item-icon icon-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+                  <div class="palette-item-text">
+                    <span class="palette-item-label">Theme: Dark Mode</span>
+                    <span class="palette-item-desc">Switch between light, dark, and system themes</span>
+                  </div>
+                </div>
+                <div class="palette-item">
+                  <div class="palette-item-icon icon-mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>
+                  <div class="palette-item-text">
+                    <span class="palette-item-label">Font Size</span>
+                    <span class="palette-item-desc">Adjust editor font size (currently 14px)</span>
+                  </div>
+                </div>
+                <div class="palette-item">
+                  <div class="palette-item-icon icon-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
+                  <div class="palette-item-text">
+                    <span class="palette-item-label">Layout: Sidebar Position</span>
+                    <span class="palette-item-desc">Move sidebar to left or right side</span>
+                  </div>
+                </div>
+              </div>
+              <div class="palette-group">
+                <div class="palette-group-label">Editor</div>
+                <div class="palette-item">
+                  <div class="palette-item-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+                  <div class="palette-item-text">
+                    <span class="palette-item-label">Tab Size</span>
+                    <span class="palette-item-desc">Set indentation width (currently 2 spaces)</span>
+                  </div>
+                </div>
+                <div class="palette-item">
+                  <div class="palette-item-icon icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                  <div class="palette-item-text">
+                    <span class="palette-item-label">Auto Save</span>
+                    <span class="palette-item-desc">Enable or disable automatic file saving</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-footer">
+            <span><span class="kbd">&uarr;</span><span class="kbd">&darr;</span> Navigate</span>
+            <span><span class="kbd">&larr;</span> Back</span>
+            <span><span class="kbd">&#8629;</span> Open</span>
+            <span><span class="kbd">ESC</span> Close</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

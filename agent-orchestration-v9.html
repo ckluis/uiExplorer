@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v9: Weaving Loom</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+/* ─── Loom Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #f7f0e3;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.loom-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(139,100,60,0.03) 0px, rgba(139,100,60,0.03) 1px, transparent 1px, transparent 40px),
+    linear-gradient(180deg, #ede4d3 0%, #f7f0e3 10%, #f7f0e3 90%, #ede4d3 100%);
+}
+
+/* ─── Loom Frame ─── */
+.loom-frame {
+  position: relative;
+  margin: 0 40px;
+  min-height: 100vh;
+  border-left: 12px solid #6b4c2a;
+  border-right: 12px solid #6b4c2a;
+  background: rgba(107,76,42,0.02);
+  box-shadow: inset 4px 0 8px rgba(107,76,42,0.1), inset -4px 0 8px rgba(107,76,42,0.1);
+}
+
+.loom-frame::before,
+.loom-frame::after {
+  content: '';
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  height: 20px;
+  background: linear-gradient(90deg, #5a3d1e, #8b6b3a, #6b4c2a, #8b6b3a, #5a3d1e);
+  z-index: 5;
+}
+
+.loom-frame::before { top: 0; border-radius: 4px 4px 0 0; }
+.loom-frame::after { bottom: 0; border-radius: 0 0 4px 4px; }
+
+/* Wood grain texture on frame */
+.loom-frame-grain-left,
+.loom-frame-grain-right {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  width: 12px;
+  z-index: 4;
+  background:
+    repeating-linear-gradient(180deg, transparent, transparent 8px, rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.06) 10px);
+}
+.loom-frame-grain-left { left: -12px; }
+.loom-frame-grain-right { right: -12px; }
+
+/* ─── Pattern Card (Punched Card) ─── */
+.pattern-card {
+  position: relative;
+  margin: 40px 30px 0;
+  padding: 20px 24px;
+  background: #f5ecd6;
+  border: 2px solid #c4a870;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(107,76,42,0.15);
+  z-index: 3;
+}
+
+.pattern-card::before {
+  content: 'PATTERN CARD';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: #f5ecd6;
+  padding: 0 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8b6b3a;
+}
+
+.pattern-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4a3520;
+  margin-bottom: 6px;
+}
+
+.pattern-card-desc {
+  font-size: 12px;
+  color: #7a6040;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+/* Punched holes row */
+.punch-holes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.punch-hole {
+  width: 14px;
+  height: 18px;
+  border-radius: 2px;
+  border: 1px solid #c4a870;
+  position: relative;
+}
+
+.punch-hole.punched {
+  background: #4a3520;
+  border-color: #4a3520;
+}
+
+.punch-hole.punched::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: #f5ecd6;
+  border-radius: 1px;
+}
+
+.punch-hole.empty {
+  background: transparent;
+}
+
+.punch-label {
+  font-size: 9px;
+  color: #a08660;
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Warp Threads (vertical) ─── */
+.weave-area {
+  position: relative;
+  margin: 0 30px;
+  padding: 20px 0;
+  min-height: 600px;
+}
+
+/* Individual warp threads */
+.warp-threads {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  z-index: 1;
+}
+
+.warp-thread {
+  width: 2px;
+  background: repeating-linear-gradient(180deg,
+    #c4a870 0px, #c4a870 6px,
+    #d4bc8a 6px, #d4bc8a 8px
+  );
+  opacity: 0.6;
+}
+
+.warp-thread:nth-child(3n) { opacity: 0.8; background: repeating-linear-gradient(180deg, #b89a5e 0px, #b89a5e 6px, #cbb27a 6px, #cbb27a 8px); }
+.warp-thread:nth-child(5n) { opacity: 0.5; }
+
+/* ─── Weft Rows (horizontal — agent work) ─── */
+.weft-rows {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.weft-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 28px;
+  position: relative;
+}
+
+/* Completed weft — tightly woven */
+.weft-complete {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.weft-complete .thread-fill {
+  height: 100%;
+  border-radius: 1px;
+}
+
+/* Color families for different agents */
+.agent-ui .thread-fill { background: linear-gradient(90deg, #8b3a3a, #a04545, #c05555, #a04545, #8b3a3a); }
+.agent-api .thread-fill { background: linear-gradient(90deg, #3a5c8b, #456ba0, #5580c0, #456ba0, #3a5c8b); }
+.agent-data .thread-fill { background: linear-gradient(90deg, #3a7a4a, #458a55, #55a068, #458a55, #3a7a4a); }
+.agent-auth .thread-fill { background: linear-gradient(90deg, #7a5a2a, #8b6b3a, #a07a45, #8b6b3a, #7a5a2a); }
+
+/* Weave texture — over/under pattern */
+.weft-row:nth-child(odd) .thread-fill {
+  mask-image: repeating-linear-gradient(90deg,
+    black 0px, black 16px, transparent 16px, transparent 18px
+  );
+  -webkit-mask-image: repeating-linear-gradient(90deg,
+    black 0px, black 16px, transparent 16px, transparent 18px
+  );
+}
+
+.weft-row:nth-child(even) .thread-fill {
+  mask-image: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 8px, black 8px, black 26px, transparent 26px, transparent 28px
+  );
+  -webkit-mask-image: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 8px, black 8px, black 26px, transparent 26px, transparent 28px
+  );
+}
+
+/* Section labels on left */
+.weft-label {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #7a6040;
+  text-align: right;
+  justify-content: flex-end;
+  letter-spacing: 0.03em;
+}
+
+/* Agent shuttle indicator on right */
+.weft-shuttle {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shuttle-icon {
+  width: 24px;
+  height: 10px;
+  border-radius: 10px 4px 4px 10px;
+  position: relative;
+}
+
+.agent-ui .shuttle-icon { background: #8b3a3a; }
+.agent-api .shuttle-icon { background: #3a5c8b; }
+.agent-data .shuttle-icon { background: #3a7a4a; }
+.agent-auth .shuttle-icon { background: #7a5a2a; }
+
+.shuttle-icon::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 2px;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.agent-ui .shuttle-icon::after { border-left: 6px solid #8b3a3a; }
+.agent-api .shuttle-icon::after { border-left: 6px solid #3a5c8b; }
+.agent-data .shuttle-icon::after { border-left: 6px solid #3a7a4a; }
+.agent-auth .shuttle-icon::after { border-left: 6px solid #7a5a2a; }
+
+/* Completed section divider */
+.weave-section-label {
+  padding: 12px 0 6px 132px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #a08660;
+  position: relative;
+  z-index: 2;
+}
+
+.weave-section-label::after {
+  content: '';
+  display: inline-block;
+  width: 60px;
+  height: 1px;
+  background: #c4a870;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+/* ─── The Gap — AskUserQuestion ─── */
+.weave-gap {
+  position: relative;
+  margin: 8px 0;
+  z-index: 10;
+}
+
+.gap-area {
+  display: flex;
+  align-items: stretch;
+  min-height: 80px;
+}
+
+.gap-label {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  justify-content: flex-end;
+}
+
+.gap-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gap-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c0392b;
+  animation: gapPulse 2s ease-in-out infinite;
+}
+
+.gap-indicator-dot:nth-child(2) { animation-delay: 0.3s; }
+.gap-indicator-dot:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes gapPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.gap-content {
+  flex: 1;
+  position: relative;
+  border: 2px dashed #c0392b;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(192,57,43,0.04) 0px, rgba(192,57,43,0.04) 16px,
+      transparent 16px, transparent 18px
+    ),
+    rgba(192,57,43,0.03);
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+/* Broken warp threads visible in gap */
+.gap-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 38px,
+    rgba(196,168,112,0.2) 38px, rgba(196,168,112,0.2) 40px
+  );
+  z-index: 0;
+}
+
+/* Dangling thread ends at top of gap */
+.gap-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 12px;
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 14px,
+    #c4a870 14px, #c4a870 16px,
+    transparent 16px, transparent 20px
+  );
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+  z-index: 0;
+}
+
+.gap-shuttle {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stopped shuttle */
+.shuttle-stopped {
+  width: 28px;
+  height: 12px;
+  border-radius: 10px 4px 4px 10px;
+  background: #8b3a3a;
+  position: relative;
+  opacity: 0.5;
+  animation: shuttleWobble 3s ease-in-out infinite;
+}
+
+@keyframes shuttleWobble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(2px) rotate(2deg); }
+  75% { transform: translateX(-2px) rotate(-2deg); }
+}
+
+/* Pattern Card Error */
+.pattern-error {
+  position: relative;
+  z-index: 1;
+}
+
+.pattern-error-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(192,57,43,0.12);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+
+.pattern-error-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c0392b;
+  animation: errorBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes errorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pattern-error-text {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c0392b;
+}
+
+.gap-question {
+  font-size: 12px;
+  color: #6b3030;
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.gap-options {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.gap-option {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px dashed #a08660;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6b5030;
+  text-align: center;
+  background: rgba(244,228,193,0.6);
+  line-height: 1.4;
+}
+
+.gap-option strong {
+  display: block;
+  font-size: 11px;
+  color: #4a3520;
+  margin-bottom: 2px;
+}
+
+.gap-waiting {
+  font-size: 10px;
+  color: #c0392b;
+  font-style: italic;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── In-Progress Rows (partially woven) ─── */
+.weft-partial .thread-fill {
+  background: linear-gradient(90deg,
+    var(--agent-color) 0%, var(--agent-color) var(--progress),
+    transparent var(--progress), transparent 100%
+  );
+}
+
+.weft-row.partial {
+  opacity: 0.7;
+}
+
+.weft-row.partial .weft-complete .thread-fill {
+  width: var(--progress, 60%);
+}
+
+/* Unwoven area — just bare warp threads */
+.weft-row.unwoven {
+  opacity: 0.25;
+}
+
+.weft-row.unwoven .weft-complete {
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 38px,
+    rgba(196,168,112,0.3) 38px, rgba(196,168,112,0.3) 40px
+  );
+}
+
+/* ─── Loom Legend ─── */
+.loom-legend {
+  margin: 30px 30px 40px;
+  padding: 16px 20px;
+  border: 1.5px solid #c4a870;
+  border-radius: 6px;
+  background: rgba(245,236,214,0.6);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 3;
+}
+
+.loom-legend h4 {
+  width: 100%;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8b6b3a;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(196,168,112,0.4);
+  padding-bottom: 6px;
+}
+
+.legend-swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #6b5030;
+}
+
+.swatch-color {
+  width: 20px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.swatch-ui { background: linear-gradient(90deg, #8b3a3a, #c05555, #8b3a3a); }
+.swatch-api { background: linear-gradient(90deg, #3a5c8b, #5580c0, #3a5c8b); }
+.swatch-data { background: linear-gradient(90deg, #3a7a4a, #55a068, #3a7a4a); }
+.swatch-auth { background: linear-gradient(90deg, #7a5a2a, #a07a45, #7a5a2a); }
+.swatch-warp { background: repeating-linear-gradient(90deg, #c4a870 0px, #c4a870 3px, transparent 3px, transparent 5px); }
+.swatch-gap { background: repeating-linear-gradient(90deg, rgba(192,57,43,0.3) 0px, rgba(192,57,43,0.3) 3px, transparent 3px, transparent 5px); border: 1px dashed #c0392b; }
+
+/* ─── Subtle Animation — Shuttle Movement ─── */
+@keyframes shuttlePass {
+  0% { transform: translateX(-10px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(10px); opacity: 0; }
+}
+
+.active-shuttle {
+  animation: shuttlePass 4s ease-in-out infinite;
+}
+
+.active-shuttle-reverse {
+  animation: shuttlePass 4s ease-in-out infinite reverse;
+}
+
+/* Thread tension animation */
+@keyframes threadTension {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(1.002); }
+}
+
+.weft-complete .thread-fill {
+  animation: threadTension 6s ease-in-out infinite;
+}
+
+/* ─── Progress Indicator ─── */
+.loom-progress {
+  margin: 0 30px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 3;
+}
+
+.progress-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b6b3a;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(196,168,112,0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 62%;
+  background: linear-gradient(90deg, #3a7a4a, #7a5a2a, #8b3a3a, #3a5c8b);
+  border-radius: 3px;
+  animation: progressShimmer 3s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.progress-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a3520;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v9</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as a Jacquard loom weaving a tapestry &mdash; the human&rsquo;s intent is encoded in a pattern card, agents are shuttles weaving weft threads, and gaps in the fabric represent questions needing answers. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Weaving Loom &mdash; warp threads (vertical timeline) carry structure, weft threads (horizontal agent passes) create the visible pattern. A punched pattern card at the top encodes human intent. Gaps in the weave show where the loom has paused, shuttle stopped mid-pass, waiting for the weaver to provide new instructions.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a Jacquard loom / tapestry weaving metaphor for human/agent orchestration. Warp threads run vertically as the timeline, weft threads weave horizontally as agent work. A punched pattern card at top represents human intent. Gaps in the weave represent AskUserQuestion moments where the shuttle has stopped. The scenario is building a collaboration tool.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="loom-container">
+      <div class="loom-frame">
+        <div class="loom-frame-grain-left"></div>
+        <div class="loom-frame-grain-right"></div>
+
+        <!-- Pattern Card — Human Intent -->
+        <div class="pattern-card">
+          <div class="pattern-card-title">Collaboration Tool</div>
+          <div class="pattern-card-desc">Real-time document editing with presence indicators, commenting threads, permission layers, and activity feeds. Four agent shuttles assigned to weave the pattern.</div>
+          <div class="punch-holes">
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole punched"></div>
+            <div class="punch-hole empty"></div>
+          </div>
+          <div class="punch-label">Pattern encoding: auth &bull; presence &bull; documents &bull; comments &bull; permissions &bull; feeds</div>
+        </div>
+
+        <!-- Loom Progress -->
+        <div class="loom-progress">
+          <span class="progress-label">Tapestry</span>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <span class="progress-pct">62%</span>
+        </div>
+
+        <!-- Weave Area -->
+        <div class="weave-area">
+          <!-- Warp threads (vertical timeline) -->
+          <div class="warp-threads">
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+            <div class="warp-thread"></div>
+          </div>
+
+          <!-- Weft Rows -->
+          <div class="weft-rows">
+
+            <!-- COMPLETED SECTION: Authentication -->
+            <div class="weave-section-label">Authentication Layer</div>
+
+            <div class="weft-row agent-auth">
+              <div class="weft-label">OAuth setup</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-auth">
+              <div class="weft-label">Session tokens</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-auth">
+              <div class="weft-label">Role middleware</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-auth">
+              <div class="weft-label">Permission gates</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+
+            <!-- COMPLETED SECTION: Data Layer -->
+            <div class="weave-section-label">Data Layer</div>
+
+            <div class="weft-row agent-data">
+              <div class="weft-label">Document schema</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-data">
+              <div class="weft-label">CRDT engine</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-data">
+              <div class="weft-label">Sync protocol</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-data">
+              <div class="weft-label">Conflict resolve</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-data">
+              <div class="weft-label">Version history</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+
+            <!-- COMPLETED SECTION: API -->
+            <div class="weave-section-label">API Surface</div>
+
+            <div class="weft-row agent-api">
+              <div class="weft-label">REST endpoints</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-api">
+              <div class="weft-label">WebSocket layer</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+            <div class="weft-row agent-api">
+              <div class="weft-label">Rate limiting</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+            </div>
+
+            <!-- IN-PROGRESS SECTION: UI Components -->
+            <div class="weave-section-label">UI Components</div>
+
+            <div class="weft-row agent-ui">
+              <div class="weft-label">Editor canvas</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon active-shuttle"></div></div>
+            </div>
+            <div class="weft-row agent-ui">
+              <div class="weft-label">Cursor presence</div>
+              <div class="weft-complete"><div class="thread-fill"></div></div>
+              <div class="weft-shuttle"><div class="shuttle-icon active-shuttle-reverse"></div></div>
+            </div>
+
+            <!-- THE GAP — AskUserQuestion -->
+            <div class="weave-gap">
+              <div class="gap-area">
+                <div class="gap-label">
+                  <div class="gap-indicator">
+                    <div class="gap-indicator-dot"></div>
+                    <div class="gap-indicator-dot"></div>
+                    <div class="gap-indicator-dot"></div>
+                  </div>
+                </div>
+                <div class="gap-content">
+                  <div class="pattern-error">
+                    <div class="pattern-error-badge">
+                      <div class="pattern-error-dot"></div>
+                      <span class="pattern-error-text">Pattern Card Error &mdash; Awaiting Weaver</span>
+                    </div>
+                  </div>
+                  <div class="gap-question">The comment threading system needs a decision: should replies be nested infinitely or capped at a fixed depth? The pattern card doesn&rsquo;t specify thread depth.</div>
+                  <div class="gap-options">
+                    <div class="gap-option">
+                      <strong>Flat + Mentions</strong>
+                      Single-level replies with @mentions for context
+                    </div>
+                    <div class="gap-option">
+                      <strong>Nested (3 deep)</strong>
+                      Three levels of nesting, then collapse to flat
+                    </div>
+                    <div class="gap-option">
+                      <strong>Infinite Nesting</strong>
+                      Reddit-style unlimited thread depth
+                    </div>
+                  </div>
+                  <div class="gap-waiting">Shuttle paused. Loom idle until the weaver provides new instructions&hellip;</div>
+                </div>
+                <div class="gap-shuttle">
+                  <div class="shuttle-stopped"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- UNWOVEN — Future work -->
+            <div class="weave-section-label">Comment Threads (blocked)</div>
+
+            <div class="weft-row unwoven agent-ui">
+              <div class="weft-label">Thread UI</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+            <div class="weft-row unwoven agent-ui">
+              <div class="weft-label">Reply nesting</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+            <div class="weft-row unwoven agent-api">
+              <div class="weft-label">Thread API</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+
+            <div class="weave-section-label">Activity Feed (queued)</div>
+
+            <div class="weft-row unwoven agent-ui">
+              <div class="weft-label">Feed layout</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+            <div class="weft-row unwoven agent-api">
+              <div class="weft-label">Event stream</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+            <div class="weft-row unwoven agent-data">
+              <div class="weft-label">Activity store</div>
+              <div class="weft-complete"></div>
+              <div class="weft-shuttle"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="loom-legend">
+          <h4>Loom Legend</h4>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-auth"></div>
+            <span>Auth Agent</span>
+          </div>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-data"></div>
+            <span>Data Agent</span>
+          </div>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-api"></div>
+            <span>API Agent</span>
+          </div>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-ui"></div>
+            <span>UI Agent</span>
+          </div>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-warp"></div>
+            <span>Warp (Timeline)</span>
+          </div>
+          <div class="legend-swatch">
+            <div class="swatch-color swatch-gap"></div>
+            <span>Gap (Awaiting Weaver)</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

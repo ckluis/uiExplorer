@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v9: Task Triage</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #0f0f1a; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Task Triage Layout ─── */
+.triage-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(160deg, #1a0f2e 0%, #0d1b3e 50%, #0a1628 100%);
+  color: #fff;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header bar */
+.triage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 24px;
+  flex-shrink: 0;
+}
+
+.triage-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.triage-streak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(230, 126, 34, 0.2));
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f39c12;
+}
+
+.streak-fire { font-size: 16px; }
+
+/* Progress section */
+.deck-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  width: 100%;
+  max-width: 340px;
+  flex-shrink: 0;
+}
+
+.deck-counter {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+.deck-counter span { color: #fff; }
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  border-radius: 4px;
+  width: 21.7%; /* 5 of 23 */
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  background: rgba(255,255,255,0.4);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.progress-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+}
+
+.progress-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.progress-stat-dot.fixed { background: #2ecc71; }
+.progress-stat-dot.deferred { background: #f39c12; }
+.progress-stat-dot.escalated { background: #e74c3c; }
+
+/* Card stack area */
+.card-stack-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  padding: 20px;
+  min-height: 0;
+}
+
+.card-stack {
+  position: relative;
+  width: 320px;
+  height: 420px;
+}
+
+/* Stacked cards */
+.triage-card {
+  position: absolute;
+  width: 320px;
+  background: #fff;
+  border-radius: 20px;
+  color: #1a1a2e;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.triage-card.card-4 { height: 380px; bottom: 24px; z-index: 1; transform: translateX(-50%) scale(0.88); opacity: 0.3; }
+.triage-card.card-3 { height: 390px; bottom: 16px; z-index: 2; transform: translateX(-50%) scale(0.92); opacity: 0.5; }
+.triage-card.card-2 { height: 400px; bottom: 8px; z-index: 3; transform: translateX(-50%) scale(0.96); opacity: 0.7; }
+.triage-card.card-1 { height: 410px; bottom: 0; z-index: 4; }
+
+/* Swipe hint animation */
+.triage-card.card-1 {
+  animation: swipe-hint 4s ease-in-out infinite;
+}
+
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  20% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-47%) rotate(2deg); }
+  30% { transform: translateX(-50%) rotate(0deg); }
+  35% { transform: translateX(-53%) rotate(-2deg); }
+  40% { transform: translateX(-50%) rotate(0deg); }
+}
+
+/* Card content */
+.card-priority {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+.priority-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.priority-badge.high { background: rgba(231, 76, 60, 0.12); color: #e74c3c; }
+.priority-badge.medium { background: rgba(243, 156, 18, 0.12); color: #e67e22; }
+.priority-badge.low { background: rgba(52, 152, 219, 0.12); color: #3498db; }
+
+.priority-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.card-issue-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+}
+
+.card-title {
+  padding: 0 20px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.card-description {
+  padding: 12px 20px 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.card-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 20px;
+  padding: 12px 14px;
+  background: #f8f8fa;
+  border-radius: 12px;
+}
+
+.card-source-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.card-source-icon.settings { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.card-source-icon.integration { background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; }
+.card-source-icon.billing { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; }
+.card-source-icon.security { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+.card-source-icon.api { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+
+.card-source-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-source-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+}
+
+.card-source-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Swipe indicators */
+.swipe-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 0 20px 16px;
+  margin-top: auto;
+}
+
+.swipe-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+}
+
+.swipe-hint svg {
+  width: 16px;
+  height: 16px;
+}
+
+.swipe-hint.defer { color: #f39c12; }
+.swipe-hint.fix { color: #2ecc71; }
+.swipe-hint.escalate { color: #e74c3c; }
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px 0 24px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-btn-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.action-btn-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+}
+
+.action-btn-circle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.action-btn-circle.defer { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+.action-btn-circle.undo { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); width: 44px; height: 44px; }
+.action-btn-circle.undo svg { width: 20px; height: 20px; }
+.action-btn-circle.fix { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; }
+.action-btn-circle.escalate { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+
+.action-btn-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.5);
+}
+
+/* Undo toast */
+.undo-toast {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(46, 204, 113, 0.95);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 50;
+}
+
+.undo-toast svg {
+  width: 18px;
+  height: 18px;
+}
+
+.undo-toast-action {
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Show toast on checkbox */
+#show-toast:checked ~ .window .undo-toast {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+/* Celebration state */
+.celebration-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #1a0f2e 0%, #0d1b3e 50%, #0a1628 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  z-index: 100;
+}
+
+.celebration-emoji {
+  font-size: 72px;
+  animation: bounce 0.6s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.celebration-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.celebration-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+}
+
+.celebration-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.celebration-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.celebration-stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #2ecc71;
+}
+
+.celebration-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.5);
+}
+
+#show-celebration:checked ~ .window .celebration-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#show-celebration:checked ~ .window .triage-app > *:not(.celebration-overlay) {
+  opacity: 0;
+}
+
+/* ─── Desktop mode (shows phone frame) ─── */
+#preview-web:checked ~ .window {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #1a0f2e 0%, #0d1b3e 50%, #0a1628 100%);
+}
+
+#preview-web:checked ~ .window .triage-app {
+  width: 375px;
+  height: 720px;
+  border-radius: 40px;
+  box-shadow: 0 0 0 12px #1a1a2e, 0 25px 60px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+#preview-web:checked ~ .window .triage-app::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 24px;
+  background: #1a1a2e;
+  border-radius: 12px;
+  z-index: 200;
+}
+
+#preview-web:checked ~ .window .triage-header {
+  padding-top: 44px;
+}
+
+/* Mobile mode - fits the window */
+#preview-mobile:checked ~ .window .triage-app {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#preview-mobile:checked ~ .window .triage-app::before {
+  display: none;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v9</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A Tinder-style swipeable card stack for batch processing configuration issues during downtime. Makes clearing a triage queue feel satisfying and gamified. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Task Triage" &mdash; Swipe Right to Fix.</strong> Full-screen card stack experience for mobile power users batch-processing during downtime (commute, waiting). Gamified with streak counters, deck depth indicators, and celebration states. Three-way decisioning: defer, fix, or escalate.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v9: "Task Triage" &mdash; Swipeable Card Stack</strong><br><br>
+        Tagline: "Swipe right to fix, left to defer."<br><br>
+        Core Concept: A Tinder-style swipeable card stack for batch processing issues during downtime. Gamified with streak counters and deck depth indicators. Makes batch processing feel satisfying.<br><br>
+        Exposure Method: Full-screen card stack experience, accessible from dedicated "Triage Mode" button.<br><br>
+        Presentation Style: Stacked cards (visible deck behind current card). Swipe gestures indicated visually. Current card prominently displayed.<br><br>
+        Target Persona: Mobile power user, batch-processing during downtime (commute, waiting). Wants to clear the deck efficiently.<br><br>
+        Platform: Mobile-first (375x720). Desktop shows phone frame.<br><br>
+        Key UI Elements:<br>
+        - Card stack with visible depth (3-4 cards showing behind)<br>
+        - Swipe gesture indicators (left Defer, right Fix, up Escalate)<br>
+        - Deck depth counter ("5 of 23 remaining")<br>
+        - Streak indicator ("7 in a row!")<br>
+        - Undo toast after each action<br>
+        - Priority badges on cards<br>
+        - Quick action buttons below card (for non-swipe users)<br>
+        - Progress bar showing deck progress<br>
+        - "Deck cleared!" celebration state<br><br>
+        Sample Cards in Stack:<br>
+        1. "Update API endpoint URL" &mdash; Priority: High<br>
+        2. "Review access permissions" &mdash; Priority: Medium<br>
+        3. "Acknowledge SSL warning" &mdash; Priority: Low<br>
+        4. "Reset failed webhook" &mdash; Priority: High<br>
+        5. "Update billing contact" &mdash; Priority: Medium<br><br>
+        Color/Mood: Gamified, energetic. Card aesthetic with shadows showing stack depth. Satisfying visual feedback on actions. Deep purple-to-blue gradient background.<br><br>
+        Interaction Patterns:<br>
+        - Radio buttons simulate current card in stack<br>
+        - CSS transforms for card positioning (translateX, rotate)<br>
+        - Checkbox states for swipe direction hints<br>
+        - Toast animation for undo feedback<br>
+        - Counter updates via :checked cascades<br><br>
+        Device Preview: Include switcher, but default to mobile view.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Toast visibility -->
+    <input type="checkbox" id="show-toast">
+
+    <!-- Celebration visibility -->
+    <input type="checkbox" id="show-celebration">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="triage-app">
+
+        <!-- Header -->
+        <div class="triage-header">
+          <div class="triage-title">Triage Mode</div>
+          <div class="triage-streak">
+            <span class="streak-fire">&#128293;</span>
+            <span>7 in a row!</span>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="deck-progress">
+          <div class="deck-counter"><span>5</span> of 23 remaining</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="progress-stats">
+            <div class="progress-stat">
+              <div class="progress-stat-dot fixed"></div>
+              <span>18 fixed</span>
+            </div>
+            <div class="progress-stat">
+              <div class="progress-stat-dot deferred"></div>
+              <span>3 deferred</span>
+            </div>
+            <div class="progress-stat">
+              <div class="progress-stat-dot escalated"></div>
+              <span>2 escalated</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Stack -->
+        <div class="card-stack-area">
+          <div class="card-stack">
+            <!-- Card 4 (back) -->
+            <div class="triage-card card-4">
+              <div class="card-priority">
+                <div class="priority-badge medium"><div class="priority-badge-dot"></div>Medium</div>
+              </div>
+              <div class="card-title">Update billing contact</div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="triage-card card-3">
+              <div class="card-priority">
+                <div class="priority-badge high"><div class="priority-badge-dot"></div>High</div>
+              </div>
+              <div class="card-title">Reset failed webhook</div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="triage-card card-2">
+              <div class="card-priority">
+                <div class="priority-badge low"><div class="priority-badge-dot"></div>Low</div>
+              </div>
+              <div class="card-title">Acknowledge SSL warning</div>
+            </div>
+
+            <!-- Card 1 (top / active) -->
+            <div class="triage-card card-1">
+              <div class="card-priority">
+                <div class="priority-badge high"><div class="priority-badge-dot"></div>High</div>
+                <div class="card-issue-type">Configuration</div>
+              </div>
+              <div class="card-title">Update API endpoint URL</div>
+              <div class="card-description">
+                The staging endpoint is still pointing to the deprecated v1 API. This is causing intermittent 404 errors in the integration sync.
+              </div>
+              <div class="card-source">
+                <div class="card-source-icon api">&#9881;</div>
+                <div class="card-source-info">
+                  <div class="card-source-label">Affected Setting</div>
+                  <div class="card-source-value">Settings &rarr; Integrations &rarr; API Config</div>
+                </div>
+              </div>
+              <div class="swipe-indicators">
+                <div class="swipe-hint defer">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Defer
+                </div>
+                <div class="swipe-hint escalate">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                  Escalate
+                </div>
+                <div class="swipe-hint fix">
+                  Fix
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <div class="action-btn">
+            <div class="action-btn-circle defer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="action-btn-label">Defer</div>
+          </div>
+          <div class="action-btn">
+            <label for="show-toast" class="action-btn-circle undo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </label>
+          </div>
+          <div class="action-btn">
+            <div class="action-btn-circle fix">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="action-btn-label">Fix Now</div>
+          </div>
+          <div class="action-btn">
+            <label for="show-celebration" class="action-btn-circle escalate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </label>
+            <div class="action-btn-label">Escalate</div>
+          </div>
+        </div>
+
+        <!-- Undo Toast -->
+        <div class="undo-toast">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Issue marked as fixed
+          <label for="show-toast" class="undo-toast-action">Undo</label>
+        </div>
+
+        <!-- Celebration Overlay -->
+        <div class="celebration-overlay">
+          <div class="celebration-emoji">&#127881;</div>
+          <div class="celebration-title">Deck Cleared!</div>
+          <div class="celebration-subtitle">Amazing work! You've triaged all pending issues.</div>
+          <div class="celebration-stats">
+            <div class="celebration-stat">
+              <div class="celebration-stat-value">18</div>
+              <div class="celebration-stat-label">Fixed</div>
+            </div>
+            <div class="celebration-stat">
+              <div class="celebration-stat-value">3</div>
+              <div class="celebration-stat-label">Deferred</div>
+            </div>
+            <div class="celebration-stat">
+              <div class="celebration-stat-value">2</div>
+              <div class="celebration-stat-label">Escalated</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

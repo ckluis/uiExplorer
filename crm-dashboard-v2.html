@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v2: Chat Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-prev { font-size: 12px; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── CRM Layout ─── */
+.crm { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #1a1a1a; font-size: 13px; }
+
+/* ─── Role Toggle Bar ─── */
+.role-bar { position: absolute; top: 0; left: 0; right: 0; height: 40px; background: #f8f8fa; border-bottom: 1px solid #e5e5ea; display: flex; align-items: center; justify-content: center; gap: 2px; z-index: 50; padding: 0 16px; }
+.role-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-right: 12px; }
+.role-btn { display: flex; align-items: center; padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #888; cursor: pointer; transition: all 0.2s; }
+.role-btn:hover { color: #555; background: rgba(0,0,0,0.04); }
+#role-solo:checked ~ .window .role-bar label[for="role-solo"],
+#role-lead:checked ~ .window .role-bar label[for="role-lead"],
+#role-admin:checked ~ .window .role-bar label[for="role-admin"] { background: #007aff; color: #fff; }
+
+.crm { padding-top: 40px; }
+
+/* ─── Channel List (Left) ─── */
+.channel-list { width: 220px; min-width: 220px; background: #f2f2f7; border-right: 1px solid #e5e5ea; display: flex; flex-direction: column; overflow: hidden; }
+.channel-search { padding: 12px; }
+.channel-search-input { width: 100%; padding: 7px 10px 7px 30px; border-radius: 8px; border: none; background: #e5e5ea; font-size: 12px; font-family: inherit; color: #333; outline: none; position: relative; }
+.search-wrap { position: relative; }
+.search-wrap::before { content: ""; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border: 2px solid #999; border-radius: 50%; z-index: 1; }
+.channel-scroll { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.channel-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; padding: 12px 8px 6px; }
+.channel-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: default; transition: background 0.15s; }
+.channel-item:hover { background: rgba(0,0,0,0.05); }
+.channel-item.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.channel-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.channel-info { flex: 1; min-width: 0; }
+.channel-name { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.channel-preview { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.channel-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.channel-time { font-size: 10px; color: #bbb; }
+.channel-badge { width: 18px; height: 18px; border-radius: 50%; background: #007aff; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.channel-status { width: 8px; height: 8px; border-radius: 50%; position: absolute; bottom: 0; right: 0; border: 2px solid #f2f2f7; }
+.avatar-wrap { position: relative; }
+.status-hot { background: #ff3b30; }
+.status-warm { background: #ff9500; }
+.status-cold { background: #8e8e93; }
+.status-closed { background: #34c759; }
+
+/* ─── Chat Feed (Center) ─── */
+.chat-area { flex: 1; display: flex; flex-direction: column; background: #fff; min-width: 0; }
+.chat-header { padding: 12px 20px; border-bottom: 1px solid #e5e5ea; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.chat-header-name { font-size: 15px; font-weight: 700; }
+.chat-header-status { font-size: 11px; color: #999; }
+.chat-header-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; }
+
+/* Pinned messages */
+.pinned-section { padding: 8px 20px; background: #fffbeb; border-bottom: 1px solid #fde68a; flex-shrink: 0; }
+.pinned-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #b45309; margin-bottom: 4px; }
+.pinned-item { font-size: 11px; color: #92400e; padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+.pinned-icon { font-size: 12px; }
+
+/* Messages */
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; }
+.msg { max-width: 75%; display: flex; flex-direction: column; }
+.msg-out { align-self: flex-end; }
+.msg-in { align-self: flex-start; }
+.msg-system { align-self: center; max-width: 85%; }
+.msg-bubble { padding: 8px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45; }
+.msg-out .msg-bubble { background: #007aff; color: #fff; border-bottom-right-radius: 4px; }
+.msg-in .msg-bubble { background: #e9e9eb; color: #1a1a1a; border-bottom-left-radius: 4px; }
+.msg-system .msg-bubble { background: transparent; color: #999; font-size: 11px; text-align: center; padding: 6px 12px; }
+.msg-system .msg-bubble .sys-icon { display: inline-block; margin-right: 4px; }
+.msg-time { font-size: 10px; color: #bbb; margin-top: 2px; padding: 0 4px; }
+.msg-out .msg-time { text-align: right; }
+.msg-sender { font-size: 10px; font-weight: 600; color: #999; margin-bottom: 2px; padding: 0 4px; }
+
+/* Bot / Action Cards */
+.msg-bot { align-self: center; max-width: 88%; }
+.msg-bot .msg-bubble { background: #f0f4ff; border: 1px solid #d4ddff; border-radius: 12px; padding: 12px 16px; color: #1a1a1a; }
+.bot-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #007aff; margin-bottom: 6px; }
+.bot-card { display: flex; flex-direction: column; gap: 4px; }
+.bot-card-row { display: flex; justify-content: space-between; font-size: 12px; }
+.bot-card-row .label { color: #888; }
+.bot-card-row .value { font-weight: 600; color: #1a1a1a; }
+.bot-stage-change { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 4px; }
+.bot-stage-change .from { color: #999; text-decoration: line-through; }
+.bot-stage-change .arrow { color: #bbb; }
+.bot-stage-change .to { color: #007aff; font-weight: 600; }
+
+/* Quick replies */
+.chat-footer { padding: 12px 20px; border-top: 1px solid #e5e5ea; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+.quick-replies { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick-pill { padding: 6px 14px; border-radius: 16px; border: 1px solid #d1d1d6; font-size: 12px; font-weight: 500; color: #007aff; cursor: default; transition: background 0.15s; }
+.quick-pill:hover { background: #f0f4ff; }
+.chat-input-row { display: flex; gap: 8px; align-items: center; }
+.chat-input { flex: 1; padding: 9px 14px; border-radius: 20px; border: 1px solid #d1d1d6; font-size: 13px; font-family: inherit; outline: none; background: #f8f8fa; color: #333; }
+.chat-send { width: 32px; height: 32px; border-radius: 50%; background: #007aff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-send svg { width: 14px; height: 14px; }
+
+/* ─── Context Panel (Right) ─── */
+.context-panel { width: 300px; min-width: 300px; border-left: 1px solid #e5e5ea; background: #fafafa; display: flex; flex-direction: column; overflow-y: auto; }
+.profile-card { padding: 24px 20px; text-align: center; border-bottom: 1px solid #e5e5ea; }
+.profile-avatar { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #007aff, #5856d6); }
+.profile-name { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.profile-role { font-size: 12px; color: #999; margin-top: 2px; }
+.profile-strength { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 10px; }
+.profile-strength-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #999; margin-right: 6px; }
+.strength-bar { width: 20px; height: 6px; border-radius: 3px; background: #e5e5ea; }
+.strength-bar.filled { background: #007aff; }
+.profile-tags { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.profile-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #f0f0f5; color: #666; font-weight: 500; }
+
+.context-section { padding: 16px 20px; border-bottom: 1px solid #e5e5ea; }
+.context-section h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 10px; }
+.property-item { display: flex; gap: 10px; padding: 8px 0; }
+.property-thumb { width: 48px; height: 36px; border-radius: 6px; flex-shrink: 0; }
+.property-info { min-width: 0; }
+.property-addr { font-size: 12px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.property-detail { font-size: 11px; color: #999; }
+.quick-actions { display: flex; flex-direction: column; gap: 6px; }
+.action-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e5ea; font-size: 12px; font-weight: 500; color: #1a1a1a; cursor: default; text-align: left; display: flex; align-items: center; gap: 8px; transition: background 0.15s; }
+.action-btn:hover { background: #f0f4ff; border-color: #c4d4ff; }
+.action-icon { font-size: 14px; }
+
+.contact-details { display: flex; flex-direction: column; gap: 6px; }
+.contact-row { display: flex; justify-content: space-between; font-size: 12px; }
+.contact-row .label { color: #999; }
+.contact-row .value { color: #1a1a1a; font-weight: 500; }
+
+/* ─── Team Lead Mode ─── */
+.team-toggle { display: none; padding: 8px 12px; }
+.team-toggle-inner { display: flex; background: #e5e5ea; border-radius: 8px; overflow: hidden; }
+.team-toggle-btn { flex: 1; padding: 6px; text-align: center; font-size: 10px; font-weight: 600; color: #888; cursor: default; border-radius: 6px; margin: 2px; }
+.team-toggle-btn.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+.team-inbox-items { display: none; }
+.agent-initials { width: 18px; height: 18px; border-radius: 4px; background: #5856d6; color: #fff; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.unassigned { position: relative; }
+.unassigned::after { content: ""; position: absolute; top: -1px; right: -1px; width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; border: 2px solid #f2f2f7; animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Team Lead overrides */
+#role-lead:checked ~ .window .team-toggle { display: block; }
+#role-lead:checked ~ .window .team-inbox-items { display: block; }
+#role-lead:checked ~ .window .team-inbox-label { display: block; }
+
+/* ─── Brokerage Admin Mode ─── */
+.agent-group { display: none; }
+.agent-group-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+.agent-group-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; }
+.agent-group-name { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+.agent-group-count { font-size: 10px; color: #999; margin-left: auto; }
+.agent-group .channel-item { padding-left: 24px; }
+
+.reassign-btn { display: none; padding: 8px 12px; border-radius: 8px; border: 1px solid #ff9500; font-size: 12px; font-weight: 600; color: #ff9500; cursor: default; text-align: center; transition: background 0.15s; }
+.reassign-btn:hover { background: rgba(255, 149, 0, 0.08); }
+.admin-stats { display: none; }
+.admin-stat { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; }
+.admin-stat .label { color: #999; }
+.admin-stat .value { font-weight: 600; color: #1a1a1a; }
+
+#role-admin:checked ~ .window .agent-group { display: block; }
+#role-admin:checked ~ .window .solo-contacts { display: none; }
+#role-admin:checked ~ .window .reassign-btn { display: block; }
+#role-admin:checked ~ .window .admin-stats { display: block; }
+#role-admin:checked ~ .window .team-toggle { display: none; }
+#role-admin:checked ~ .window .team-inbox-items { display: none; }
+#role-admin:checked ~ .window .team-inbox-label { display: none; }
+
+/* ─── Mobile Overrides ─── */
+#preview-mobile:checked ~ .window .channel-list { display: none; }
+#preview-mobile:checked ~ .window .context-panel { display: none; }
+#preview-mobile:checked ~ .window .chat-area { min-width: 100%; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v2</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores a conversational CRM metaphor for real estate agents where every client relationship is a chat thread. CRM actions (stage changes, follow-ups, deal milestones) appear as inline bot messages within the conversation flow, reducing context switching between communication and pipeline management.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Chat Flow"</strong> &mdash; Your CRM talks back. A group-chat metaphor (Slack/iMessage) where relationships are conversation threads and CRM actions happen as inline messages. Three-column layout: channel list, chat feed, context panel.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v2: "Chat Flow" — Conversational CRM</strong><br><br>
+        Tagline: "Your CRM talks back."<br>
+        Core metaphor: A group chat app like Slack/iMessage — every relationship is a conversation thread, CRM actions happen as inline messages.<br><br>
+        Layout: Three-column layout. Left (~220px): channel list with contact names grouped by status (Hot/Warm/Cold/Closed) with unread-style badges. Center (~500px): chat-like feed with chronological mix of real communications and system events styled as bot messages. Right (~300px): context panel with contact profile card, property interests, quick-action buttons.<br><br>
+        Key UI elements: Message bubbles (outgoing right-aligned blue, incoming left-aligned gray, system events centered muted). Inline action cards as bot messages. Channel list with colored dot status indicators. Contact profile card with relationship strength meter. Quick-reply pill buttons. Pinned messages for deal milestones.<br><br>
+        Color/mood: Clean white and light gray like iMessage. Electric blue accent for outgoing. Fast, casual, low-friction.<br><br>
+        Role toggle: Solo Agent sees personal conversations. Team Lead gains "My Conversations / Team Inbox" toggle with agent initials. Brokerage Admin sees two-tier agent/conversation hierarchy with reassign and stats.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; View origin prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Role radios -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-lead">
+    <input type="radio" name="role" id="role-admin">
+
+    <!-- Preview radios -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <!-- Role toggle bar -->
+      <div class="role-bar">
+        <span class="role-label">View as</span>
+        <label for="role-solo" class="role-btn">Solo Agent</label>
+        <label for="role-lead" class="role-btn">Team Lead</label>
+        <label for="role-admin" class="role-btn">Brokerage Admin</label>
+      </div>
+
+      <div class="crm">
+        <!-- ─── Left: Channel List ─── -->
+        <div class="channel-list">
+          <div class="channel-search">
+            <div class="search-wrap">
+              <input type="text" class="channel-search-input" placeholder="Search contacts..." disabled>
+            </div>
+          </div>
+
+          <!-- Team Lead toggle -->
+          <div class="team-toggle">
+            <div class="team-toggle-inner">
+              <div class="team-toggle-btn active">My Conversations</div>
+              <div class="team-toggle-btn">Team Inbox</div>
+            </div>
+          </div>
+
+          <div class="channel-scroll">
+            <!-- Solo Agent contacts -->
+            <div class="solo-contacts">
+              <div class="channel-group-label" style="color:#ff3b30;">Hot Leads</div>
+
+              <div class="channel-item active">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#007aff,#5856d6);">MR</div>
+                  <div class="channel-status status-hot"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Maria Rodriguez</div>
+                  <div class="channel-preview">Sounds great, let's do 2pm!</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">2:14pm</span>
+                  <span class="channel-badge">3</span>
+                </div>
+              </div>
+
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#ff3b30,#ff9500);">JT</div>
+                  <div class="channel-status status-hot"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">James Thornton</div>
+                  <div class="channel-preview">Can we see the Oak St place?</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">1:45pm</span>
+                </div>
+              </div>
+
+              <div class="channel-group-label" style="color:#ff9500;">Warm</div>
+
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#34c759,#30d158);">SP</div>
+                  <div class="channel-status status-warm"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Sarah Park</div>
+                  <div class="channel-preview">I'll think about the offer...</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">11:20am</span>
+                </div>
+              </div>
+
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#ff9500,#ffcc00);">DW</div>
+                  <div class="channel-status status-warm"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">David Williams</div>
+                  <div class="channel-preview">Pre-approval came through</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">Yesterday</span>
+                </div>
+              </div>
+
+              <div class="channel-group-label" style="color:#8e8e93;">Cold</div>
+
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#8e8e93,#636366);">LC</div>
+                  <div class="channel-status status-cold"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Lisa Chen</div>
+                  <div class="channel-preview">Maybe next quarter</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">Jan 24</span>
+                </div>
+              </div>
+
+              <div class="channel-group-label" style="color:#34c759;">Closed</div>
+
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#34c759,#248a3d);">RK</div>
+                  <div class="channel-status status-closed"></div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Robert Kim</div>
+                  <div class="channel-preview">Closing docs signed!</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">Jan 18</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Lead: Team Inbox items -->
+            <div class="team-inbox-label" style="display:none;">
+              <div class="channel-group-label">Team Inbox</div>
+            </div>
+            <div class="team-inbox-items">
+              <div class="channel-item unassigned">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:#aaa;">??</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">New Web Lead</div>
+                  <div class="channel-preview">Zillow inquiry &mdash; 3br in NE</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">Just now</span>
+                </div>
+              </div>
+              <div class="channel-item">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#af52de,#5856d6);">AJ</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Amy Jensen</div>
+                  <div class="channel-preview">Needs follow-up &mdash; showing</div>
+                </div>
+                <div class="channel-meta">
+                  <span class="channel-time">3:01pm</span>
+                  <span class="agent-initials">KL</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin: Agent groups -->
+            <div class="agent-group">
+              <div class="agent-group-header">
+                <div class="agent-group-avatar" style="background:#007aff;">KL</div>
+                <div class="agent-group-name">Karen Lee</div>
+                <div class="agent-group-count">4 active</div>
+              </div>
+              <div class="channel-item" style="padding-left:24px;">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#007aff,#5856d6);font-size:9px;">MR</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Maria Rodriguez</div>
+                  <div class="channel-preview">Sounds great, let's do 2pm!</div>
+                </div>
+                <div class="channel-meta"><span class="channel-time">2:14pm</span></div>
+              </div>
+              <div class="channel-item" style="padding-left:24px;">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#ff3b30,#ff9500);font-size:9px;">JT</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">James Thornton</div>
+                  <div class="channel-preview">Can we see the Oak St place?</div>
+                </div>
+                <div class="channel-meta"><span class="channel-time">1:45pm</span></div>
+              </div>
+            </div>
+            <div class="agent-group">
+              <div class="agent-group-header">
+                <div class="agent-group-avatar" style="background:#ff9500;">MT</div>
+                <div class="agent-group-name">Mike Torres</div>
+                <div class="agent-group-count">3 active</div>
+              </div>
+              <div class="channel-item" style="padding-left:24px;">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#34c759,#30d158);font-size:9px;">SP</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">Sarah Park</div>
+                  <div class="channel-preview">I'll think about the offer...</div>
+                </div>
+                <div class="channel-meta"><span class="channel-time">11:20am</span></div>
+              </div>
+            </div>
+            <div class="agent-group">
+              <div class="agent-group-header">
+                <div class="agent-group-avatar" style="background:#5856d6;">JN</div>
+                <div class="agent-group-name">Jessica Nguyen</div>
+                <div class="agent-group-count">2 active</div>
+              </div>
+              <div class="channel-item" style="padding-left:24px;">
+                <div class="avatar-wrap">
+                  <div class="channel-avatar" style="background:linear-gradient(135deg,#ff9500,#ffcc00);font-size:9px;">DW</div>
+                </div>
+                <div class="channel-info">
+                  <div class="channel-name">David Williams</div>
+                  <div class="channel-preview">Pre-approval came through</div>
+                </div>
+                <div class="channel-meta"><span class="channel-time">Yesterday</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Center: Chat Feed ─── -->
+        <div class="chat-area">
+          <div class="chat-header">
+            <div class="channel-avatar" style="background:linear-gradient(135deg,#007aff,#5856d6);width:36px;height:36px;font-size:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0;">MR</div>
+            <div>
+              <div class="chat-header-name">Maria Rodriguez</div>
+              <div class="chat-header-status">Active now &middot; First contact 3 weeks ago</div>
+            </div>
+            <div class="chat-header-tag">Hot Lead</div>
+          </div>
+
+          <!-- Pinned milestones -->
+          <div class="pinned-section">
+            <div class="pinned-label">Pinned Milestones</div>
+            <div class="pinned-item"><span class="pinned-icon">&#x1f3e0;</span> Showing scheduled: 742 Evergreen Terrace &mdash; Tomorrow 2:00pm</div>
+            <div class="pinned-item"><span class="pinned-icon">&#x2705;</span> Pre-approved: $485,000 &mdash; First National Bank</div>
+          </div>
+
+          <div class="chat-messages">
+            <!-- Day separator -->
+            <div class="msg msg-system"><div class="msg-bubble">January 28, 2026</div></div>
+
+            <div class="msg msg-in">
+              <div class="msg-sender">Maria Rodriguez</div>
+              <div class="msg-bubble">Hi! I saw your listing on the 3-bed on Maple Drive. Is it still available?</div>
+              <div class="msg-time">9:32am</div>
+            </div>
+
+            <div class="msg msg-out">
+              <div class="msg-bubble">Hi Maria! Yes, 1847 Maple Drive is still on the market. It's a beautiful 3BR/2BA, listed at $425,000. Would you like to schedule a showing?</div>
+              <div class="msg-time">9:45am</div>
+            </div>
+
+            <!-- Bot: new lead captured -->
+            <div class="msg msg-bot">
+              <div class="msg-bubble">
+                <div class="bot-label">CRM Bot</div>
+                <div class="bot-card">
+                  <div class="bot-card-row"><span class="label">New lead captured</span><span class="value">Maria Rodriguez</span></div>
+                  <div class="bot-card-row"><span class="label">Source</span><span class="value">Zillow Inquiry</span></div>
+                  <div class="bot-card-row"><span class="label">Interest</span><span class="value">1847 Maple Dr &mdash; $425K</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg msg-in">
+              <div class="msg-bubble">That sounds perfect. I'm pre-approved up to $485K through First National. Could we see it this week?</div>
+              <div class="msg-time">10:02am</div>
+            </div>
+
+            <div class="msg msg-out">
+              <div class="msg-bubble">Absolutely! I also have another property that just hit the market that you might love &mdash; 742 Evergreen Terrace. 3BR/2.5BA, $459K, with a gorgeous backyard. Want to see both?</div>
+              <div class="msg-time">10:15am</div>
+            </div>
+
+            <div class="msg msg-in">
+              <div class="msg-bubble">Oh yes, both sound great! I'm flexible Thursday or Friday afternoon.</div>
+              <div class="msg-time">10:22am</div>
+            </div>
+
+            <!-- Bot: stage change -->
+            <div class="msg msg-bot">
+              <div class="msg-bubble">
+                <div class="bot-label">Stage Updated</div>
+                <div class="bot-stage-change">
+                  <span class="from">New Lead</span>
+                  <span class="arrow">&rarr;</span>
+                  <span class="to">Showing Scheduled</span>
+                </div>
+                <div class="bot-card" style="margin-top:8px;">
+                  <div class="bot-card-row"><span class="label">Showing</span><span class="value">Thu 1/29, 2:00pm</span></div>
+                  <div class="bot-card-row"><span class="label">Properties</span><span class="value">1847 Maple Dr, 742 Evergreen</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg msg-out">
+              <div class="msg-bubble">Perfect! I've got you down for Thursday at 2pm. We'll start at Maple Drive and then head to Evergreen Terrace. I'll send you the details.</div>
+              <div class="msg-time">10:30am</div>
+            </div>
+
+            <!-- Day separator -->
+            <div class="msg msg-system"><div class="msg-bubble">January 29, 2026</div></div>
+
+            <!-- Bot: showing reminder -->
+            <div class="msg msg-system">
+              <div class="msg-bubble"><span class="sys-icon">&#x1f514;</span> Showing reminder sent to Maria &mdash; Today at 2:00pm</div>
+            </div>
+
+            <div class="msg msg-in">
+              <div class="msg-bubble">Just left the Maple Drive house. It's nice but the kitchen felt small. I LOVED 742 Evergreen though! The yard is exactly what we need for the kids.</div>
+              <div class="msg-time">3:45pm</div>
+            </div>
+
+            <div class="msg msg-out">
+              <div class="msg-bubble">So glad you loved Evergreen! It's getting a lot of interest &mdash; the sellers might have another offer coming in. Want me to start putting together numbers for an offer?</div>
+              <div class="msg-time">3:52pm</div>
+            </div>
+
+            <!-- Day separator -->
+            <div class="msg msg-system"><div class="msg-bubble">Today</div></div>
+
+            <div class="msg msg-in">
+              <div class="msg-bubble">Yes, let's do it! What do you think we should offer? We don't want to lose this one.</div>
+              <div class="msg-time">1:50pm</div>
+            </div>
+
+            <div class="msg msg-out">
+              <div class="msg-bubble">Given the comps in the area and the seller's situation, I'd recommend coming in at $449K with an escalation clause up to $465K. That keeps you under budget with room for closing costs.</div>
+              <div class="msg-time">2:05pm</div>
+            </div>
+
+            <div class="msg msg-in">
+              <div class="msg-bubble">Sounds great, let's do 2pm tomorrow to go over everything and sign?</div>
+              <div class="msg-time">2:14pm</div>
+            </div>
+          </div>
+
+          <!-- Quick replies & input -->
+          <div class="chat-footer">
+            <div class="quick-replies">
+              <div class="quick-pill">Sounds perfect!</div>
+              <div class="quick-pill">I'll prepare the offer docs</div>
+              <div class="quick-pill">Let me check my calendar</div>
+              <div class="quick-pill">Send comp analysis</div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-input" placeholder="Type a message..." disabled>
+              <div class="chat-send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Right: Context Panel ─── -->
+        <div class="context-panel">
+          <div class="profile-card">
+            <div class="profile-avatar">MR</div>
+            <div class="profile-name">Maria Rodriguez</div>
+            <div class="profile-role">Buyer &middot; First-time homeowner</div>
+            <div class="profile-strength">
+              <span class="profile-strength-label">Relationship</span>
+              <div class="strength-bar filled"></div>
+              <div class="strength-bar filled"></div>
+              <div class="strength-bar filled"></div>
+              <div class="strength-bar filled"></div>
+              <div class="strength-bar"></div>
+            </div>
+            <div class="profile-tags">
+              <span class="profile-tag">Pre-Approved</span>
+              <span class="profile-tag">3BR+</span>
+              <span class="profile-tag">Family</span>
+            </div>
+          </div>
+
+          <div class="context-section">
+            <h3>Contact Details</h3>
+            <div class="contact-details">
+              <div class="contact-row"><span class="label">Phone</span><span class="value">(503) 555-0147</span></div>
+              <div class="contact-row"><span class="label">Email</span><span class="value">maria.r@email.com</span></div>
+              <div class="contact-row"><span class="label">Budget</span><span class="value">$400K &ndash; $485K</span></div>
+              <div class="contact-row"><span class="label">Timeline</span><span class="value">Within 60 days</span></div>
+              <div class="contact-row"><span class="label">Source</span><span class="value">Zillow</span></div>
+            </div>
+          </div>
+
+          <div class="context-section">
+            <h3>Property Interests</h3>
+            <div class="property-item">
+              <div class="property-thumb" style="background:linear-gradient(135deg,#34c759,#007aff);border-radius:6px;"></div>
+              <div class="property-info">
+                <div class="property-addr">742 Evergreen Terrace</div>
+                <div class="property-detail">3BR/2.5BA &middot; $459,000 &middot; Loved it</div>
+              </div>
+            </div>
+            <div class="property-item">
+              <div class="property-thumb" style="background:linear-gradient(135deg,#8e8e93,#636366);border-radius:6px;"></div>
+              <div class="property-info">
+                <div class="property-addr">1847 Maple Drive</div>
+                <div class="property-detail">3BR/2BA &middot; $425,000 &middot; Too small kitchen</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="context-section">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions">
+              <div class="action-btn"><span class="action-icon">&#x1f4dd;</span> Draft Offer</div>
+              <div class="action-btn"><span class="action-icon">&#x1f4c5;</span> Schedule Meeting</div>
+              <div class="action-btn"><span class="action-icon">&#x1f4e7;</span> Send Comp Report</div>
+              <div class="action-btn"><span class="action-icon">&#x1f4de;</span> Call Maria</div>
+              <div class="reassign-btn">&#x1f504; Reassign to Another Agent</div>
+            </div>
+          </div>
+
+          <!-- Admin stats -->
+          <div class="context-section admin-stats">
+            <h3>Agent Stats &mdash; Karen Lee</h3>
+            <div class="contact-details">
+              <div class="admin-stat"><span class="label">Active leads</span><span class="value">4</span></div>
+              <div class="admin-stat"><span class="label">Avg response time</span><span class="value">12 min</span></div>
+              <div class="admin-stat"><span class="label">Close rate (90d)</span><span class="value">34%</span></div>
+              <div class="admin-stat"><span class="label">Pipeline value</span><span class="value">$1.82M</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

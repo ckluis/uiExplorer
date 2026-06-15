@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Client — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Email Client ─── */
+.email-app { display: flex; height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; color: #1a1a1a; position: relative; }
+
+/* Folder pane */
+.folder-pane { width: 200px; min-width: 200px; background: #f7f7f8; border-right: 1px solid #e5e5e7; padding: 16px 0; display: flex; flex-direction: column; }
+.folder-pane .app-title { font-size: 15px; font-weight: 700; padding: 0 16px 12px; color: #1a1a1a; }
+.compose-btn { display: block; margin: 0 12px 12px; padding: 10px 16px; background: #5b6abf; color: #fff; font-size: 13px; font-weight: 600; border-radius: 8px; text-align: center; cursor: pointer; transition: background 0.15s; }
+.compose-btn:hover { background: #4a59ae; }
+.folder-item { display: flex; align-items: center; padding: 8px 16px; cursor: pointer; color: #555; font-size: 13px; transition: background 0.15s; }
+.folder-item:hover { background: #eeeef0; }
+.folder-item .folder-icon { width: 18px; height: 18px; margin-right: 10px; opacity: 0.6; }
+.folder-item .folder-name { flex: 1; }
+.folder-item .folder-count { font-size: 11px; font-weight: 600; color: #fff; background: #5b6abf; border-radius: 10px; padding: 1px 7px; }
+input[name="folder"]:checked + .folder-item { background: #e8e8f0; color: #1a1a1a; font-weight: 600; }
+input[name="folder"]:checked + .folder-item .folder-icon { opacity: 1; }
+
+/* Message list pane */
+.message-list-pane { width: 340px; min-width: 340px; border-right: 1px solid #e5e5e7; display: flex; flex-direction: column; background: #fff; }
+
+/* Search bar */
+.search-bar { padding: 12px 16px; border-bottom: 1px solid #e5e5e7; }
+.search-input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #e0e0e3; border-radius: 8px; font-size: 13px; font-family: inherit; color: #333; background: #f7f7f8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat; transition: border-color 0.15s; }
+.search-input:focus { outline: none; border-color: #5b6abf; background-color: #fff; }
+
+.message-list-header { padding: 12px 16px 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+.msg-count { font-size: 11px; color: #999; font-weight: 400; }
+.message-list { flex: 1; overflow-y: auto; }
+
+.message-item { display: flex; align-items: flex-start; padding: 12px 16px; border-bottom: 1px solid #f0f0f2; cursor: pointer; transition: background 0.15s; gap: 10px; }
+.message-item:hover { background: #f7f7f9; }
+
+.msg-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
+.avatar-sc { background: #e74c3c; } .avatar-ar { background: #3498db; } .avatar-jl { background: #2ecc71; }
+.avatar-mt { background: #f39c12; } .avatar-ck { background: #9b59b6; } .avatar-pj { background: #1abc9c; }
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.msg-sender { font-weight: 600; font-size: 13px; color: #1a1a1a; }
+.msg-time { font-size: 11px; color: #999; flex-shrink: 0; }
+.msg-subject { font-size: 13px; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-preview { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-unread .msg-sender { color: #000; }
+.msg-unread .msg-subject { font-weight: 600; }
+
+/* Thread indicator */
+.msg-thread { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #5b6abf; background: rgba(91,106,191,0.08); padding: 1px 6px; border-radius: 3px; margin-left: 6px; font-weight: 500; }
+
+.star-label { flex-shrink: 0; cursor: pointer; color: #ccc; margin-top: 2px; transition: color 0.15s; }
+.star-label:hover { color: #f1c40f; }
+.star-label svg { width: 16px; height: 16px; }
+input[id^="star-"]:checked + .message-item .star-label { color: #f1c40f; }
+input[id^="star-"]:checked + .message-item .star-label svg { fill: #f1c40f; }
+
+input[name="message"]:checked + input[id^="star-"] + .message-item { background: #eef0ff; }
+
+/* Reading pane */
+.reading-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: #fafafa; }
+.reading-header { padding: 24px 28px 20px; border-bottom: 1px solid #e5e5e7; background: #fff; }
+.reading-subject { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px; }
+.reading-meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #666; }
+.reading-sender-name { font-weight: 600; color: #1a1a1a; }
+.reading-date { color: #999; font-size: 12px; }
+.reading-body { padding: 24px 28px; font-size: 14px; line-height: 1.7; color: #333; }
+.reading-body p { margin-bottom: 16px; }
+
+/* Thread messages in reading pane */
+.thread-msg { border-top: 1px solid #e5e5e7; padding: 20px 28px; }
+.thread-msg .thread-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; }
+.thread-msg .thread-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; }
+.thread-msg .thread-sender { font-weight: 600; color: #1a1a1a; }
+.thread-msg .thread-date { font-size: 12px; color: #999; }
+.thread-msg .thread-body { font-size: 14px; line-height: 1.7; color: #555; padding-left: 38px; }
+.thread-msg .thread-body p { margin-bottom: 12px; }
+.thread-collapsed { background: #f9f9fb; padding: 12px 28px; border-top: 1px solid #e5e5e7; font-size: 12px; color: #888; cursor: pointer; }
+
+.reading-content { display: none; }
+#msg-1:checked ~ .reading-pane .reading-content.rc-1 { display: block; }
+#msg-2:checked ~ .reading-pane .reading-content.rc-2 { display: block; }
+#msg-3:checked ~ .reading-pane .reading-content.rc-3 { display: block; }
+#msg-4:checked ~ .reading-pane .reading-content.rc-4 { display: block; }
+#msg-5:checked ~ .reading-pane .reading-content.rc-5 { display: block; }
+#msg-6:checked ~ .reading-pane .reading-content.rc-6 { display: block; }
+.reading-content.rc-1 { display: block; }
+
+input[name="message"], input[name="folder"], input[id^="star-"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* Compose Overlay */
+#compose-toggle { position: absolute; opacity: 0; pointer-events: none; }
+.compose-overlay { position: absolute; bottom: 0; right: 0; width: 480px; height: 420px; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08); display: none; flex-direction: column; z-index: 50; }
+#compose-toggle:checked ~ .compose-overlay { display: flex; }
+.compose-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #2c2c3a; color: #fff; border-radius: 12px 12px 0 0; font-size: 14px; font-weight: 600; }
+.compose-close { cursor: pointer; color: rgba(255,255,255,0.7); font-size: 18px; }
+.compose-close:hover { color: #fff; }
+.compose-fields { padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 8px; }
+.compose-field { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.compose-field span { color: #999; min-width: 40px; }
+.compose-field .field-input { flex: 1; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; color: #333; }
+.compose-body-area { flex: 1; padding: 16px; font-size: 14px; line-height: 1.6; color: #666; font-style: italic; }
+.compose-footer { padding: 12px 16px; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+.send-btn { padding: 8px 24px; background: #5b6abf; color: #fff; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; }
+.send-btn:hover { background: #4a59ae; }
+
+/* ─── Mobile ─── */
+#preview-mobile:checked ~ .window .folder-pane { display: none; }
+#preview-mobile:checked ~ .window .message-list-pane { width: 100%; min-width: 100%; }
+#preview-mobile:checked ~ .window .reading-pane { display: none; }
+#preview-mobile:checked ~ .window .compose-overlay { width: 100%; border-radius: 0; height: 100%; }
+#preview-mobile:checked ~ .window .search-input { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Email Client</h1>
+      <span class="exp-version">v3</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds conversation threading in the reading pane, a search bar above the message list, folder switching visual states, and thread count indicators in the message list.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v3: Add conversation threading to the reading pane so threaded messages show multiple replies stacked vertically. Add a search bar at the top of the message list. Show thread count badges next to threaded message subjects. Add message count display in the list header.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="email-client-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Formatting toolbar</span>
+        </a>
+        <a href="email-client-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Compact mode</span>
+        </a>
+        <a href="email-client-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Conversation threading</span>
+        </a>
+        <a href="email-client-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Star/flag checkboxes</span>
+        </a>
+        <a href="email-client-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 3-pane layout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="email-app">
+        <input type="radio" name="message" id="msg-1" checked>
+        <input type="checkbox" id="star-1">
+        <input type="radio" name="message" id="msg-2">
+        <input type="checkbox" id="star-2">
+        <input type="radio" name="message" id="msg-3">
+        <input type="checkbox" id="star-3">
+        <input type="radio" name="message" id="msg-4">
+        <input type="checkbox" id="star-4">
+        <input type="radio" name="message" id="msg-5">
+        <input type="checkbox" id="star-5">
+        <input type="radio" name="message" id="msg-6">
+        <input type="checkbox" id="star-6">
+        <input type="checkbox" id="compose-toggle">
+
+        <div class="folder-pane">
+          <div class="app-title">Mail</div>
+          <label for="compose-toggle" class="compose-btn">Compose</label>
+          <input type="radio" name="folder" id="folder-inbox" checked>
+          <label for="folder-inbox" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 8 12 14 22 8"/></svg><span class="folder-name">Inbox</span><span class="folder-count">3</span></label>
+          <input type="radio" name="folder" id="folder-starred">
+          <label for="folder-starred" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="folder-name">Starred</span></label>
+          <input type="radio" name="folder" id="folder-sent">
+          <label for="folder-sent" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span class="folder-name">Sent</span></label>
+          <input type="radio" name="folder" id="folder-drafts">
+          <label for="folder-drafts" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="folder-name">Drafts</span><span class="folder-count">1</span></label>
+          <input type="radio" name="folder" id="folder-trash">
+          <label for="folder-trash" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="folder-name">Trash</span></label>
+        </div>
+
+        <div class="message-list-pane">
+          <div class="search-bar">
+            <div class="search-input" contenteditable="false" style="cursor: text;">Search mail...</div>
+          </div>
+          <div class="message-list-header">
+            <span>Inbox</span>
+            <span class="msg-count">6 messages</span>
+          </div>
+          <div class="message-list">
+            <label for="msg-1" class="message-item msg-unread">
+              <div class="msg-avatar avatar-sc">SC</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Sarah Chen</span><span class="msg-time">10:23 AM</span></div>
+                <div class="msg-subject">Q4 Product Roadmap Review <span class="msg-thread">3</span></div>
+                <div class="msg-preview">Hi team, I've attached the updated roadmap for Q4...</div>
+              </div>
+              <label for="star-1" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-2" class="message-item msg-unread">
+              <div class="msg-avatar avatar-ar">AR</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Alex Rivera</span><span class="msg-time">9:45 AM</span></div>
+                <div class="msg-subject">Design System Updates</div>
+                <div class="msg-preview">The new component library is ready for review...</div>
+              </div>
+              <label for="star-2" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-3" class="message-item msg-unread">
+              <div class="msg-avatar avatar-jl">JL</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Jordan Lee</span><span class="msg-time">9:12 AM</span></div>
+                <div class="msg-subject">Re: Sprint Planning Notes <span class="msg-thread">2</span></div>
+                <div class="msg-preview">Sounds good! I'll prepare the backlog items...</div>
+              </div>
+              <label for="star-3" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-4" class="message-item">
+              <div class="msg-avatar avatar-mt">MT</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Morgan Taylor</span><span class="msg-time">Yesterday</span></div>
+                <div class="msg-subject">Weekly Team Sync Agenda</div>
+                <div class="msg-preview">Here's the agenda for tomorrow's sync...</div>
+              </div>
+              <label for="star-4" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-5" class="message-item">
+              <div class="msg-avatar avatar-ck">CK</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Casey Kim</span><span class="msg-time">Yesterday</span></div>
+                <div class="msg-subject">Client Feedback Summary</div>
+                <div class="msg-preview">I've compiled the feedback from last week's demos...</div>
+              </div>
+              <label for="star-5" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-6" class="message-item">
+              <div class="msg-avatar avatar-pj">PJ</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Pat Johnson</span><span class="msg-time">Mon</span></div>
+                <div class="msg-subject">Infrastructure Cost Report</div>
+                <div class="msg-preview">Monthly infrastructure cost breakdown attached...</div>
+              </div>
+              <label for="star-6" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+          </div>
+        </div>
+
+        <!-- Reading Pane with Threading -->
+        <div class="reading-pane">
+          <div class="reading-content rc-1">
+            <div class="reading-header">
+              <div class="reading-subject">Q4 Product Roadmap Review</div>
+              <div class="reading-meta"><span class="reading-sender-name">Sarah Chen</span><span>&lt;sarah.chen@company.com&gt;</span><span class="reading-date">Today at 10:23 AM</span></div>
+            </div>
+            <div class="reading-body">
+              <p>Hi team,</p>
+              <p>I've attached the updated roadmap for Q4. Key changes:</p>
+              <p>1. Search feature moved to Sprint 3<br>2. New onboarding flow starting October<br>3. API v2 migration extended by two weeks</p>
+              <p>Please review before Thursday's meeting.</p>
+              <p>Best,<br>Sarah</p>
+            </div>
+            <div class="thread-msg">
+              <div class="thread-meta">
+                <div class="thread-avatar avatar-jl" style="width:28px;height:28px;font-size:11px;">JL</div>
+                <span class="thread-sender">Jordan Lee</span>
+                <span class="thread-date">Today at 10:45 AM</span>
+              </div>
+              <div class="thread-body">
+                <p>Thanks Sarah. The Sprint 3 move for search makes sense given the customer data. I'll adjust the engineering estimates accordingly.</p>
+                <p>One concern: the onboarding flow might conflict with the auth refactor we planned. Can we discuss?</p>
+              </div>
+            </div>
+            <div class="thread-msg">
+              <div class="thread-meta">
+                <div class="thread-avatar avatar-ar" style="width:28px;height:28px;font-size:11px;">AR</div>
+                <span class="thread-sender">Alex Rivera</span>
+                <span class="thread-date">Today at 11:02 AM</span>
+              </div>
+              <div class="thread-body">
+                <p>+1 on Jordan's point about the auth refactor. I'd also suggest we scope the onboarding flow more tightly for the first iteration. Happy to help with the design spec.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="reading-content rc-2">
+            <div class="reading-header">
+              <div class="reading-subject">Design System Updates</div>
+              <div class="reading-meta"><span class="reading-sender-name">Alex Rivera</span><span>&lt;alex.rivera@company.com&gt;</span><span class="reading-date">Today at 9:45 AM</span></div>
+            </div>
+            <div class="reading-body">
+              <p>Hey,</p>
+              <p>The new component library is ready. What's new:</p>
+              <p>- Updated button styles (WCAG AA)<br>- New modal with focus trap<br>- Revised dark mode color tokens<br>- 12 new icons</p>
+              <p>Preview at staging.designsystem.internal</p>
+              <p>Cheers,<br>Alex</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-3">
+            <div class="reading-header">
+              <div class="reading-subject">Re: Sprint Planning Notes</div>
+              <div class="reading-meta"><span class="reading-sender-name">Jordan Lee</span><span>&lt;jordan.lee@company.com&gt;</span><span class="reading-date">Today at 9:12 AM</span></div>
+            </div>
+            <div class="thread-collapsed">1 earlier message in this thread</div>
+            <div class="reading-body">
+              <p>Sounds good! I'll prepare the backlog items by Thursday.</p>
+              <p>- 3 carry-over items need re-estimating<br>- QA wants more regression testing time<br>- Let's discuss tech debt during planning</p>
+              <p>Jordan</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-4">
+            <div class="reading-header">
+              <div class="reading-subject">Weekly Team Sync Agenda</div>
+              <div class="reading-meta"><span class="reading-sender-name">Morgan Taylor</span><span>&lt;morgan.taylor@company.com&gt;</span><span class="reading-date">Yesterday at 4:30 PM</span></div>
+            </div>
+            <div class="reading-body">
+              <p>Agenda:</p>
+              <p>1. Sprint progress (10 min)<br>2. Blockers (15 min)<br>3. Search prototype demo (10 min)<br>4. Open floor (10 min)</p>
+              <p>See you at 2pm!<br>Morgan</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-5">
+            <div class="reading-header">
+              <div class="reading-subject">Client Feedback Summary</div>
+              <div class="reading-meta"><span class="reading-sender-name">Casey Kim</span><span>&lt;casey.kim@company.com&gt;</span><span class="reading-date">Yesterday at 2:15 PM</span></div>
+            </div>
+            <div class="reading-body">
+              <p><strong>Loved:</strong> Dashboard, exports, performance</p>
+              <p><strong>Requested:</strong> Date filters, bulk actions, mobile</p>
+              <p>Creating tickets for improvements.<br>Casey</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-6">
+            <div class="reading-header">
+              <div class="reading-subject">Infrastructure Cost Report</div>
+              <div class="reading-meta"><span class="reading-sender-name">Pat Johnson</span><span>&lt;pat.johnson@company.com&gt;</span><span class="reading-date">Monday at 11:00 AM</span></div>
+            </div>
+            <div class="reading-body">
+              <p>Monthly highlights: $42,300 total (down 8%). DB optimization saved $3,200/mo. On track for annual budget.</p>
+              <p>Pat</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="compose-overlay">
+          <div class="compose-header"><span>New Message</span><label for="compose-toggle" class="compose-close">&times;</label></div>
+          <div class="compose-fields">
+            <div class="compose-field"><span>To</span><div class="field-input"></div></div>
+            <div class="compose-field"><span>Subject</span><div class="field-input"></div></div>
+          </div>
+          <div class="compose-body-area">Compose your message...</div>
+          <div class="compose-footer"><label for="compose-toggle" class="send-btn">Send</label><span style="color:#999;font-size:12px;">Discard</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

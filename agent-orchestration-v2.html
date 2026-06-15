@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v2: Geological Strata</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  background: rgba(139, 156, 247, 0.15);
+  color: #8b9cf7;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-prev {
+  font-size: 12px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ─── Origination Variant Badge ─── */
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+/* ─── Geological Cross-Section ─── */
+.geo-cross-section {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Shared layer label */
+.layer-label {
+  position: absolute;
+  left: 24px;
+  top: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  z-index: 2;
+}
+
+/* ─── 1. Sky / Atmosphere ─── */
+.sky-layer {
+  position: relative;
+  min-height: 160px;
+  background: linear-gradient(180deg, #87ceeb 0%, #b4d8e7 40%, #d4e8f0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 40px;
+}
+
+.sky-layer .layer-label { color: #3a6d8c; }
+
+.cloud-prompt {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 40px;
+  padding: 20px 36px;
+  max-width: 560px;
+  text-align: center;
+  box-shadow:
+    0 4px 20px rgba(135, 206, 235, 0.3),
+    inset 0 -2px 6px rgba(255,255,255,0.5);
+  position: relative;
+}
+
+.cloud-prompt::before,
+.cloud-prompt::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+.cloud-prompt::before {
+  width: 50px;
+  height: 35px;
+  bottom: -8px;
+  left: 60px;
+}
+
+.cloud-prompt::after {
+  width: 30px;
+  height: 22px;
+  bottom: -18px;
+  left: 80px;
+}
+
+.cloud-prompt-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5a9ab5;
+  margin-bottom: 8px;
+}
+
+.cloud-prompt-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #2c5f7a;
+  line-height: 1.5;
+}
+
+/* ─── 2. Surface / Soil ─── */
+.surface-layer {
+  position: relative;
+  height: 60px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.03) 3px,
+      rgba(0,0,0,0.03) 4px
+    ),
+    linear-gradient(180deg, #8B7355 0%, #6d5a42 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  border-top: 2px solid #5a4a35;
+}
+
+.surface-layer .layer-label { color: #c4b193; }
+
+.surface-input {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.surface-input-text {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+}
+
+.surface-input-cursor {
+  width: 1px;
+  height: 14px;
+  background: rgba(255,255,255,0.4);
+}
+
+/* ─── 3. Sedimentary Layer ─── */
+.sedimentary-layer {
+  position: relative;
+  min-height: 150px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 8px,
+      rgba(0,0,0,0.04) 8px,
+      rgba(0,0,0,0.04) 9px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 24px,
+      rgba(0,0,0,0.06) 24px,
+      rgba(0,0,0,0.06) 26px
+    ),
+    linear-gradient(180deg, #c4a96a 0%, #b89b5e 30%, #a88d52 100%);
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border-top: 3px solid #8B7355;
+}
+
+.sedimentary-layer .layer-label { color: #7a6840; }
+
+.orch-card {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 18px 24px;
+  max-width: 600px;
+  width: 100%;
+  backdrop-filter: blur(2px);
+}
+
+.orch-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.orch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5a8a3c;
+  box-shadow: 0 0 6px rgba(90, 138, 60, 0.5);
+}
+
+.orch-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3d2e1a;
+}
+
+.orch-status {
+  font-size: 13px;
+  color: #4a3820;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.orch-plan {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orch-plan-item {
+  font-size: 12px;
+  color: #5a4530;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+}
+
+/* ─── 4. Metamorphic Layer ─── */
+.metamorphic-layer {
+  position: relative;
+  min-height: 150px;
+  background:
+    repeating-linear-gradient(
+      2deg,
+      transparent,
+      transparent 5px,
+      rgba(0,0,0,0.05) 5px,
+      rgba(0,0,0,0.05) 6px
+    ),
+    repeating-linear-gradient(
+      -1deg,
+      transparent,
+      transparent 12px,
+      rgba(255,255,255,0.03) 12px,
+      rgba(255,255,255,0.03) 13px
+    ),
+    linear-gradient(180deg, #6b7b8d 0%, #556270 50%, #4a5568 100%);
+  padding: 28px 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 3px solid #4a5a6a;
+}
+
+.metamorphic-layer .layer-label { color: #9aa8b5; }
+
+.meta-agent {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 14px 16px;
+  width: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.meta-agent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(139,156,247,0.4), rgba(139,156,247,0.1));
+}
+
+.meta-agent-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c0cad4;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.meta-agent-status {
+  font-size: 10px;
+  color: #8a9aaa;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.meta-pressure {
+  margin-top: 8px;
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.meta-pressure-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b9cf7, #6b7cf7);
+}
+
+/* ─── 5. Igneous Layer ─── */
+.igneous-layer {
+  position: relative;
+  min-height: 120px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,80,40,0.03) 20px,
+      rgba(255,80,40,0.03) 21px
+    ),
+    linear-gradient(180deg, #4a2020 0%, #3a1515 40%, #2d1010 100%);
+  padding: 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 3px solid rgba(200, 80, 40, 0.4);
+}
+
+.igneous-layer .layer-label { color: #a06050; }
+
+.igneous-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.igneous-group-label {
+  font-size: 9px;
+  color: #8a5a4a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.igneous-gems {
+  display: flex;
+  gap: 10px;
+}
+
+.gem {
+  width: 110px;
+  padding: 12px 10px;
+  text-align: center;
+  border-radius: 4px;
+  position: relative;
+}
+
+.gem-crystal {
+  background:
+    linear-gradient(135deg, rgba(255,120,60,0.2) 0%, rgba(200,60,30,0.3) 100%);
+  border: 1px solid rgba(255,120,60,0.25);
+  box-shadow:
+    inset 0 0 12px rgba(255,80,40,0.1),
+    0 0 8px rgba(255,80,40,0.1);
+}
+
+.gem-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: #e8a090;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gem-detail {
+  font-size: 8px;
+  color: #a07060;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ─── Geyser ─── */
+.geyser {
+  position: absolute;
+  right: 140px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.geyser-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 220, 100, 0.9) 0%,
+    rgba(255, 180, 60, 0.7) 30%,
+    rgba(255, 140, 40, 0.5) 60%,
+    rgba(255, 100, 30, 0.8) 100%
+  );
+  box-shadow:
+    0 0 8px rgba(255, 180, 60, 0.6),
+    0 0 20px rgba(255, 140, 40, 0.3),
+    0 0 40px rgba(255, 100, 30, 0.15);
+}
+
+.geyser-panel {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  width: 260px;
+  background: rgba(20, 15, 5, 0.92);
+  border: 1px solid rgba(255, 180, 60, 0.35);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow:
+    0 0 20px rgba(255, 160, 40, 0.15),
+    0 4px 16px rgba(0,0,0,0.5);
+  pointer-events: auto;
+}
+
+.geyser-badge {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f39c12;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.geyser-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f39c12;
+  box-shadow: 0 0 6px rgba(243, 156, 18, 0.6);
+}
+
+.geyser-question {
+  font-size: 11px;
+  color: #e8d8c0;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.geyser-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.geyser-option {
+  font-size: 10px;
+  color: #b0a090;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+}
+
+.geyser-eruption-top {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,220,100,0.8), rgba(255,180,60,0) 70%);
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v2</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as geological strata &mdash; a cross-section of earth where each orchestration layer becomes a distinct geological stratum. Deeper = more specialized, more compressed reasoning. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Geological Strata &mdash; the human prompt sits at the surface as sky/atmosphere. The orchestrator is sedimentary rock (loose, readable). Sub-agents become metamorphic (compressed, denser). Deep sub-sub-agents are igneous (intense, crystallized logic). A "core sample" shows how reasoning transforms with depth.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a geological cross-section visualization of agent orchestration. Map each layer of the agent hierarchy to a geological stratum: sky (human), soil (surface interface), sedimentary (orchestrator), metamorphic (sub-agents), igneous (sub-sub-agents). Include a geyser element representing an AskUserQuestion erupting from depth to surface. Use earth tones, CSS texture patterns, and increasing visual density/compression with depth.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="geo-cross-section">
+
+      <!-- Geyser -->
+      <div class="geyser">
+        <div class="geyser-line"></div>
+        <div class="geyser-eruption-top"></div>
+        <div class="geyser-panel">
+          <div class="geyser-badge">AskUserQuestion</div>
+          <div class="geyser-question">The quantum computing field has 3 major branches with recent breakthroughs. Should I focus on:</div>
+          <div class="geyser-options">
+            <div class="geyser-option">(a) Superconducting qubits</div>
+            <div class="geyser-option">(b) Topological quantum computing</div>
+            <div class="geyser-option">(c) Photonic systems</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Sky / Atmosphere -->
+      <div class="sky-layer">
+        <span class="layer-label">Human Layer</span>
+        <div class="cloud-prompt">
+          <div class="cloud-prompt-label">Human Prompt</div>
+          <div class="cloud-prompt-text">"Research and summarize the latest advances in quantum computing"</div>
+        </div>
+      </div>
+
+      <!-- 2. Surface / Soil -->
+      <div class="surface-layer">
+        <span class="layer-label">Surface Interface</span>
+        <div class="surface-input">
+          <div class="surface-input-cursor"></div>
+          <div class="surface-input-text">Enter your research question...</div>
+        </div>
+      </div>
+
+      <!-- 3. Sedimentary Layer -->
+      <div class="sedimentary-layer">
+        <span class="layer-label">Orchestrator &mdash; Sedimentary</span>
+        <div class="orch-card">
+          <div class="orch-card-header">
+            <div class="orch-dot"></div>
+            <div class="orch-title">Orchestrator Agent</div>
+          </div>
+          <div class="orch-status">Breaking down research task into 4 parallel streams...</div>
+          <div class="orch-plan">
+            <div class="orch-plan-item">1. Academic literature review (arxiv, journals)</div>
+            <div class="orch-plan-item">2. Industry news synthesis (tech journalism)</div>
+            <div class="orch-plan-item">3. Expert perspectives (interviews, podcasts)</div>
+            <div class="orch-plan-item">4. Patent and IP landscape analysis</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Metamorphic Layer -->
+      <div class="metamorphic-layer">
+        <span class="layer-label">Sub-Agents &mdash; Metamorphic</span>
+        <div class="meta-agent">
+          <div class="meta-agent-name">Academic Paper Agent</div>
+          <div class="meta-agent-status">Scanning arxiv for 2024-2025 papers on quantum error correction and qubit coherence times...</div>
+          <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 72%"></div></div>
+        </div>
+        <div class="meta-agent">
+          <div class="meta-agent-name">News Synthesis Agent</div>
+          <div class="meta-agent-status">Aggregating tech journalism from 14 sources, filtering for breakthrough announcements...</div>
+          <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 58%"></div></div>
+        </div>
+        <div class="meta-agent">
+          <div class="meta-agent-name">Expert Interview Agent</div>
+          <div class="meta-agent-status">Finding podcast transcripts and conference talks from leading QC researchers...</div>
+          <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 45%"></div></div>
+        </div>
+        <div class="meta-agent">
+          <div class="meta-agent-name">Patent Analysis Agent</div>
+          <div class="meta-agent-status">Reviewing recent filings from IBM, Google, IonQ. Cross-referencing with academic citations...</div>
+          <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 63%"></div></div>
+        </div>
+      </div>
+
+      <!-- 5. Igneous Layer -->
+      <div class="igneous-layer">
+        <span class="layer-label">Sub-Sub-Agents &mdash; Igneous</span>
+        <div class="igneous-group">
+          <div class="igneous-group-label">Under: Academic Paper Agent</div>
+          <div class="igneous-gems">
+            <div class="gem gem-crystal">
+              <div class="gem-name">Citation Graph Walker</div>
+              <div class="gem-detail">Traversing reference chains, depth 4</div>
+            </div>
+            <div class="gem gem-crystal">
+              <div class="gem-name">Abstract Classifier</div>
+              <div class="gem-detail">Categorizing 847 abstracts by subfield</div>
+            </div>
+          </div>
+        </div>
+        <div class="igneous-group">
+          <div class="igneous-group-label">Under: Patent Analysis Agent</div>
+          <div class="igneous-gems">
+            <div class="gem gem-crystal">
+              <div class="gem-name">Claims Extractor</div>
+              <div class="gem-detail">Parsing patent claim trees</div>
+            </div>
+            <div class="gem gem-crystal">
+              <div class="gem-name">Prior Art Linker</div>
+              <div class="gem-detail">Matching claims to papers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban Board — v5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+    /* ─── Experiment Info Sidebar ─── */
+    .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+    .experiment-sidebar {
+      width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+      padding: 24px 20px; overflow-y: auto;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px;
+    }
+    .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+    .experiment-sidebar a:hover { text-decoration: underline; }
+    .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+    .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+    .experiment-sidebar .exp-version { display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+    .experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+    .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+    .experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+    .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+    .experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+    /* ─── Sidebar Versions Card ─── */
+    .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+    .experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+    .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+    .experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+    .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+    .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+    /* ─── Device Preview Switcher ─── */
+    .experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    .preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+    .preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+    .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+    .preview-btn svg { width: 20px; height: 20px; }
+    #preview-web:checked ~ .preview-bar label[for="preview-web"],
+    #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+    #preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+    .window { width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1); }
+    #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+    #preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+    #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+    /* ─── Kanban Board v5 — Production Quality ─── */
+    .kanban {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fc; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* Project Header */
+    .project-header {
+      background: #fff; border-bottom: 1px solid #e8eaef;
+      padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .project-info { display: flex; align-items: center; gap: 14px; }
+    .project-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #4a7cf7, #764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: #fff;
+    }
+    .project-name { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+    .project-meta { font-size: 11px; color: #888; margin-top: 2px; }
+    .project-stats { display: flex; gap: 20px; align-items: center; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Team avatars */
+    .team-avatars { display: flex; margin-left: 16px; }
+    .team-avatar {
+      width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff; border: 2px solid #fff; margin-left: -8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .team-avatar:first-child { margin-left: 0; }
+
+    /* Filter bar */
+    .filter-bar {
+      padding: 10px 28px; display: flex; gap: 16px; align-items: center;
+      background: #fff; border-bottom: 1px solid #e8eaef; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; align-items: center; gap: 6px; }
+    .filter-group-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #aaa; }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px;
+      font-size: 11px; font-weight: 500; border-radius: 20px; cursor: pointer;
+      border: 1px solid #e0e3ea; color: #666; background: #fff;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .filter-chip:hover { border-color: #4a7cf7; color: #4a7cf7; box-shadow: 0 2px 8px rgba(74,124,247,0.12); }
+    .filter-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    #filter-high:checked ~ .window .filter-chip[for="filter-high"],
+    #filter-medium:checked ~ .window .filter-chip[for="filter-medium"],
+    #filter-low:checked ~ .window .filter-chip[for="filter-low"],
+    #filter-ak:checked ~ .window .filter-chip[for="filter-ak"],
+    #filter-mj:checked ~ .window .filter-chip[for="filter-mj"],
+    #filter-rp:checked ~ .window .filter-chip[for="filter-rp"],
+    #filter-dw:checked ~ .window .filter-chip[for="filter-dw"],
+    #filter-sl:checked ~ .window .filter-chip[for="filter-sl"] {
+      background: #4a7cf7; color: #fff; border-color: #4a7cf7; box-shadow: 0 2px 8px rgba(74,124,247,0.25);
+    }
+    #filter-high:checked ~ .window .filter-chip[for="filter-high"] .chip-dot,
+    #filter-medium:checked ~ .window .filter-chip[for="filter-medium"] .chip-dot,
+    #filter-low:checked ~ .window .filter-chip[for="filter-low"] .chip-dot { background: #fff !important; }
+
+    #filter-high:checked ~ .window .card:not(.is-high),
+    #filter-medium:checked ~ .window .card:not(.is-medium),
+    #filter-low:checked ~ .window .card:not(.is-low) { opacity: 0.15; transform: scale(0.98); }
+    #filter-ak:checked ~ .window .card:not(.is-ak),
+    #filter-mj:checked ~ .window .card:not(.is-mj),
+    #filter-rp:checked ~ .window .card:not(.is-rp),
+    #filter-dw:checked ~ .window .card:not(.is-dw),
+    #filter-sl:checked ~ .window .card:not(.is-sl) { opacity: 0.15; transform: scale(0.98); }
+
+    /* Column collapse */
+    .col-collapse-label {
+      font-size: 11px; color: #aaa; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .col-collapse-label:hover { background: rgba(0,0,0,0.06); color: #666; }
+
+    #collapse-todo:checked ~ .window .col-todo .col-cards,
+    #collapse-progress:checked ~ .window .col-progress .col-cards,
+    #collapse-review:checked ~ .window .col-review .col-cards,
+    #collapse-done:checked ~ .window .col-done .col-cards { display: none; }
+    #collapse-todo:checked ~ .window .col-todo,
+    #collapse-progress:checked ~ .window .col-progress,
+    #collapse-review:checked ~ .window .col-review,
+    #collapse-done:checked ~ .window .col-done { min-width: 56px; width: 56px; }
+    #collapse-todo:checked ~ .window .col-todo .col-header h3,
+    #collapse-progress:checked ~ .window .col-progress .col-header h3,
+    #collapse-review:checked ~ .window .col-review .col-header h3,
+    #collapse-done:checked ~ .window .col-done .col-header h3 { writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; }
+    #collapse-todo:checked ~ .window .col-todo .col-header,
+    #collapse-progress:checked ~ .window .col-progress .col-header,
+    #collapse-review:checked ~ .window .col-review .col-header,
+    #collapse-done:checked ~ .window .col-done .col-header { flex-direction: column; align-items: center; padding: 14px 6px; }
+    #collapse-todo:checked ~ .window .col-todo .wip-warning,
+    #collapse-progress:checked ~ .window .col-progress .wip-warning { display: none; }
+
+    .kanban-columns {
+      display: flex; gap: 14px; padding: 14px 28px 28px;
+      flex: 1; overflow-x: auto; overflow-y: hidden;
+    }
+    .kanban-col {
+      min-width: 290px; width: 290px; background: #eef0f4; border-radius: 14px;
+      display: flex; flex-direction: column; max-height: 100%;
+      transition: width 0.35s cubic-bezier(0.4,0,0.2,1), min-width 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .col-header {
+      padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: all 0.3s;
+    }
+    .col-header h3 {
+      font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase;
+      letter-spacing: 0.06em; transition: all 0.3s;
+    }
+    .col-count {
+      background: rgba(0,0,0,0.07); color: #777; font-size: 11px; font-weight: 600;
+      padding: 2px 10px; border-radius: 10px;
+    }
+    .wip-warning {
+      background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c;
+      font-size: 10px; font-weight: 600; padding: 5px 12px; margin: 0 10px 8px;
+      border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(185,28,28,0.1);
+    }
+    .col-cards { padding: 0 10px 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Cards — production polish */
+    .card {
+      background: #fff; border-radius: 10px; padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+    .card-labels { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+    .card-label {
+      font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .label-frontend { background: #dbeafe; color: #1e40af; }
+    .label-backend { background: #fce7f3; color: #9d174d; }
+    .label-devops { background: #d1fae5; color: #065f46; }
+    .label-design { background: #ede9fe; color: #5b21b6; }
+    .label-bug { background: #fee2e2; color: #991b1b; }
+
+    .card-title { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; line-height: 1.4; }
+    .card-due { font-size: 10px; color: #888; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+    .card-due::before {
+      content: ''; display: inline-block; width: 12px; height: 12px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain; flex-shrink: 0;
+    }
+    .card-due.overdue { color: #dc2626; font-weight: 600; }
+    .card-due.overdue::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+    }
+
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-avatar {
+      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .avatar-blue { background: linear-gradient(135deg, #4a7cf7, #3b5de7); }
+    .avatar-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+    .avatar-orange { background: linear-gradient(135deg, #f39c12, #e67e22); }
+    .avatar-purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+    .avatar-red { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    .priority {
+      font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 5px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .priority-high { background: #fef2f2; color: #dc2626; }
+    .priority-medium { background: #fffbeb; color: #d97706; }
+    .priority-low { background: #f0fdf4; color: #16a34a; }
+
+    /* Subtask progress bars */
+    .card-progress { margin-top: 10px; }
+    .progress-label { font-size: 10px; color: #999; margin-bottom: 4px; }
+    .progress-bar { height: 4px; background: #e8eaef; border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #4a7cf7, #667eea); }
+
+    /* Column accent tops */
+    .col-todo .col-header { border-top: 3px solid #4a7cf7; border-radius: 14px 14px 0 0; }
+    .col-progress .col-header { border-top: 3px solid #f59e0b; border-radius: 14px 14px 0 0; }
+    .col-review .col-header { border-top: 3px solid #8b5cf6; border-radius: 14px 14px 0 0; }
+    .col-done .col-header { border-top: 3px solid #10b981; border-radius: 14px 14px 0 0; }
+
+    /* Done column cards get subtle opacity */
+    .col-done .card { opacity: 0.7; }
+    .col-done .card:hover { opacity: 1; }
+
+    /* Scrollbar */
+    .col-cards::-webkit-scrollbar { width: 4px; }
+    .col-cards::-webkit-scrollbar-track { background: transparent; }
+    .col-cards::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+
+    /* Mobile */
+    #preview-mobile:checked ~ .window .kanban-columns { flex-direction: column; overflow-y: auto; overflow-x: hidden; padding: 10px 12px 24px; gap: 12px; }
+    #preview-mobile:checked ~ .window .kanban-col { min-width: 100%; width: 100%; max-height: none; }
+    #preview-mobile:checked ~ .window .project-header { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+    #preview-mobile:checked ~ .window .project-name { font-size: 14px; }
+    #preview-mobile:checked ~ .window .project-stats { gap: 12px; }
+    #preview-mobile:checked ~ .window .stat-value { font-size: 14px; }
+    #preview-mobile:checked ~ .window .team-avatars { display: none; }
+    #preview-mobile:checked ~ .window .filter-bar { padding: 8px 14px; gap: 8px; }
+    #preview-mobile:checked ~ .window .filter-chip { font-size: 10px; padding: 3px 8px; }
+    #preview-mobile:checked ~ .window .col-collapse-label { display: none; }
+    #preview-mobile:checked ~ .window .kanban-columns { padding: 10px 12px 24px; }
+  </style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Kanban Board</h1>
+      <span class="exp-version">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality polish pass: refined shadows and hover states with subtle transforms, a proper project header with team avatars and stats, subtask progress bars, custom scrollbars, and gradient avatars. The final version of the kanban board experiment.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v5: Refined shadows, animations, project header, production quality. Add a full project header with project icon, name, team member avatars (overlapping stack), and summary stats (total tasks, completed, overdue). Refine all shadows to use layered box-shadows for depth. Add hover lift effect on cards. Include subtask progress bars on select cards. Polish scrollbars, avatars with gradients, rounded corners. Make Done column cards subtly dimmed. This is the final production-quality iteration.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="kanban-board-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Subtask progress</span>
+        </a>
+        <a href="kanban-board-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Filters & collapsible</span>
+        </a>
+        <a href="kanban-board-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Theme toggle</span>
+        </a>
+        <a href="kanban-board-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable details</span>
+        </a>
+        <a href="kanban-board-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 4-column kanban</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Filter checkboxes -->
+    <input type="checkbox" id="filter-high">
+    <input type="checkbox" id="filter-medium">
+    <input type="checkbox" id="filter-low">
+    <input type="checkbox" id="filter-ak">
+    <input type="checkbox" id="filter-mj">
+    <input type="checkbox" id="filter-rp">
+    <input type="checkbox" id="filter-dw">
+    <input type="checkbox" id="filter-sl">
+    <!-- Column collapse -->
+    <input type="checkbox" id="collapse-todo">
+    <input type="checkbox" id="collapse-progress">
+    <input type="checkbox" id="collapse-review">
+    <input type="checkbox" id="collapse-done">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="kanban">
+        <!-- Project Header -->
+        <div class="project-header">
+          <div class="project-info">
+            <div class="project-icon">A</div>
+            <div>
+              <div class="project-name">Project Alpha</div>
+              <div class="project-meta">Sprint 4 &middot; Jan 20 &ndash; Feb 3, 2026</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;">
+            <div class="project-stats">
+              <div class="stat-item"><div class="stat-value">13</div><div class="stat-label">Tasks</div></div>
+              <div class="stat-item"><div class="stat-value">3</div><div class="stat-label">Done</div></div>
+              <div class="stat-item"><div class="stat-value" style="color:#dc2626">3</div><div class="stat-label">Overdue</div></div>
+            </div>
+            <div class="team-avatars">
+              <div class="team-avatar avatar-blue">AK</div>
+              <div class="team-avatar avatar-green">MJ</div>
+              <div class="team-avatar avatar-orange">RP</div>
+              <div class="team-avatar avatar-red">DW</div>
+              <div class="team-avatar avatar-purple">SL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-group-title">Priority</span>
+            <label for="filter-high" class="filter-chip"><span class="chip-dot" style="background:#dc2626"></span> High</label>
+            <label for="filter-medium" class="filter-chip"><span class="chip-dot" style="background:#d97706"></span> Medium</label>
+            <label for="filter-low" class="filter-chip"><span class="chip-dot" style="background:#16a34a"></span> Low</label>
+          </div>
+          <div class="filter-group">
+            <span class="filter-group-title">Assignee</span>
+            <label for="filter-ak" class="filter-chip">AK</label>
+            <label for="filter-mj" class="filter-chip">MJ</label>
+            <label for="filter-rp" class="filter-chip">RP</label>
+            <label for="filter-dw" class="filter-chip">DW</label>
+            <label for="filter-sl" class="filter-chip">SL</label>
+          </div>
+        </div>
+
+        <!-- Columns -->
+        <div class="kanban-columns">
+          <!-- To Do -->
+          <div class="kanban-col col-todo">
+            <div class="col-header">
+              <h3>To Do</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="col-count">4</span>
+                <label for="collapse-todo" class="col-collapse-label">&laquo;</label>
+              </div>
+            </div>
+            <div class="col-cards">
+              <div class="card is-high is-ak">
+                <div class="card-labels"><span class="card-label label-design">Design</span></div>
+                <div class="card-title">Design new onboarding flow</div>
+                <div class="card-due">Feb 5, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-blue">AK</div><span class="priority priority-high">High</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 1/4</div><div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div></div>
+              </div>
+              <div class="card is-medium is-mj">
+                <div class="card-labels"><span class="card-label label-backend">Backend</span></div>
+                <div class="card-title">Write API documentation</div>
+                <div class="card-due">Feb 10, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-green">MJ</div><span class="priority priority-medium">Medium</span></div>
+              </div>
+              <div class="card is-high is-rp">
+                <div class="card-labels"><span class="card-label label-devops">DevOps</span></div>
+                <div class="card-title">Set up CI/CD pipeline</div>
+                <div class="card-due overdue">Overdue: Jan 28</div>
+                <div class="card-footer"><div class="card-avatar avatar-orange">RP</div><span class="priority priority-high">High</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 2/5</div><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div></div>
+              </div>
+              <div class="card is-low is-sl">
+                <div class="card-labels"><span class="card-label label-frontend">Frontend</span></div>
+                <div class="card-title">Update dependency versions</div>
+                <div class="card-due">Feb 15, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-purple">SL</div><span class="priority priority-low">Low</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- In Progress -->
+          <div class="kanban-col col-progress">
+            <div class="col-header">
+              <h3>In Progress</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="col-count">4 / 3</span>
+                <label for="collapse-progress" class="col-collapse-label">&laquo;</label>
+              </div>
+            </div>
+            <div class="wip-warning">WIP limit exceeded (max 3)</div>
+            <div class="col-cards">
+              <div class="card is-high is-dw">
+                <div class="card-labels"><span class="card-label label-backend">Backend</span><span class="card-label label-frontend">Frontend</span></div>
+                <div class="card-title">Implement user authentication</div>
+                <div class="card-due overdue">Overdue: Jan 25</div>
+                <div class="card-footer"><div class="card-avatar avatar-red">DW</div><span class="priority priority-high">High</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 5/8</div><div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div></div>
+              </div>
+              <div class="card is-medium is-ak">
+                <div class="card-labels"><span class="card-label label-frontend">Frontend</span></div>
+                <div class="card-title">Build dashboard charts</div>
+                <div class="card-due">Feb 3, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-blue">AK</div><span class="priority priority-medium">Medium</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 3/6</div><div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div></div>
+              </div>
+              <div class="card is-low is-mj">
+                <div class="card-labels"><span class="card-label label-design">Design</span></div>
+                <div class="card-title">Create email templates</div>
+                <div class="card-due">Feb 8, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-green">MJ</div><span class="priority priority-low">Low</span></div>
+              </div>
+              <div class="card is-high is-rp">
+                <div class="card-labels"><span class="card-label label-backend">Backend</span><span class="card-label label-bug">Bug</span></div>
+                <div class="card-title">Migrate database schema</div>
+                <div class="card-due">Feb 1, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-orange">RP</div><span class="priority priority-high">High</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 1/3</div><div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review -->
+          <div class="kanban-col col-review">
+            <div class="col-header">
+              <h3>Review</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="col-count">2</span>
+                <label for="collapse-review" class="col-collapse-label">&laquo;</label>
+              </div>
+            </div>
+            <div class="col-cards">
+              <div class="card is-medium is-rp">
+                <div class="card-labels"><span class="card-label label-backend">Backend</span></div>
+                <div class="card-title">Refactor database queries</div>
+                <div class="card-due">Feb 2, 2026</div>
+                <div class="card-footer"><div class="card-avatar avatar-orange">RP</div><span class="priority priority-medium">Medium</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 4/4</div><div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div></div>
+              </div>
+              <div class="card is-high is-dw">
+                <div class="card-labels"><span class="card-label label-backend">Backend</span><span class="card-label label-bug">Bug</span></div>
+                <div class="card-title">Add unit tests for payments</div>
+                <div class="card-due overdue">Overdue: Jan 20</div>
+                <div class="card-footer"><div class="card-avatar avatar-red">DW</div><span class="priority priority-high">High</span></div>
+                <div class="card-progress"><div class="progress-label">Subtasks 7/9</div><div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Done -->
+          <div class="kanban-col col-done">
+            <div class="col-header">
+              <h3>Done</h3>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="col-count">3</span>
+                <label for="collapse-done" class="col-collapse-label">&laquo;</label>
+              </div>
+            </div>
+            <div class="col-cards">
+              <div class="card is-low is-sl">
+                <div class="card-labels"><span class="card-label label-design">Design</span></div>
+                <div class="card-title">Project kickoff meeting</div>
+                <div class="card-due" style="color:#16a34a">Completed Jan 3</div>
+                <div class="card-footer"><div class="card-avatar avatar-purple">SL</div><span class="priority priority-low">Low</span></div>
+              </div>
+              <div class="card is-medium is-rp">
+                <div class="card-labels"><span class="card-label label-devops">DevOps</span></div>
+                <div class="card-title">Set up project repository</div>
+                <div class="card-due" style="color:#16a34a">Completed Jan 4</div>
+                <div class="card-footer"><div class="card-avatar avatar-orange">RP</div><span class="priority priority-medium">Medium</span></div>
+              </div>
+              <div class="card is-low is-ak">
+                <div class="card-labels"><span class="card-label label-frontend">Frontend</span><span class="card-label label-backend">Backend</span></div>
+                <div class="card-title">Define tech stack</div>
+                <div class="card-due" style="color:#16a34a">Completed Jan 2</div>
+                <div class="card-footer"><div class="card-avatar avatar-blue">AK</div><span class="priority priority-low">Low</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

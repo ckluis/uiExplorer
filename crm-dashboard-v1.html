@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v1: Deal Flow Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-family: 'Inter', sans-serif; }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── CRM Dashboard ─── */
+.crm { display: flex; flex-direction: column; height: 100%; color: #333; }
+
+/* Top Bar */
+.crm-topbar { display: flex; align-items: center; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e2dc; gap: 16px; flex-shrink: 0; }
+.crm-logo { font-size: 16px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
+.crm-logo span { color: #667eea; }
+.crm-search { flex: 1; max-width: 320px; margin-left: 20px; }
+.crm-search-input { width: 100%; padding: 7px 12px 7px 32px; border: 1px solid #e0ddd6; border-radius: 8px; font-size: 12px; font-family: inherit; background: #faf9f7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat; color: #555; outline: none; }
+.crm-search-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+.crm-spacer { flex: 1; }
+.crm-role-toggle { display: flex; gap: 2px; background: #f0ede7; border-radius: 8px; padding: 2px; }
+.crm-role-label { padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #888; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.crm-role-label:hover { color: #555; }
+#role-solo:checked ~ .window .crm-role-toggle label[for="role-solo"],
+#role-team:checked ~ .window .crm-role-toggle label[for="role-team"],
+#role-admin:checked ~ .window .crm-role-toggle label[for="role-admin"] { background: #fff; color: #1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.crm-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); margin-left: 8px; }
+
+/* Agent Performance Mini Bars (Admin only) */
+.crm-agent-perf { display: none; padding: 10px 20px; background: #fff; border-bottom: 1px solid #e5e2dc; flex-shrink: 0; }
+#role-admin:checked ~ .window .crm-agent-perf { display: flex; gap: 16px; align-items: center; }
+.agent-perf-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; }
+.agent-perf-avatar { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+.agent-perf-bar { width: 80px; height: 6px; background: #ece9e3; border-radius: 3px; overflow: hidden; }
+.agent-perf-fill { height: 100%; border-radius: 3px; }
+.agent-perf-val { font-weight: 700; font-size: 10px; color: #333; min-width: 28px; }
+
+/* My Deals / All Deals filter (Team Lead only) */
+.crm-filter-bar { display: none; padding: 8px 20px; background: #faf9f7; border-bottom: 1px solid #e5e2dc; flex-shrink: 0; }
+#role-team:checked ~ .window .crm-filter-bar { display: flex; align-items: center; gap: 12px; }
+.crm-filter-bar span { font-size: 11px; color: #888; font-weight: 500; }
+.crm-filter-pill { padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #ece9e3; color: #666; cursor: pointer; }
+.crm-filter-pill:hover { background: #e0ddd6; }
+
+/* Board */
+.crm-board { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; padding: 16px 12px; gap: 12px; }
+.crm-column { min-width: 210px; width: 210px; display: flex; flex-direction: column; flex-shrink: 0; }
+.col-header { padding: 10px 12px; border-radius: 10px 10px 0 0; background: #fff; border: 1px solid #e5e2dc; border-bottom: none; }
+.col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.col-stats { display: flex; gap: 10px; margin-top: 4px; }
+.col-count { font-size: 10px; color: #999; font-weight: 500; }
+.col-value { font-size: 10px; color: #667eea; font-weight: 700; }
+.col-bar { height: 3px; border-radius: 0; }
+.col-1 .col-bar { background: #667eea; }
+.col-2 .col-bar { background: #8b5cf6; }
+.col-3 .col-bar { background: #f59e0b; }
+.col-4 .col-bar { background: #ef4444; }
+.col-5 .col-bar { background: #10b981; }
+.col-6 .col-bar { background: #06b6d4; }
+.col-cards { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
+
+/* Conversion arrows */
+.col-arrow { display: flex; align-items: center; justify-content: center; min-width: 28px; flex-shrink: 0; flex-direction: column; gap: 2px; }
+.col-arrow-icon { font-size: 16px; color: #ccc; }
+.col-arrow-pct { font-size: 9px; font-weight: 700; color: #999; }
+
+/* Deal Cards */
+.deal-card { background: #fff; border-radius: 8px; border: 1px solid #e5e2dc; padding: 10px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
+.deal-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.deal-card::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 2px 2px 0; }
+.deal-card.urgency-green::before { background: #10b981; }
+.deal-card.urgency-yellow::before { background: #f59e0b; }
+.deal-card.urgency-red::before { background: #ef4444; }
+.deal-card.stale { opacity: 0.55; }
+
+.deal-thumb { width: 100%; height: 48px; border-radius: 4px; margin-bottom: 8px; }
+.deal-address { font-size: 11px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+.deal-contact { font-size: 10px; color: #888; margin-top: 2px; }
+.deal-price { font-size: 13px; font-weight: 800; color: #333; margin-top: 6px; }
+.deal-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.deal-source { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+.source-zillow { background: rgba(0, 106, 255, 0.1); color: #006aff; }
+.source-referral { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.source-openhouse { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+.source-realtor { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.source-social { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.deal-days { font-size: 9px; color: #aaa; }
+
+/* Agent badge (Team Lead & Admin) */
+.deal-agent { display: none; margin-top: 6px; align-items: center; gap: 5px; font-size: 9px; color: #888; }
+.deal-agent-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+#role-team:checked ~ .window .deal-agent,
+#role-admin:checked ~ .window .deal-agent { display: flex; }
+
+/* Card expand on focus-within */
+.deal-card .deal-expand { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ece9e3; font-size: 10px; color: #777; line-height: 1.5; }
+.deal-card:focus-within .deal-expand { display: block; }
+.deal-expand-label { font-weight: 700; color: #555; font-size: 9px; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 4px; }
+.deal-expand-label:first-child { margin-top: 0; }
+.deal-expand-text { margin-top: 1px; }
+.deal-card-focus { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid #ddd; background: #faf9f7; cursor: pointer; font-size: 10px; color: #aaa; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+.deal-card-focus:focus { outline: 2px solid #667eea; outline-offset: 1px; }
+
+/* Team Lead column header changes */
+#role-team:checked ~ .window .col-header-team,
+#role-admin:checked ~ .window .col-header-team { display: block; }
+.col-header-team { display: none; font-size: 9px; color: #8b5cf6; font-weight: 600; margin-top: 2px; }
+
+/* Admin column header */
+#role-admin:checked ~ .window .col-header-admin { display: block; }
+.col-header-admin { display: none; font-size: 9px; color: #ef4444; font-weight: 600; margin-top: 2px; }
+
+/* Admin denser cards */
+#role-admin:checked ~ .window .deal-thumb { height: 32px; }
+#role-admin:checked ~ .window .deal-card { padding: 8px; }
+#role-admin:checked ~ .window .deal-price { font-size: 12px; }
+
+/* Property thumbnail gradients */
+.thumb-1 { background: linear-gradient(135deg, #c2a878, #8b7355); }
+.thumb-2 { background: linear-gradient(135deg, #7eb8c9, #4a8a9c); }
+.thumb-3 { background: linear-gradient(135deg, #a8c97e, #6e9c4a); }
+.thumb-4 { background: linear-gradient(135deg, #c97ea8, #9c4a73); }
+.thumb-5 { background: linear-gradient(135deg, #c9b17e, #9c8a4a); }
+.thumb-6 { background: linear-gradient(135deg, #7e8ec9, #4a5a9c); }
+.thumb-7 { background: linear-gradient(135deg, #c9967e, #9c6d4a); }
+.thumb-8 { background: linear-gradient(135deg, #7ec9b8, #4a9c88); }
+.thumb-9 { background: linear-gradient(135deg, #b87ec9, #854a9c); }
+.thumb-10 { background: linear-gradient(135deg, #c97e7e, #9c4a4a); }
+.thumb-11 { background: linear-gradient(135deg, #9cc97e, #6e9c4a); }
+.thumb-12 { background: linear-gradient(135deg, #7ec2c9, #4a959c); }
+.thumb-13 { background: linear-gradient(135deg, #c9c07e, #9c954a); }
+.thumb-14 { background: linear-gradient(135deg, #c97ea0, #9c4a6e); }
+.thumb-15 { background: linear-gradient(135deg, #8b7ec9, #5e4a9c); }
+.thumb-16 { background: linear-gradient(135deg, #7ec98a, #4a9c55); }
+.thumb-17 { background: linear-gradient(135deg, #c9a27e, #9c784a); }
+.thumb-18 { background: linear-gradient(135deg, #7e9fc9, #4a729c); }
+.thumb-19 { background: linear-gradient(135deg, #c9847e, #9c574a); }
+.thumb-20 { background: linear-gradient(135deg, #a0c97e, #739c4a); }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .crm-board { padding: 8px; gap: 8px; }
+#preview-mobile:checked ~ .window .crm-column { min-width: 180px; width: 180px; }
+#preview-mobile:checked ~ .window .crm-topbar { padding: 8px 12px; flex-wrap: wrap; }
+#preview-mobile:checked ~ .window .crm-search { max-width: 100%; margin-left: 0; order: 10; flex-basis: 100%; margin-top: 8px; }
+#preview-mobile:checked ~ .window .crm-role-toggle { display: none; }
+#preview-mobile:checked ~ .window .crm-avatar { display: none; }
+#preview-mobile:checked ~ .window .deal-thumb { height: 36px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring a pipeline Kanban board for real estate CRM. Deals flow across six stages from lead to close, with urgency indicators, source badges, role-based views, and expandable card details — all in pure CSS.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>Deal Flow Board</strong> — "See every deal move from lead to close." A physical whiteboard metaphor with sticky-note cards across columns. Warm, tactile, optimistic.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v1: "Deal Flow Board" — Pipeline Kanban</strong><br><br>
+        Tagline: "See every deal move from lead to close."<br>
+        Core metaphor: A physical whiteboard with sticky notes across columns — the war room deal tracker.<br><br>
+        Layout: Full-width horizontal scrolling board with 6 vertical columns: New Lead | Nurturing | Showing | Offer | Under Contract | Closing. Each column has a header with count and aggregate dollar value. Cards show property address/thumbnail placeholder (CSS gradient), contact name, price, and urgency indicator (green/yellow/red left border based on days since last contact). Top bar has role toggle and search.<br><br>
+        Key UI elements: Property cards with gradient urgency borders (green = recent, yellow = cooling, red = cold). Column headers with aggregate stats. Card detail on :focus-within. Stage transition arrows between columns. Source badges (Zillow, Referral, Open House). Stale deal fading.<br><br>
+        Color/mood: Light background (#f5f4f1 warm off-white). Columns with subtle colored top borders. White cards with clean shadows. Warm, tactile, optimistic.<br><br>
+        Role toggle (CSS radio buttons — Solo Agent / Team Lead / Brokerage Admin): Solo Agent shows personal pipeline. Team Lead adds agent badges and team stats. Brokerage Admin shows denser cards with agent filter and performance bars.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p><a href="crm-dashboard.html">View full origination brief &rarr;</a></p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt →</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Role radios (must be siblings before .window for CSS selectors) -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <!-- Device preview radios -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="crm">
+        <!-- Top Bar -->
+        <div class="crm-topbar">
+          <div class="crm-logo">Deal<span>Flow</span></div>
+          <div class="crm-search">
+            <input type="text" class="crm-search-input" placeholder="Search deals, contacts, addresses...">
+          </div>
+          <div class="crm-spacer"></div>
+          <div class="crm-role-toggle">
+            <label for="role-solo" class="crm-role-label">Solo Agent</label>
+            <label for="role-team" class="crm-role-label">Team Lead</label>
+            <label for="role-admin" class="crm-role-label">Brokerage Admin</label>
+          </div>
+          <div class="crm-avatar"></div>
+        </div>
+
+        <!-- Agent Performance (Admin only) -->
+        <div class="crm-agent-perf">
+          <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.04em;margin-right:8px;">Agent Pipeline</span>
+          <div class="agent-perf-item">
+            <div class="agent-perf-avatar" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+            <span>Sarah M.</span>
+            <div class="agent-perf-bar"><div class="agent-perf-fill" style="width:85%;background:#10b981"></div></div>
+            <span class="agent-perf-val">$4.2M</span>
+          </div>
+          <div class="agent-perf-item">
+            <div class="agent-perf-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+            <span>James K.</span>
+            <div class="agent-perf-bar"><div class="agent-perf-fill" style="width:62%;background:#f59e0b"></div></div>
+            <span class="agent-perf-val">$2.8M</span>
+          </div>
+          <div class="agent-perf-item">
+            <div class="agent-perf-avatar" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+            <span>Maria L.</span>
+            <div class="agent-perf-bar"><div class="agent-perf-fill" style="width:74%;background:#667eea"></div></div>
+            <span class="agent-perf-val">$3.5M</span>
+          </div>
+          <div class="agent-perf-item">
+            <div class="agent-perf-avatar" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></div>
+            <span>Tom R.</span>
+            <div class="agent-perf-bar"><div class="agent-perf-fill" style="width:45%;background:#ef4444"></div></div>
+            <span class="agent-perf-val">$1.9M</span>
+          </div>
+        </div>
+
+        <!-- My Deals / All Deals filter (Team Lead only) -->
+        <div class="crm-filter-bar">
+          <span>View:</span>
+          <span class="crm-filter-pill" style="background:#667eea;color:#fff;">My Deals</span>
+          <span class="crm-filter-pill">All Deals</span>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="crm-board">
+
+          <!-- Column 1: New Lead -->
+          <div class="crm-column col-1">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">New Lead</div>
+              <div class="col-stats">
+                <span class="col-count">4 deals</span>
+                <span class="col-value">$2.1M</span>
+              </div>
+              <div class="col-header-team">Team: 8 deals &middot; $4.3M</div>
+              <div class="col-header-admin">Brokerage: 14 deals &middot; $7.8M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-1"></div>
+                <div class="deal-address">742 Evergreen Terrace</div>
+                <div class="deal-contact">Michael Chen</div>
+                <div class="deal-price">$485,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-zillow">Zillow</span>
+                  <span class="deal-days">2d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Schedule initial consultation call</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Pre-approved for $500K. Looking for 3BR in west side. Relocating from Portland.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Email inquiry via Zillow — Jan 30</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-2"></div>
+                <div class="deal-address">1847 Oakwood Dr</div>
+                <div class="deal-contact">Jessica & Ryan Park</div>
+                <div class="deal-price">$625,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">1d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+                  James K.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Send welcome packet and schedule call</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Referred by the Hendersons. Young family, first-time buyers. Budget flexible up to $650K.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Phone call — Jan 31</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-3"></div>
+                <div class="deal-address">305 Birch Lane, Unit 4B</div>
+                <div class="deal-contact">Amanda Torres</div>
+                <div class="deal-price">$340,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-openhouse">Open House</span>
+                  <span class="deal-days">5d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Follow up from Sunday open house</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Interested in condos near downtown. Works in tech, flexible on timing.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Met at open house — Jan 26</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-red stale" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-4"></div>
+                <div class="deal-address">9120 Summit Ridge Ct</div>
+                <div class="deal-contact">David Kowalski</div>
+                <div class="deal-price">$715,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-social">Social</span>
+                  <span class="deal-days">14d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+                  Maria L.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Re-engage or archive — no response to last 2 emails</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Instagram DM lead. Luxury buyer, unclear timeline.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Email follow-up — Jan 18</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="col-arrow">
+            <span class="col-arrow-icon">&rarr;</span>
+            <span class="col-arrow-pct">68%</span>
+          </div>
+
+          <!-- Column 2: Nurturing -->
+          <div class="crm-column col-2">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">Nurturing</div>
+              <div class="col-stats">
+                <span class="col-count">3 deals</span>
+                <span class="col-value">$1.6M</span>
+              </div>
+              <div class="col-header-team">Team: 6 deals &middot; $3.1M</div>
+              <div class="col-header-admin">Brokerage: 11 deals &middot; $5.9M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-5"></div>
+                <div class="deal-address">2240 Magnolia Blvd</div>
+                <div class="deal-contact">Rachel & Tim Nguyen</div>
+                <div class="deal-price">$550,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">1d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Send curated list of 5 properties matching criteria</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Need 4BR for growing family. Good schools a must. Pre-approved with First National.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Video call — Jan 31</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-6"></div>
+                <div class="deal-address">887 Westfield Ave</div>
+                <div class="deal-contact">Carlos Mendez</div>
+                <div class="deal-price">$425,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-zillow">Zillow</span>
+                  <span class="deal-days">6d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+                  James K.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Call to discuss updated price preferences</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Investor looking for rental properties. Cash buyer. Wants 8%+ cap rate.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Text message — Jan 26</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-red stale" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-7"></div>
+                <div class="deal-address">4501 Pine Crest Way</div>
+                <div class="deal-contact">Linda Okafor</div>
+                <div class="deal-price">$590,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-realtor">Realtor.com</span>
+                  <span class="deal-days">12d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></div>
+                  Tom R.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Send market update for her target neighborhoods</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Downsizing from 5BR. Wants single-story. No rush — lease ends in June.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Email — Jan 20</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="col-arrow">
+            <span class="col-arrow-icon">&rarr;</span>
+            <span class="col-arrow-pct">55%</span>
+          </div>
+
+          <!-- Column 3: Showing -->
+          <div class="crm-column col-3">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">Showing</div>
+              <div class="col-stats">
+                <span class="col-count">4 deals</span>
+                <span class="col-value">$2.4M</span>
+              </div>
+              <div class="col-header-team">Team: 7 deals &middot; $4.6M</div>
+              <div class="col-header-admin">Brokerage: 12 deals &middot; $8.1M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-8"></div>
+                <div class="deal-address">156 Harbor View Ln</div>
+                <div class="deal-contact">Daniel & Priya Sharma</div>
+                <div class="deal-price">$780,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">1d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">3 showings scheduled for Saturday AM</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Loved 156 Harbor View on first tour. Want to see comparables before deciding.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">In-person showing — Jan 31</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-9"></div>
+                <div class="deal-address">3322 Elm Street</div>
+                <div class="deal-contact">Kevin O'Brien</div>
+                <div class="deal-price">$395,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-openhouse">Open House</span>
+                  <span class="deal-days">3d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+                  Maria L.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Second showing on Tuesday at 4pm</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Single professional. Wants walkable neighborhood. Liked the layout, concerned about street noise.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Text — Jan 29</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-10"></div>
+                <div class="deal-address">710 Riverside Dr, #12A</div>
+                <div class="deal-contact">Sarah Kim</div>
+                <div class="deal-price">$520,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-zillow">Zillow</span>
+                  <span class="deal-days">7d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+                  James K.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Schedule third showing — she wants to bring her parents</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Liked the river views but wants more storage. Looking at 2 other condos with competing agent.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Phone call — Jan 25</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-11"></div>
+                <div class="deal-address">2901 Maple Heights Blvd</div>
+                <div class="deal-contact">Greg & Tanya Foster</div>
+                <div class="deal-price">$685,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">5d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Revisit top 2 picks this weekend</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Relocating for work. Need to close by March. Seen 6 homes so far, narrowing down.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">In-person showing — Jan 27</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="col-arrow">
+            <span class="col-arrow-icon">&rarr;</span>
+            <span class="col-arrow-pct">42%</span>
+          </div>
+
+          <!-- Column 4: Offer -->
+          <div class="crm-column col-4">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">Offer</div>
+              <div class="col-stats">
+                <span class="col-count">3 deals</span>
+                <span class="col-value">$1.9M</span>
+              </div>
+              <div class="col-header-team">Team: 5 deals &middot; $3.2M</div>
+              <div class="col-header-admin">Brokerage: 9 deals &middot; $6.1M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-12"></div>
+                <div class="deal-address">445 Lakeshore Blvd</div>
+                <div class="deal-contact">Nathan & Emily Brooks</div>
+                <div class="deal-price">$820,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">today</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Offer submitted at $805K — awaiting seller response</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Strong offer with escalation clause up to $835K. Competing with 2 other offers.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Phone — Feb 1</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-13"></div>
+                <div class="deal-address">1102 Chestnut Hill Rd</div>
+                <div class="deal-contact">Patricia Alvarez</div>
+                <div class="deal-price">$465,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-openhouse">Open House</span>
+                  <span class="deal-days">4d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+                  Maria L.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Counter-offer discussion — seller wants $475K</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Client firm at $465K. May walk if no movement. Inspection contingency included.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Email — Jan 28</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-14"></div>
+                <div class="deal-address">678 Willow Creek Ct</div>
+                <div class="deal-contact">Marcus Johnson</div>
+                <div class="deal-price">$590,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-zillow">Zillow</span>
+                  <span class="deal-days">2d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+                  James K.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Preparing offer letter — client approved $590K bid</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Clean offer, no contingencies except financing. Strong pre-approval from Chase.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Video call — Jan 30</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="col-arrow">
+            <span class="col-arrow-icon">&rarr;</span>
+            <span class="col-arrow-pct">78%</span>
+          </div>
+
+          <!-- Column 5: Under Contract -->
+          <div class="crm-column col-5">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">Under Contract</div>
+              <div class="col-stats">
+                <span class="col-count">3 deals</span>
+                <span class="col-value">$1.7M</span>
+              </div>
+              <div class="col-header-team">Team: 4 deals &middot; $2.6M</div>
+              <div class="col-header-admin">Brokerage: 8 deals &middot; $5.4M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-15"></div>
+                <div class="deal-address">229 Cedar Park Ave</div>
+                <div class="deal-contact">Lisa & Robert Wang</div>
+                <div class="deal-price">$695,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">1d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Home inspection scheduled for Feb 5</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Accepted at asking price. 30-day close. Appraisal ordered.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Phone — Jan 31</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-16"></div>
+                <div class="deal-address">5567 Aspen Trail</div>
+                <div class="deal-contact">Jennifer Martinez</div>
+                <div class="deal-price">$410,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-zillow">Zillow</span>
+                  <span class="deal-days">2d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+                  Maria L.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Waiting on appraisal report — due Feb 3</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">FHA loan. Inspection came back clean. Title work in progress.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Text — Jan 30</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-yellow" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-17"></div>
+                <div class="deal-address">8834 Stonegate Dr</div>
+                <div class="deal-contact">William & Claire Dubois</div>
+                <div class="deal-price">$575,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-realtor">Realtor.com</span>
+                  <span class="deal-days">6d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></div>
+                  Tom R.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Negotiate inspection repair credits — seller countered at $3K</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">Inspection found HVAC issue. Client wants $8K credit. May need to compromise.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Email — Jan 26</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="col-arrow">
+            <span class="col-arrow-icon">&rarr;</span>
+            <span class="col-arrow-pct">92%</span>
+          </div>
+
+          <!-- Column 6: Closing -->
+          <div class="crm-column col-6">
+            <div class="col-header">
+              <div class="col-bar"></div>
+              <div class="col-title">Closing</div>
+              <div class="col-stats">
+                <span class="col-count">2 deals</span>
+                <span class="col-value">$1.2M</span>
+              </div>
+              <div class="col-header-team">Team: 3 deals &middot; $2.0M</div>
+              <div class="col-header-admin">Brokerage: 6 deals &middot; $4.2M</div>
+            </div>
+            <div class="col-cards">
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-18"></div>
+                <div class="deal-address">1450 Grandview Terrace</div>
+                <div class="deal-contact">Anthony & Maria Rossi</div>
+                <div class="deal-price">$725,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-referral">Referral</span>
+                  <span class="deal-days">today</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+                  Sarah M.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Final walkthrough Feb 3, closing Feb 5</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">All clear to close. Lender docs received. Title insurance confirmed.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Phone — Feb 1</div>
+                </div>
+              </div>
+
+              <div class="deal-card urgency-green" tabindex="0">
+                <button class="deal-card-focus" tabindex="-1">&hellip;</button>
+                <div class="deal-thumb thumb-19"></div>
+                <div class="deal-address">3780 Brookfield Rd</div>
+                <div class="deal-contact">Samantha Lee</div>
+                <div class="deal-price">$448,000</div>
+                <div class="deal-meta">
+                  <span class="deal-source source-openhouse">Open House</span>
+                  <span class="deal-days">1d ago</span>
+                </div>
+                <div class="deal-agent">
+                  <div class="deal-agent-dot" style="background:linear-gradient(135deg,#10b981,#06b6d4)"></div>
+                  Maria L.
+                </div>
+                <div class="deal-expand">
+                  <div class="deal-expand-label">Next Action</div>
+                  <div class="deal-expand-text">Closing scheduled Feb 7 — coordinate with title company</div>
+                  <div class="deal-expand-label">Notes</div>
+                  <div class="deal-expand-text">First-time buyer, very excited. Gift letter from parents on file. All conditions met.</div>
+                  <div class="deal-expand-label">Last Contact</div>
+                  <div class="deal-expand-text">Text — Jan 31</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

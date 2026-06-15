@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v17: Cartographic Expedition (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #666;
+  padding: 8px 10px 2px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #8b7355 0%, #6b5030 50%, #4a3520 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #f4e4c1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Map Content ─── */
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200,170,120,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(180,150,100,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(220,195,150,0.15) 0%, transparent 70%),
+    linear-gradient(135deg, #f4e4c1 0%, #e8d5a8 30%, #f0dbb4 60%, #e5d0a0 100%);
+  background-color: #f4e4c1;
+  border: 4px double #8b7355;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.map-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,115,85,0.02) 3px, rgba(139,115,85,0.02) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(139,115,85,0.015) 5px, rgba(139,115,85,0.015) 6px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.map-container::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(139,115,85,0.3);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Phase Controls ─── */
+.phase-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 16px 30px 0;
+  position: relative;
+  z-index: 5;
+}
+
+.phase-label {
+  cursor: pointer;
+  padding: 8px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b7355;
+  border: 1.5px solid #8b7355;
+  background: rgba(244,228,193,0.4);
+  transition: background 0.3s, color 0.3s;
+}
+
+.phase-label:first-of-type { border-radius: 6px 0 0 6px; }
+.phase-label:last-of-type { border-radius: 0 6px 6px 0; }
+.phase-label:not(:first-of-type) { border-left: none; }
+
+#phase-scouting:checked ~ .map-container .phase-label[for="phase-scouting"],
+#phase-mapping:checked ~ .map-container .phase-label[for="phase-mapping"],
+#phase-return:checked ~ .map-container .phase-label[for="phase-return"] {
+  background: #6b5030;
+  color: #f4e4c1;
+}
+
+/* ─── Phase visibility ─── */
+.phase-scouting-content,
+.phase-mapping-content,
+.phase-return-content { display: none; }
+
+#phase-scouting:checked ~ .map-container .phase-scouting-content { display: block; }
+#phase-mapping:checked ~ .map-container .phase-mapping-content { display: block; }
+#phase-return:checked ~ .map-container .phase-return-content { display: block; }
+
+/* Phase banner */
+.phase-banner {
+  text-align: center;
+  padding: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a08660;
+}
+
+/* ─── Map Title Banner ─── */
+.map-title {
+  text-align: center;
+  padding: 20px 20px 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.map-title h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4a3520;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.map-title .subtitle {
+  font-size: 11px;
+  color: #8b7355;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.map-title .divider {
+  display: block;
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8b7355, transparent);
+  margin: 8px auto 0;
+}
+
+/* ─── Map Grid ─── */
+.map-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  padding: 12px 30px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ─── Map Regions — Hover Notes ─── */
+.map-region {
+  position: relative;
+  padding: 12px;
+}
+
+.map-region .region-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f9efd4;
+  border: 1.5px solid #c0392b;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 10px;
+  color: #5a3020;
+  line-height: 1.5;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.15);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.map-region:hover .region-note {
+  opacity: 1;
+}
+
+.region-note .note-header {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c0392b;
+  margin-bottom: 4px;
+}
+
+/* ─── Known World — Left Column ─── */
+.known-world {
+  padding: 10px 20px 10px 10px;
+  position: relative;
+}
+
+.capital {
+  position: relative;
+  border: 2px solid #6b5030;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: rgba(107,80,48,0.08);
+}
+
+.capital::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 8px solid #6b5030;
+}
+
+.capital-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.castle {
+  position: relative;
+  width: 48px;
+  height: 32px;
+  background: #6b5030;
+  border-radius: 2px;
+}
+
+.castle::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 4px;
+  width: 8px;
+  height: 14px;
+  background: #6b5030;
+  box-shadow: 14px 0 0 #6b5030, 28px 0 0 #6b5030;
+}
+
+.castle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 16px;
+  background: #f4e4c1;
+  border-radius: 6px 6px 0 0;
+}
+
+.capital h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a3520;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.capital .capital-label {
+  font-size: 10px;
+  color: #8b7355;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.province {
+  position: relative;
+  border: 1.5px solid #8b7355;
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: rgba(139,115,85,0.06);
+}
+
+.province h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a4020;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.province .province-desc {
+  font-size: 10px;
+  color: #8b7355;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.province .complete-stamp {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2d6b30;
+  border: 1.5px solid #2d6b30;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transform: rotate(-2deg);
+}
+
+.terrain-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.terrain-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a08660;
+  opacity: 0.5;
+}
+
+.road-line {
+  width: 2px;
+  height: 16px;
+  margin: 0 auto;
+  border-left: 2px dashed #a08660;
+}
+
+/* ─── Frontier — Middle Column ─── */
+.frontier {
+  padding: 10px 20px;
+  position: relative;
+  border-left: 1px dashed rgba(139,115,85,0.3);
+  border-right: 1px dashed rgba(139,115,85,0.3);
+}
+
+.frontier-label {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #a08660;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted #c4a87a;
+}
+
+.expedition {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 14px;
+  border: 1.5px dashed #8b7355;
+  border-radius: 8px;
+  background: rgba(200,170,120,0.1);
+}
+
+.expedition-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.flag {
+  position: relative;
+  width: 4px;
+  height: 24px;
+  background: #6b5030;
+}
+
+.flag::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 4px;
+  width: 16px;
+  height: 10px;
+  background: #c0392b;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.expedition-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5a4020;
+  letter-spacing: 0.03em;
+}
+
+.expedition-agent {
+  font-size: 10px;
+  color: #a08660;
+  font-style: italic;
+}
+
+.expedition-status {
+  font-size: 11px;
+  color: #7a6040;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.exploration-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.route-dash {
+  flex: 1;
+  height: 0;
+  border-top: 2px dotted #a08660;
+}
+
+.route-end {
+  font-size: 10px;
+  color: #a08660;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.partial-territory {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px dashed rgba(139,115,85,0.4);
+  border-radius: 6px;
+  background: rgba(244,228,193,0.5);
+}
+
+.partial-territory .island {
+  display: inline-block;
+  padding: 4px 10px;
+  margin: 3px;
+  border: 1px dashed #a08660;
+  border-radius: 12px;
+  font-size: 10px;
+  color: #8b7355;
+  background: rgba(200,170,120,0.15);
+}
+
+.question-marks {
+  font-size: 18px;
+  color: rgba(139,115,85,0.4);
+  letter-spacing: 8px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ─── Unexplored — Right Column ─── */
+.unexplored {
+  padding: 10px 10px 10px 20px;
+  position: relative;
+  opacity: 0.6;
+}
+
+.unexplored-label {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #b8a080;
+  margin-bottom: 16px;
+}
+
+.here-be-dragons {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.here-be-dragons h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(74,53,32,0.5);
+  letter-spacing: 0.1em;
+  font-style: italic;
+}
+
+.here-be-dragons .dragon-sub {
+  font-size: 10px;
+  color: rgba(139,115,85,0.5);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.terra-incognita {
+  margin: 16px 0;
+  padding: 10px;
+  border: 1px dotted rgba(139,115,85,0.25);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.terra-incognita h4 {
+  font-size: 11px;
+  color: rgba(74,53,32,0.4);
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
+.terra-incognita p {
+  font-size: 10px;
+  color: rgba(139,115,85,0.4);
+  margin-top: 4px;
+}
+
+.sea-monster {
+  position: relative;
+  width: 80px;
+  height: 40px;
+  margin: 20px auto;
+}
+
+.sea-monster .body {
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  width: 60px;
+  height: 20px;
+  border-radius: 50% 50% 0 0;
+  border: 2px dashed rgba(139,115,85,0.3);
+  border-bottom: none;
+}
+
+.sea-monster .hump1 {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  width: 20px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px dashed rgba(139,115,85,0.3);
+  border-bottom: none;
+}
+
+.sea-monster .hump2 {
+  position: absolute;
+  bottom: 14px;
+  right: 0;
+  width: 16px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px dashed rgba(139,115,85,0.3);
+  border-bottom: none;
+}
+
+.sea-monster .head {
+  position: absolute;
+  bottom: 20px;
+  left: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px dashed rgba(139,115,85,0.3);
+}
+
+.waves {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(139,115,85,0.25);
+  letter-spacing: 4px;
+  margin: 8px 0;
+}
+
+/* ─── Pigeon Trail Toggles ─── */
+.pigeon-controls {
+  display: flex;
+  gap: 8px;
+  padding: 8px 30px;
+  position: relative;
+  z-index: 5;
+  justify-content: center;
+}
+
+.pigeon-toggle {
+  cursor: pointer;
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #8b7355;
+  border: 1px dashed #a08660;
+  border-radius: 12px;
+  background: rgba(244,228,193,0.4);
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Pigeon trail paths */
+.pigeon-trail {
+  position: absolute;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.pigeon-trail-line {
+  border-top: 2px dotted #c0392b;
+  position: absolute;
+  opacity: 0.5;
+}
+
+#pigeon-alpha:checked ~ .map-container .pigeon-trail-alpha,
+#pigeon-beta:checked ~ .map-container .pigeon-trail-beta {
+  opacity: 1;
+}
+
+#pigeon-alpha:checked ~ .map-container .pigeon-toggle[for="pigeon-alpha"],
+#pigeon-beta:checked ~ .map-container .pigeon-toggle[for="pigeon-beta"] {
+  background: #c0392b;
+  color: #f4e4c1;
+  border-color: #c0392b;
+}
+
+/* Trail visualization */
+.pigeon-trail-alpha {
+  top: 180px;
+  left: 35%;
+  width: 200px;
+}
+
+.pigeon-trail-beta {
+  top: 340px;
+  left: 35%;
+  width: 180px;
+}
+
+.trail-line {
+  height: 0;
+  border-top: 2px dotted #c0392b;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.trail-pigeon {
+  font-size: 10px;
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.trail-scroll {
+  background: #f9efd4;
+  border: 1.5px solid #c0392b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #5a3020;
+  line-height: 1.4;
+  margin-top: 4px;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+}
+
+.trail-scroll .scroll-from {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c0392b;
+  margin-bottom: 4px;
+}
+
+.trail-scroll .scroll-question {
+  font-style: italic;
+  color: #5a3020;
+}
+
+.trail-scroll .scroll-routes {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.trail-scroll .route-option {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px dashed #a08660;
+  border-radius: 4px;
+  font-size: 9px;
+  color: #6b5030;
+  text-align: center;
+  background: rgba(200,170,120,0.1);
+}
+
+/* ─── Bottom Row ─── */
+.map-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 30px 20px;
+  border-top: 1px dotted rgba(139,115,85,0.3);
+  margin-top: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.map-legend {
+  border: 1.5px solid #8b7355;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: rgba(244,228,193,0.6);
+  min-width: 180px;
+}
+
+.map-legend h4 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5a4020;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(139,115,85,0.3);
+  padding-bottom: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  color: #6b5030;
+}
+
+.legend-icon {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.legend-line-solid {
+  width: 18px;
+  height: 0;
+  border-top: 2px solid #6b5030;
+}
+
+.legend-line-dashed {
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed #a08660;
+}
+
+.legend-line-dots {
+  width: 18px;
+  height: 0;
+  border-top: 2px dotted rgba(139,115,85,0.4);
+}
+
+.legend-line-pigeon {
+  width: 18px;
+  height: 0;
+  border-top: 2px dotted #c0392b;
+}
+
+/* ─── Compass Rose ─── */
+.compass {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.compass-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid #8b7355;
+  border-radius: 50%;
+}
+
+.compass-ring::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(139,115,85,0.4);
+  border-radius: 50%;
+}
+
+.compass-n, .compass-s, .compass-e, .compass-w {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  color: #5a4020;
+}
+
+.compass-n { top: 6px; left: 50%; transform: translateX(-50%); }
+.compass-s { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.compass-e { right: 6px; top: 50%; transform: translateY(-50%); }
+.compass-w { left: 6px; top: 50%; transform: translateY(-50%); }
+
+.compass-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+}
+
+.compass-needle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 15px solid #c0392b;
+}
+
+.compass-needle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 15px solid #5a4020;
+}
+
+.compass-goal {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 600;
+  color: #8b7355;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ─── Corner Flourishes ─── */
+.corner-tl, .corner-tr, .corner-bl, .corner-br {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  z-index: 3;
+}
+
+.corner-tl { top: 14px; left: 14px; border-top: 2px solid #8b7355; border-left: 2px solid #8b7355; }
+.corner-tr { top: 14px; right: 14px; border-top: 2px solid #8b7355; border-right: 2px solid #8b7355; }
+.corner-bl { bottom: 14px; left: 14px; border-bottom: 2px solid #8b7355; border-left: 2px solid #8b7355; }
+.corner-br { bottom: 14px; right: 14px; border-bottom: 2px solid #8b7355; border-right: 2px solid #8b7355; }
+
+/* ─── Mobile Responsive ─── */
+#preview-mobile:checked ~ .window .map-grid {
+  grid-template-columns: 1fr;
+}
+
+#preview-mobile:checked ~ .window .frontier {
+  border-left: none;
+  border-right: none;
+  border-top: 1px dashed rgba(139,115,85,0.3);
+  border-bottom: 1px dashed rgba(139,115,85,0.3);
+}
+
+#preview-mobile:checked ~ .window .map-title h2 {
+  font-size: 18px;
+}
+
+#preview-mobile:checked ~ .window .phase-controls {
+  padding: 12px 12px 0;
+}
+
+#preview-mobile:checked ~ .window .phase-label {
+  padding: 6px 12px;
+  font-size: 10px;
+}
+
+#preview-mobile:checked ~ .window .pigeon-controls {
+  padding: 6px 12px;
+}
+
+#preview-mobile:checked ~ .window .map-grid {
+  padding: 8px 12px 16px;
+}
+
+#preview-mobile:checked ~ .window .known-world,
+#preview-mobile:checked ~ .window .frontier,
+#preview-mobile:checked ~ .window .unexplored {
+  padding: 10px 6px;
+}
+
+#preview-mobile:checked ~ .window .map-bottom {
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+}
+
+#preview-mobile:checked ~ .window .pigeon-trail-alpha,
+#preview-mobile:checked ~ .window .pigeon-trail-beta {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  margin: 8px 0;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v17</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Cartographic Expedition (v7) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + expedition phase radios, hover map notes, pigeon trail checkboxes.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v17.html as an enhanced iteration of v7 (Cartographic Expedition). Take the existing Cartographic map and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: radio buttons for expedition phases (scouting/mapping/return), :hover on map regions reveals exploration notes and annotations, checkbox toggles for messenger pigeon trails (question routing visualization). Mobile: zoomed map sections, swipe-like radio switching between regions. Preserve parchment/ink aesthetic.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Enhanced Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Enhanced Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Enhanced Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Enhanced Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Enhanced Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Enhanced Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Enhanced Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Enhanced Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Enhanced Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Enhanced Mycelium Network</span>
+        </a>
+        <div class="exp-vc-group">Original Series (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Phase state -->
+    <input type="radio" name="phase" id="phase-scouting" checked>
+    <input type="radio" name="phase" id="phase-mapping">
+    <input type="radio" name="phase" id="phase-return">
+
+    <!-- Pigeon trail state -->
+    <input type="checkbox" id="pigeon-alpha">
+    <input type="checkbox" id="pigeon-beta">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="map-container">
+        <!-- Corner flourishes -->
+        <div class="corner-tl"></div>
+        <div class="corner-tr"></div>
+        <div class="corner-bl"></div>
+        <div class="corner-br"></div>
+
+        <!-- Map Title -->
+        <div class="map-title">
+          <h2>The Realm of Production</h2>
+          <div class="subtitle">A Chart of Known &amp; Unknown Territories</div>
+          <span class="divider"></span>
+        </div>
+
+        <!-- Phase Controls -->
+        <div class="phase-controls">
+          <label for="phase-scouting" class="phase-label">Scouting</label>
+          <label for="phase-mapping" class="phase-label">Mapping</label>
+          <label for="phase-return" class="phase-label">Return</label>
+        </div>
+
+        <!-- Pigeon Trail Controls -->
+        <div class="pigeon-controls">
+          <label for="pigeon-alpha" class="pigeon-toggle">&#x1F54A; Alpha Trail</label>
+          <label for="pigeon-beta" class="pigeon-toggle">&#x1F54A; Beta Trail</label>
+        </div>
+
+        <!-- Pigeon Trails (toggled by checkboxes) -->
+        <div class="pigeon-trail pigeon-trail-alpha">
+          <div class="trail-line"></div>
+          <div class="trail-pigeon">&#x1F54A; Pigeon from Expedition Alpha</div>
+          <div class="trail-scroll">
+            <div class="scroll-from">Message from Expedition Alpha</div>
+            <div class="scroll-question">The UI Archipelago has two possible routes. Which route shall we chart?</div>
+            <div class="scroll-routes">
+              <div class="route-option">Northern Passage<br><strong>Server Components</strong></div>
+              <div class="route-option">Southern Passage<br><strong>Client SPA</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pigeon-trail pigeon-trail-beta">
+          <div class="trail-line"></div>
+          <div class="trail-pigeon">&#x1F54A; Pigeon from Expedition Beta</div>
+          <div class="trail-scroll">
+            <div class="scroll-from">Message from Expedition Beta</div>
+            <div class="scroll-question">The Testing Wastes require a framework. Which standard shall we adopt?</div>
+            <div class="scroll-routes">
+              <div class="route-option">Eastern Road<br><strong>Vitest</strong></div>
+              <div class="route-option">Western Road<br><strong>Jest</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCOUTING PHASE -->
+        <div class="phase-scouting-content">
+          <div class="phase-banner">Phase I &mdash; Scouting: Expeditions Dispatched</div>
+          <div class="map-grid">
+            <!-- KNOWN WORLD -->
+            <div class="known-world map-region">
+              <div class="region-note">
+                <div class="note-header">Explorer's Note</div>
+                The Capital stands strong. Three provinces fully charted. Roads are well-maintained. The Human Commander has issued orders for two new expeditions into the frontier.
+              </div>
+              <div class="capital">
+                <div class="capital-icon">
+                  <div class="castle"></div>
+                </div>
+                <h3>The Capital</h3>
+                <div class="capital-label">Human Command</div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Province of Authentication</h4>
+                <div class="province-desc">Login flows, session management, OAuth integration.</div>
+                <span class="complete-stamp">Complete</span>
+                <div class="terrain-dots">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>The Database Plains</h4>
+                <div class="province-desc">Schema migrations, query optimization, connection pooling.</div>
+                <span class="complete-stamp">Complete</span>
+                <div class="terrain-dots">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Port of API Gateway</h4>
+                <div class="province-desc">RESTful endpoints, rate limiting, request validation.</div>
+                <span class="complete-stamp">Complete</span>
+                <div class="terrain-dots">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FRONTIER -->
+            <div class="frontier map-region">
+              <div class="region-note">
+                <div class="note-header">Frontier Report</div>
+                Two expedition parties have set out. Alpha heads east toward the UI Archipelago. Beta pushes south into the Testing Wastes. Both have sent pigeons requesting guidance.
+              </div>
+              <div class="frontier-label">The Frontier</div>
+              <div class="expedition">
+                <div class="expedition-flag">
+                  <div class="flag"></div>
+                  <div>
+                    <div class="expedition-name">Expedition Alpha</div>
+                    <div class="expedition-agent">Frontend Agent &mdash; Scouting</div>
+                  </div>
+                </div>
+                <div class="expedition-status">Scouts dispatched toward the UI Archipelago. Initial coastline sighted. Awaiting orders on approach vector.</div>
+                <div class="exploration-route">
+                  <div class="route-dash"></div>
+                  <div class="route-end">eastward &rarr;</div>
+                </div>
+              </div>
+              <div class="expedition">
+                <div class="expedition-flag">
+                  <div class="flag"></div>
+                  <div>
+                    <div class="expedition-name">Expedition Beta</div>
+                    <div class="expedition-agent">Testing Agent &mdash; Scouting</div>
+                  </div>
+                </div>
+                <div class="expedition-status">Scouts have entered the Testing Wastes. Terrain is hostile. No outposts established yet.</div>
+                <div class="exploration-route">
+                  <div class="route-dash"></div>
+                  <div class="route-end">southward &rarr;</div>
+                </div>
+                <div class="question-marks">? ? ? ? ?</div>
+              </div>
+            </div>
+
+            <!-- UNEXPLORED -->
+            <div class="unexplored map-region">
+              <div class="region-note">
+                <div class="note-header">Cartographer's Warning</div>
+                Beyond the frontier lies uncharted territory. No expedition has ventured this far. The map ends here. Rumors of dangerous currents and unknown creatures persist.
+              </div>
+              <div class="unexplored-label">Terra Incognita</div>
+              <div class="here-be-dragons">
+                <h3>Here Be Dragons</h3>
+                <div class="dragon-sub">Beyond the edge of the known world</div>
+              </div>
+              <div class="terra-incognita">
+                <h4>Performance Optimization</h4>
+                <p>Uncharted territory. No expedition dispatched.</p>
+              </div>
+              <div class="waves">~ ~ ~ ~ ~ ~ ~ ~</div>
+              <div class="sea-monster">
+                <div class="head"></div>
+                <div class="hump1"></div>
+                <div class="body"></div>
+                <div class="hump2"></div>
+              </div>
+              <div class="waves">~ ~ ~ ~ ~ ~ ~ ~</div>
+              <div class="terra-incognita">
+                <h4>The Deployment Seas</h4>
+                <p>Uncharted waters. Rumors of CI/CD currents.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAPPING PHASE -->
+        <div class="phase-mapping-content">
+          <div class="phase-banner">Phase II &mdash; Mapping: Territory Under Survey</div>
+          <div class="map-grid">
+            <div class="known-world map-region">
+              <div class="region-note">
+                <div class="note-header">Explorer's Note</div>
+                Known territory remains stable. Supply lines from the Capital are well-established. New cartographic data flowing back from both expedition parties.
+              </div>
+              <div class="capital">
+                <div class="capital-icon">
+                  <div class="castle"></div>
+                </div>
+                <h3>The Capital</h3>
+                <div class="capital-label">Human Command</div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Province of Authentication</h4>
+                <div class="province-desc">Login flows, session management, OAuth integration.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>The Database Plains</h4>
+                <div class="province-desc">Schema migrations, query optimization, connection pooling.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Port of API Gateway</h4>
+                <div class="province-desc">RESTful endpoints, rate limiting, request validation.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+            </div>
+
+            <div class="frontier map-region">
+              <div class="region-note">
+                <div class="note-header">Frontier Report</div>
+                Active mapping underway. Alpha has established coastal outposts. Beta has unit test outposts but integration territory remains hostile.
+              </div>
+              <div class="frontier-label">The Frontier &mdash; Active Mapping</div>
+              <div class="expedition">
+                <div class="expedition-flag">
+                  <div class="flag"></div>
+                  <div>
+                    <div class="expedition-name">Expedition Alpha</div>
+                    <div class="expedition-agent">Frontend Agent &mdash; Mapping</div>
+                  </div>
+                </div>
+                <div class="expedition-status">Charting the UI Archipelago&hellip; Coastline partially mapped. Interior regions still under survey.</div>
+                <div class="partial-territory">
+                  <span class="island">Component Island</span>
+                  <span class="island">State Mgmt Bay</span>
+                  <span class="island">Routing Strait</span>
+                  <span class="island">Style Reef</span>
+                </div>
+              </div>
+              <div class="expedition">
+                <div class="expedition-flag">
+                  <div class="flag"></div>
+                  <div>
+                    <div class="expedition-name">Expedition Beta</div>
+                    <div class="expedition-agent">Testing Agent &mdash; Mapping</div>
+                  </div>
+                </div>
+                <div class="expedition-status">Surveying the Testing Wastes. Unit test outposts established. Integration territory remains hostile.</div>
+                <div class="partial-territory">
+                  <span class="island">Unit Outpost</span>
+                  <span class="island">Mock Harbor</span>
+                </div>
+                <div class="question-marks">? ? ?</div>
+              </div>
+            </div>
+
+            <div class="unexplored map-region">
+              <div class="region-note">
+                <div class="note-header">Cartographer's Warning</div>
+                Frontier expeditions have pushed the edge of the known world slightly eastward. But vast territory remains unexplored.
+              </div>
+              <div class="unexplored-label">Terra Incognita</div>
+              <div class="here-be-dragons">
+                <h3>Here Be Dragons</h3>
+                <div class="dragon-sub">Shrinking, but still formidable</div>
+              </div>
+              <div class="terra-incognita">
+                <h4>Performance Optimization</h4>
+                <p>Uncharted. Expedition Gamma planned.</p>
+              </div>
+              <div class="waves">~ ~ ~ ~ ~ ~ ~ ~</div>
+              <div class="terra-incognita">
+                <h4>The Deployment Seas</h4>
+                <p>Uncharted waters. Rumors of CI/CD currents.</p>
+              </div>
+              <div class="terra-incognita">
+                <h4>Monitoring Highlands</h4>
+                <p>Distant peaks. Visibility unknown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RETURN PHASE -->
+        <div class="phase-return-content">
+          <div class="phase-banner">Phase III &mdash; Return: Expeditions Report Back</div>
+          <div class="map-grid">
+            <div class="known-world map-region">
+              <div class="region-note">
+                <div class="note-header">Explorer's Note</div>
+                The known world has expanded. Two new provinces have been annexed from the frontier. The Capital celebrates. New maps are being drawn.
+              </div>
+              <div class="capital">
+                <div class="capital-icon">
+                  <div class="castle"></div>
+                </div>
+                <h3>The Capital</h3>
+                <div class="capital-label">Human Command</div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Province of Authentication</h4>
+                <div class="province-desc">Login flows, session management, OAuth integration.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>The Database Plains</h4>
+                <div class="province-desc">Fully charted and fortified.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Port of API Gateway</h4>
+                <div class="province-desc">Harbor fortified. Trade routes open.</div>
+                <span class="complete-stamp">Complete</span>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>UI Archipelago</h4>
+                <div class="province-desc">Components, state management, routing, and styling fully charted by Expedition Alpha.</div>
+                <span class="complete-stamp">Complete</span>
+                <div class="terrain-dots">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="road-line"></div>
+              <div class="province">
+                <h4>Testing Wastes</h4>
+                <div class="province-desc">Unit and integration outposts established by Expedition Beta. Territory pacified.</div>
+                <span class="complete-stamp">Complete</span>
+                <div class="terrain-dots">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="frontier map-region">
+              <div class="region-note">
+                <div class="note-header">Frontier Report</div>
+                The frontier has moved east. Previous expedition zones are now known territory. New frontiers await.
+              </div>
+              <div class="frontier-label">New Frontier</div>
+              <div class="expedition">
+                <div class="expedition-flag">
+                  <div class="flag"></div>
+                  <div>
+                    <div class="expedition-name">Expedition Gamma</div>
+                    <div class="expedition-agent">Performance Agent &mdash; Preparing</div>
+                  </div>
+                </div>
+                <div class="expedition-status">New expedition being assembled. Target: Performance Optimization territory. Awaiting dispatch orders from the Capital.</div>
+                <div class="question-marks">? ? ? ? ?</div>
+              </div>
+            </div>
+
+            <div class="unexplored map-region">
+              <div class="region-note">
+                <div class="note-header">Cartographer's Warning</div>
+                The unknown retreats but never vanishes. New horizons always appear beyond the last.
+              </div>
+              <div class="unexplored-label">Terra Incognita</div>
+              <div class="here-be-dragons">
+                <h3>Here Be Dragons</h3>
+                <div class="dragon-sub">Ever retreating, never gone</div>
+              </div>
+              <div class="waves">~ ~ ~ ~ ~ ~ ~ ~</div>
+              <div class="sea-monster">
+                <div class="head"></div>
+                <div class="hump1"></div>
+                <div class="body"></div>
+                <div class="hump2"></div>
+              </div>
+              <div class="waves">~ ~ ~ ~ ~ ~ ~ ~</div>
+              <div class="terra-incognita">
+                <h4>The Deployment Seas</h4>
+                <p>Still uncharted. Next expedition's target.</p>
+              </div>
+              <div class="terra-incognita">
+                <h4>Monitoring Highlands</h4>
+                <p>Distant peaks. Visibility unknown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="map-bottom">
+          <div class="map-legend">
+            <h4>Legend</h4>
+            <div class="legend-item">
+              <div class="legend-icon">&#x1F3F0;</div>
+              <span>Capital = Human</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon">&#x2691;</div>
+              <span>Expedition = Agent</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon"><div class="legend-line-solid"></div></div>
+              <span>Explored = Complete</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon"><div class="legend-line-dashed"></div></div>
+              <span>Frontier = In Progress</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon"><div class="legend-line-dots"></div></div>
+              <span>Unexplored = Unknown</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon"><div class="legend-line-pigeon"></div></div>
+              <span>Pigeon Trail = Question</span>
+            </div>
+          </div>
+
+          <div class="compass">
+            <div class="compass-ring"></div>
+            <span class="compass-n">N</span>
+            <span class="compass-s">S</span>
+            <span class="compass-e">E</span>
+            <span class="compass-w">W</span>
+            <div class="compass-needle"></div>
+            <div class="compass-goal">Destination: Production Launch</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

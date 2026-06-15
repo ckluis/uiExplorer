@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v1: Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; max-height: 300px; overflow-y: auto; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8f9fa; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-family: 'Inter', sans-serif; display: flex; }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Main App Layout ─── */
+.app-layout { display: flex; flex: 1; height: 100%; }
+
+/* Left nav sidebar */
+.app-nav { width: 56px; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 8px; flex-shrink: 0; }
+.app-nav-logo { width: 32px; height: 32px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 8px; margin-bottom: 12px; }
+.app-nav-item { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); transition: all 0.2s; cursor: pointer; position: relative; }
+.app-nav-item:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+.app-nav-item.active { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+.app-nav-item svg { width: 20px; height: 20px; }
+.app-nav-item .badge { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; font-size: 9px; font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; }
+.app-nav-spacer { flex: 1; }
+
+/* Main content area */
+.app-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Top bar */
+.app-topbar { display: flex; align-items: center; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e7eb; gap: 16px; flex-shrink: 0; }
+.app-topbar h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+.app-topbar-spacer { flex: 1; }
+.app-topbar-search { width: 240px; padding: 7px 12px 7px 32px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; font-family: inherit; background: #f9fafb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat; color: #555; outline: none; }
+.app-topbar-search:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+.app-topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); }
+
+/* Page content */
+.app-page { flex: 1; overflow-y: auto; padding: 24px; background: #f8f9fa; }
+.page-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.page-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 20px; }
+.page-card h3 { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 12px; }
+.page-card-stats { display: flex; gap: 24px; margin-bottom: 16px; }
+.page-stat { display: flex; flex-direction: column; }
+.page-stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; }
+.page-stat-label { font-size: 11px; color: #6b7280; }
+.page-card-chart { height: 80px; background: linear-gradient(to right, rgba(102,126,234,0.1), rgba(102,126,234,0.05)); border-radius: 8px; position: relative; overflow: hidden; }
+.page-card-chart::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(to right, #667eea 0%, #667eea 20%, #10b981 20%, #10b981 55%, #f59e0b 55%, #f59e0b 75%, #ef4444 75%, #ef4444 100%); opacity: 0.3; border-radius: 0 0 8px 8px; }
+.page-table { width: 100%; font-size: 12px; }
+.page-table th { text-align: left; padding: 8px 12px; background: #f9fafb; color: #6b7280; font-weight: 500; border-bottom: 1px solid #e5e7eb; }
+.page-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+.page-table tr:last-child td { border-bottom: none; }
+
+/* Issue indicator badges on page */
+.issue-indicator { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; font-size: 10px; font-weight: 600; color: #ef4444; cursor: pointer; }
+.issue-indicator.warning { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+.issue-indicator svg { width: 12px; height: 12px; }
+
+/* ─── Command Center Panel ─── */
+.command-panel { width: 320px; background: #1e293b; color: #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; border-left: 1px solid #334155; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Panel collapsed state */
+#panel-collapsed:checked ~ .window .command-panel { width: 0; border-left: none; overflow: hidden; }
+#panel-collapsed:checked ~ .window .panel-fab { display: flex; }
+
+/* FAB for collapsed state */
+.panel-fab { display: none; position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4); cursor: pointer; z-index: 50; }
+.panel-fab svg { width: 24px; height: 24px; }
+.panel-fab .fab-badge { position: absolute; top: -4px; right: -4px; width: 22px; height: 22px; background: #ef4444; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #1e293b; }
+
+/* Panel header */
+.panel-header { padding: 16px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 12px; }
+.panel-title { font-size: 14px; font-weight: 700; color: #fff; flex: 1; }
+.panel-kbd-hint { font-size: 10px; color: #64748b; font-family: 'JetBrains Mono', monospace; }
+.panel-close { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: all 0.2s; }
+.panel-close:hover { background: rgba(255,255,255,0.1); color: #94a3b8; }
+.panel-close svg { width: 16px; height: 16px; }
+
+/* Panel tabs */
+.panel-tabs { display: flex; padding: 0 16px; border-bottom: 1px solid #334155; }
+.panel-tab { padding: 12px 16px; font-size: 12px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.panel-tab:hover { color: #94a3b8; }
+.panel-tab .count { background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+#tab-active:checked ~ .window .panel-tab[data-tab="active"],
+#tab-resolved:checked ~ .window .panel-tab[data-tab="resolved"],
+#tab-all:checked ~ .window .panel-tab[data-tab="all"] { color: #fff; border-bottom-color: #667eea; }
+#tab-active:checked ~ .window .panel-tab[data-tab="active"] .count { background: #667eea; }
+
+/* Quick filter */
+.panel-filter { padding: 12px 16px; border-bottom: 1px solid #334155; }
+.panel-filter-input { width: 100%; padding: 8px 12px 8px 32px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none; }
+.panel-filter-input::placeholder { color: #475569; }
+.panel-filter-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+.panel-filter-wrap { position: relative; }
+.panel-filter-wrap::before { content: '/'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #667eea; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+
+/* Issue tree */
+.panel-tree { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+/* Issue category */
+.issue-category { margin-bottom: 4px; }
+.issue-category-header { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; transition: background 0.15s; }
+.issue-category-header:hover { background: rgba(255,255,255,0.03); }
+.issue-category-icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.issue-category-icon.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.issue-category-icon.warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.issue-category-icon.info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.issue-category-name { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; flex: 1; }
+.issue-category-count { font-size: 10px; color: #64748b; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+.issue-category-chevron { color: #475569; transition: transform 0.2s; }
+.issue-category-chevron svg { width: 14px; height: 14px; }
+
+/* Issue items */
+.issue-list { padding-left: 0; }
+.issue-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px 10px 44px; cursor: pointer; transition: background 0.15s; position: relative; }
+.issue-item:hover { background: rgba(255,255,255,0.03); }
+.issue-item:focus-within { background: rgba(102, 126, 234, 0.1); }
+.issue-item.selected { background: rgba(102, 126, 234, 0.15); }
+
+/* Checkbox for batch select */
+.issue-checkbox { width: 16px; height: 16px; border: 1px solid #475569; border-radius: 4px; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+.issue-checkbox:hover { border-color: #667eea; }
+.issue-item.selected .issue-checkbox { background: #667eea; border-color: #667eea; }
+.issue-item.selected .issue-checkbox::after { content: ''; width: 8px; height: 5px; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg) translateY(-1px); }
+
+/* Issue content */
+.issue-content { flex: 1; min-width: 0; }
+.issue-title { font-size: 12px; font-weight: 500; color: #e2e8f0; line-height: 1.4; margin-bottom: 4px; }
+.issue-meta { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #64748b; }
+.issue-severity { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.issue-severity.critical { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.issue-severity.warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.issue-severity.info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.issue-source { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.issue-kbd { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #475569; padding: 1px 4px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-left: auto; flex-shrink: 0; }
+
+/* Issue expanded detail */
+.issue-detail { display: none; margin-top: 10px; padding: 10px 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 11px; color: #94a3b8; line-height: 1.5; }
+.issue-item:focus-within .issue-detail { display: block; }
+.issue-detail-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 4px; }
+.issue-detail-label:not(:first-child) { margin-top: 8px; }
+.issue-detail-link { color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.issue-detail-link:hover { text-decoration: underline; }
+.issue-detail-link svg { width: 12px; height: 12px; }
+
+/* Batch action bar */
+.batch-bar { display: none; padding: 12px 16px; background: #0f172a; border-top: 1px solid #334155; }
+#batch-mode:checked ~ .window .batch-bar { display: block; }
+.batch-bar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.batch-bar-count { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+.batch-bar-clear { font-size: 11px; color: #667eea; cursor: pointer; }
+.batch-bar-clear:hover { text-decoration: underline; }
+.batch-bar-actions { display: flex; gap: 8px; }
+.batch-btn { padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.batch-btn.primary { background: #667eea; color: white; }
+.batch-btn.primary:hover { background: #5a6fd6; }
+.batch-btn.secondary { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+.batch-btn.secondary:hover { background: rgba(255,255,255,0.12); }
+.batch-btn svg { width: 14px; height: 14px; }
+.batch-btn .kbd { font-family: 'JetBrains Mono', monospace; font-size: 9px; opacity: 0.7; margin-left: 4px; }
+
+/* Panel footer with keyboard hints */
+.panel-footer { padding: 12px 16px; background: #0f172a; border-top: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.panel-hint { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b; }
+.panel-hint kbd { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 2px 5px; background: rgba(255,255,255,0.08); border-radius: 3px; color: #94a3b8; }
+
+/* ─── Mobile Overrides ─── */
+#preview-mobile:checked ~ .window { flex-direction: column; }
+#preview-mobile:checked ~ .window .app-nav { display: none; }
+#preview-mobile:checked ~ .window .app-layout { flex-direction: column; }
+#preview-mobile:checked ~ .window .app-main { display: none; }
+#preview-mobile:checked ~ .window .command-panel { width: 100%; flex: 1; border-left: none; }
+#preview-mobile:checked ~ .window .panel-footer { display: none; }
+#preview-mobile:checked ~ .window .issue-kbd { display: none; }
+#preview-mobile:checked ~ .window .panel-kbd-hint { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring a power-user command center for managing configuration issues across enterprise software. Keyboard-first navigation with batch actions for sysadmins who manage dozens of issues daily. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>Command Center</strong> &mdash; A vim-style side panel for batch issue management. Persistent rail with keyboard shortcuts (j/k navigate, x resolve, / filter, b batch). Tree view grouped by category with severity indicators and cross-page dependency links.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v1: "Command Center" &mdash; Power Admin Side Panel</strong><br><br>
+        Tagline: "j/k to navigate, x to resolve, / to filter."<br><br>
+        Core Concept: A power-user side panel for managing multiple configuration issues with keyboard-first navigation. Think vim-style command palette meets issue tracker. The panel shows a tree view of all system issues categorized by type, with batch action capabilities.<br><br>
+        Exposure Method: Persistent side rail (always visible on right side of screen) + FAB trigger button when collapsed. Keyboard shortcut hints visible throughout (Cmd+K to focus, j/k to navigate, x to resolve, / to filter, b for batch select).<br><br>
+        Presentation Style: Side panel (~320px) with tabs for Active/Resolved/All. Tree view of issues grouped by category. Batch action bar appears when items selected.<br><br>
+        Target Persona: System administrator, power user who manages dozens of configuration issues daily. Values efficiency, keyboard navigation, and information density.<br><br>
+        Platform: Web (desktop-first), simplified mobile view.<br><br>
+        Key UI Elements:<br>
+        - Collapsible side rail with FAB trigger<br>
+        - Issue tree with expandable categories<br>
+        - Keyboard shortcut hints displayed inline (e.g., "[j/k]" next to navigation)<br>
+        - Severity indicators (critical/warning/info)<br>
+        - Batch selection checkboxes<br>
+        - Batch action bar (Resolve All, Snooze All, Assign All)<br>
+        - Quick filter input with "/" prefix<br>
+        - Tab bar: Active (12) | Resolved | All<br>
+        - Issue detail expand on selection<br>
+        - Related config links showing cross-page dependencies<br><br>
+        Sample Checklist Items:<br>
+        1. "API Rate Limit Exceeded" &mdash; Critical &mdash; Caused by: Integration Settings > API Keys<br>
+        2. "User Permission Conflict" &mdash; Warning &mdash; Caused by: Role Definitions > Sales Team<br>
+        3. "Webhook Delivery Failing" &mdash; Critical &mdash; Caused by: Webhooks > Slack Integration<br>
+        4. "Data Sync Stale (3 days)" &mdash; Warning &mdash; Caused by: Integrations > Salesforce<br>
+        5. "Storage Quota 90% Full" &mdash; Info &mdash; Caused by: Storage Settings > Attachments<br><br>
+        Color/Mood: Dark sidebar on light content. Professional, information-dense. Accent color for keyboard hints.<br><br>
+        Interaction Patterns: Hover shows full issue details. Focus-within expands issue row. Checkbox :checked shows batch action bar. Tab radio buttons switch views.<br><br>
+        Device Preview: Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- State radios -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="radio" name="tab" id="tab-active" checked>
+    <input type="radio" name="tab" id="tab-resolved">
+    <input type="radio" name="tab" id="tab-all">
+    <input type="checkbox" id="panel-collapsed">
+    <input type="checkbox" id="batch-mode" checked>
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="app-layout">
+        <!-- Left nav -->
+        <nav class="app-nav">
+          <div class="app-nav-logo"></div>
+          <div class="app-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="app-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="app-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="app-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="badge">5</span>
+          </div>
+          <div class="app-nav-spacer"></div>
+          <div class="app-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+        </nav>
+
+        <!-- Main content -->
+        <div class="app-main">
+          <div class="app-topbar">
+            <h1>System Dashboard</h1>
+            <div class="app-topbar-spacer"></div>
+            <input type="text" class="app-topbar-search" placeholder="Search...">
+            <div class="app-topbar-avatar"></div>
+          </div>
+
+          <div class="app-page">
+            <div class="page-grid">
+              <!-- Overview card -->
+              <div class="page-card">
+                <h3>Platform Overview</h3>
+                <div class="page-card-stats">
+                  <div class="page-stat">
+                    <div class="page-stat-value">2,847</div>
+                    <div class="page-stat-label">Active Users</div>
+                  </div>
+                  <div class="page-stat">
+                    <div class="page-stat-value">98.2%</div>
+                    <div class="page-stat-label">Uptime</div>
+                  </div>
+                </div>
+                <div class="page-card-chart"></div>
+              </div>
+
+              <!-- Integrations card with issues -->
+              <div class="page-card">
+                <h3>Integrations <span class="issue-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 2 issues</span></h3>
+                <table class="page-table">
+                  <tr>
+                    <th>Service</th>
+                    <th>Status</th>
+                    <th>Last Sync</th>
+                  </tr>
+                  <tr>
+                    <td>Salesforce</td>
+                    <td><span class="issue-indicator warning">Stale</span></td>
+                    <td>3 days ago</td>
+                  </tr>
+                  <tr>
+                    <td>Slack</td>
+                    <td><span class="issue-indicator">Failing</span></td>
+                    <td>12 min ago</td>
+                  </tr>
+                  <tr>
+                    <td>GitHub</td>
+                    <td style="color:#10b981;font-weight:500;">Connected</td>
+                    <td>2 min ago</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Storage card with issue -->
+              <div class="page-card">
+                <h3>Storage <span class="issue-indicator warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 90% full</span></h3>
+                <div class="page-card-stats">
+                  <div class="page-stat">
+                    <div class="page-stat-value">45.2 GB</div>
+                    <div class="page-stat-label">Used of 50 GB</div>
+                  </div>
+                </div>
+                <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:90%;background:linear-gradient(to right,#f59e0b,#ef4444);"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Command Center Panel -->
+        <aside class="command-panel">
+          <div class="panel-header">
+            <span class="panel-title">Issues</span>
+            <span class="panel-kbd-hint">Cmd+K</span>
+            <label for="panel-collapsed" class="panel-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </label>
+          </div>
+
+          <div class="panel-tabs">
+            <label for="tab-active" class="panel-tab" data-tab="active">Active <span class="count">12</span></label>
+            <label for="tab-resolved" class="panel-tab" data-tab="resolved">Resolved</label>
+            <label for="tab-all" class="panel-tab" data-tab="all">All</label>
+          </div>
+
+          <div class="panel-filter">
+            <div class="panel-filter-wrap">
+              <input type="text" class="panel-filter-input" placeholder="filter issues...">
+            </div>
+          </div>
+
+          <div class="panel-tree">
+            <!-- Critical Issues -->
+            <div class="issue-category">
+              <div class="issue-category-header">
+                <div class="issue-category-icon critical">!</div>
+                <span class="issue-category-name">Critical</span>
+                <span class="issue-category-count">2</span>
+                <span class="issue-category-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="issue-list">
+                <div class="issue-item selected" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">API Rate Limit Exceeded</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity critical">Critical</span>
+                      <span class="issue-source">Integration Settings</span>
+                      <span class="issue-kbd">[j]</span>
+                    </div>
+                    <div class="issue-detail">
+                      <div class="issue-detail-label">Cause</div>
+                      Your API is receiving 2,340 requests/min, exceeding the 1,000/min limit set in Integration Settings.
+                      <div class="issue-detail-label">Fix</div>
+                      <a href="#" class="issue-detail-link">Integration Settings &rarr; API Keys <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+                      <div class="issue-detail-label">Related</div>
+                      Rate limiting rules, caching configuration
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Webhook Delivery Failing</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity critical">Critical</span>
+                      <span class="issue-source">Webhooks</span>
+                      <span class="issue-kbd">[k]</span>
+                    </div>
+                    <div class="issue-detail">
+                      <div class="issue-detail-label">Cause</div>
+                      Slack webhook endpoint returning 403 errors. The integration token may have been revoked.
+                      <div class="issue-detail-label">Fix</div>
+                      <a href="#" class="issue-detail-link">Webhooks &rarr; Slack Integration <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+                      <div class="issue-detail-label">Related</div>
+                      OAuth tokens, Slack workspace settings
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Warning Issues -->
+            <div class="issue-category">
+              <div class="issue-category-header">
+                <div class="issue-category-icon warning">!</div>
+                <span class="issue-category-name">Warning</span>
+                <span class="issue-category-count">6</span>
+                <span class="issue-category-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="issue-list">
+                <div class="issue-item selected" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">User Permission Conflict</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Role Definitions</span>
+                    </div>
+                    <div class="issue-detail">
+                      <div class="issue-detail-label">Cause</div>
+                      3 users in Sales Team have conflicting permissions from multiple role assignments.
+                      <div class="issue-detail-label">Fix</div>
+                      <a href="#" class="issue-detail-link">Role Definitions &rarr; Sales Team <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Data Sync Stale (3 days)</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Integrations</span>
+                    </div>
+                    <div class="issue-detail">
+                      <div class="issue-detail-label">Cause</div>
+                      Salesforce sync has not completed successfully in 3 days. Last error: authentication expired.
+                      <div class="issue-detail-label">Fix</div>
+                      <a href="#" class="issue-detail-link">Integrations &rarr; Salesforce <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Automation Rule Disabled</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Workflows</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Email Template Outdated</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Communications</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">SSO Certificate Expiring</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Security</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Backup Schedule Missed</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity warning">Warning</span>
+                      <span class="issue-source">Data Management</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Info Issues -->
+            <div class="issue-category">
+              <div class="issue-category-header">
+                <div class="issue-category-icon info">i</div>
+                <span class="issue-category-name">Info</span>
+                <span class="issue-category-count">4</span>
+                <span class="issue-category-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="issue-list">
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Storage Quota 90% Full</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity info">Info</span>
+                      <span class="issue-source">Storage Settings</span>
+                    </div>
+                    <div class="issue-detail">
+                      <div class="issue-detail-label">Cause</div>
+                      Attachment storage at 45.2 GB of 50 GB limit. Consider archiving old files.
+                      <div class="issue-detail-label">Fix</div>
+                      <a href="#" class="issue-detail-link">Storage Settings &rarr; Attachments <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">New Feature Available</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity info">Info</span>
+                      <span class="issue-source">Platform Updates</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">License Renewal (60 days)</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity info">Info</span>
+                      <span class="issue-source">Billing</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="issue-item" tabindex="0">
+                  <div class="issue-checkbox"></div>
+                  <div class="issue-content">
+                    <div class="issue-title">Scheduled Maintenance</div>
+                    <div class="issue-meta">
+                      <span class="issue-severity info">Info</span>
+                      <span class="issue-source">Operations</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Batch action bar -->
+          <div class="batch-bar">
+            <div class="batch-bar-header">
+              <span class="batch-bar-count">2 selected</span>
+              <span class="batch-bar-clear">Clear</span>
+            </div>
+            <div class="batch-bar-actions">
+              <button class="batch-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Resolve All <span class="kbd">x</span>
+              </button>
+              <button class="batch-btn secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Snooze
+              </button>
+              <button class="batch-btn secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                Assign
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <span class="panel-hint"><kbd>j</kbd><kbd>k</kbd> navigate</span>
+            <span class="panel-hint"><kbd>x</kbd> resolve</span>
+            <span class="panel-hint"><kbd>/</kbd> filter</span>
+            <span class="panel-hint"><kbd>b</kbd> batch select</span>
+            <span class="panel-hint"><kbd>esc</kbd> close</span>
+          </div>
+        </aside>
+
+        <!-- FAB for collapsed panel -->
+        <label for="panel-collapsed" class="panel-fab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span class="fab-badge">12</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

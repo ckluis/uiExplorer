@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{FAMILY_NAME}} — Origination · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:#0a0c10; --surface-1:#0f1217; --surface-2:#141821; --surface-3:#1a1f2a;
+  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.13);
+  --ink:#e6e9ef; --ink-dim:#9aa4b2; --ink-faint:#6b7480;
+  --accent:#2ee6c6; --accent-2:#38bdf8; --accent-dim:rgba(46,230,198,0.12); --accent-line:rgba(46,230,198,0.30);
+  --opus:#e5a63b; --sonnet:#8b9cf7; --haiku:#5ec4d4; --auto:#f5a623; --orig:#2ecc71;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+
+/* ─── Sidebar — Lab Instrument ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--surface-1);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+.experiment-sidebar a { color: var(--accent); text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+/* Origin badge (green) instead of version badge */
+.experiment-sidebar .exp-origin-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  background: rgba(46,204,113,0.12);
+  color: var(--orig);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(46,204,113,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus); }
+.experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku); }
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: rgba(245,166,35,0.12);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0 0 10px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: var(--ink-dim); }
+
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: var(--ink-dim); }
+.experiment-sidebar .exp-origination-link a { color: var(--orig); font-weight: 600; }
+
+/* ─── Versions card (lists all variants) ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46,204,113,0.15); }
+.experiment-sidebar .exp-vc-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px; border-radius: 5px;
+  text-decoration: none; color: inherit;
+  border: 1px solid transparent; transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.04); }
+.experiment-sidebar .exp-vc-entry.current { background: var(--accent-dim); border-color: var(--accent-line); }
+.experiment-sidebar .exp-vc-v { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent); min-width: 26px; }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px; color: var(--ink-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ─── Content area ─── */
+.origin-content {
+  flex: 1;
+  overflow-y: auto;
+  background: linear-gradient(135deg,#0d1016,#121722);
+  padding: 56px 64px 80px;
+}
+.origin-content::-webkit-scrollbar { width: 8px; }
+.origin-content::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+
+.origin-inner { max-width: 880px; margin: 0 auto; }
+
+.origin-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.origin-title {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+.origin-lead { font-size: 16px; color: var(--ink-dim); line-height: 1.6; margin: 0 0 40px; max-width: 640px; }
+
+.origin-block { margin-bottom: 48px; }
+.origin-block-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Verbatim master prompt panel */
+.origin-prompt {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 24px 28px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-dim);
+}
+
+.origin-research { font-size: 14px; line-height: 1.7; color: var(--ink-dim); }
+
+/* Variant grid */
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.variant-card {
+  display: block;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.variant-card:hover { border-color: var(--accent-line); transform: translateY(-2px); text-decoration: none; }
+.variant-card .vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.variant-card .vc-name { font-size: 14px; font-weight: 600; color: var(--ink); margin: 6px 0 4px; }
+.variant-card .vc-desc { font-size: 12px; color: var(--ink-faint); line-height: 1.5; }
+
+/* AskUserQuestion block (for origin page, if interactions shaped the series) */
+.origin-ask {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.origin-ask-label {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent); margin-bottom: 8px;
+}
+.origin-ask-question { font-size: 14px; color: var(--ink); margin-bottom: 12px; }
+.origin-ask-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.origin-ask-option {
+  font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+  padding: 6px 10px; background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line); border-radius: 5px;
+}
+.origin-ask-option.selected { color: var(--ink); background: var(--accent-dim); border-color: var(--accent-line); font-weight: 600; }
+.origin-ask-answer {
+  font-size: 13px; color: var(--ink-dim);
+  padding: 10px 12px; background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2); border-radius: 5px;
+}
+.origin-ask-answer strong { color: var(--orig); }
+
+.origin-exec { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ ORIGIN PAGE SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>{{FAMILY_NAME}}</h1>
+      <span class="exp-origin-badge">Origin</span>
+      <span class="exp-model {{MODEL_CLASS}}">{{MODEL}}</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>About This Series</h2>
+      <p>{{SERIES_SUMMARY}}</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        The verbatim master prompt and all AskUserQuestion interactions appear in the main panel.
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variants</h2>
+      <div class="exp-versions-card">
+        <!-- Most recent variant first. Add one per variant. -->
+        <a href="{{FAMILY}}-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">{{VARIANT_1_NAME}}</span>
+        </a>
+        <!-- ... down to vN ... -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ ORIGIN CONTENT ════════════════════ -->
+  <main class="origin-content">
+    <div class="origin-inner">
+      <div class="origin-eyebrow">Origination Series</div>
+      <h1 class="origin-title">{{FAMILY_NAME}}</h1>
+      <p class="origin-lead">{{SERIES_LEAD}}</p>
+
+      <!-- Verbatim master prompt — copy-pasted, never paraphrased -->
+      <div class="origin-block">
+        <div class="origin-block-label">Master Prompt</div>
+        <div class="origin-prompt">
+          {{MASTER_PROMPT}}
+        </div>
+
+        <!-- ── AskUserQuestion interactions — uncomment one per interaction ──
+        <div class="origin-ask">
+          <div class="origin-ask-label">AskUserQuestion</div>
+          <div class="origin-ask-question">{{QUESTION}}</div>
+          <div class="origin-ask-options">
+            <div class="origin-ask-option">{{OPTION_1}}</div>
+            <div class="origin-ask-option selected">{{SELECTED_OPTION}}</div>
+          </div>
+          <div class="origin-ask-answer"><strong>Answer:</strong> {{ANSWER_TEXT}}</div>
+        </div>
+        ── end AskUserQuestion block ── -->
+      </div>
+
+      <!-- Research context / domains -->
+      <div class="origin-block">
+        <div class="origin-block-label">Research Context</div>
+        <div class="origin-research">{{RESEARCH_CONTEXT}}</div>
+      </div>
+
+      <!-- Variants -->
+      <div class="origin-block">
+        <div class="origin-block-label">Variants</div>
+        <div class="variant-grid">
+          {{VARIANT_GRID}}
+          <!-- Each variant card:
+          <a href="{{FAMILY}}-v1.html" class="variant-card">
+            <div class="vc-v">v1</div>
+            <div class="vc-name">{{VARIANT_NAME}}</div>
+            <div class="vc-desc">{{VARIANT_DESC}}</div>
+          </a>
+          -->
+        </div>
+      </div>
+
+      <!-- Execution model -->
+      <div class="origin-block">
+        <div class="origin-block-label">Execution Model</div>
+        <div class="origin-exec">{{EXECUTION_MODEL}}</div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!--
+════════════════════════════════════════════════════════════════════════════
+  VARIANT SIDEBAR SNIPPET — copy this into each {{FAMILY}}-v{N}.html variant.
+  This is the autonomous-variant sidebar shell. Pair it with the standard
+  experiment-template.html shell (sidebar CSS + device preview) and swap the
+  version/model header block for the one below. Restyled to Lab Instrument.
+
+  Requires these extra CSS rules (add alongside the experiment-template CSS):
+
+  .experiment-sidebar .exp-variant {
+    display:inline-block; font-family:var(--mono);
+    background:rgba(46,204,113,0.12); color:var(--orig);
+    font-size:11px; font-weight:600; padding:2px 8px;
+    border:1px solid rgba(46,204,113,0.3); border-radius:4px; margin-top:4px;
+  }
+  .experiment-sidebar .exp-origination-link { font-size:12px; line-height:1.6; color:var(--ink-dim); }
+  .experiment-sidebar .exp-origination-link a { color:var(--orig); font-weight:600; }
+
+  HTML:
+
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>{{FAMILY_NAME}}</h1>
+      <span class="exp-variant">v{N}</span>
+      <span class="exp-model opus">Opus 4.6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+      <div class="exp-runmeta">
+        <span class="exp-effort high">high</span>
+        <span class="exp-harness">Claude Code</span>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>{{WHAT THIS VARIANT EXPLORES}}. Part of a {N}-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>{{SPECIFIC UI APPROACH / PERSONA / DESIGN DIRECTION FOR THIS VARIANT}}.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the
+        exact prompt given to the build agent — it was crafted by the orchestrating agent
+        based on the origination prompt and research phase.<br><br>
+        <strong>{{VARIANT NAME}}</strong><br><br>
+        {{THE FULL, EXACT BUILD PROMPT GIVEN TO THE SUB-AGENT — verbatim, not summarized.
+        Use <br><br> between paragraphs.}}
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="{{FAMILY}}.html">View the origination prompt →</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="{{FAMILY}}.html" class="exp-vc-origin">Origination Prompt →</a>
+        <a href="{{FAMILY}}-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Variant concept name</span>
+        </a>
+        <a href="{{FAMILY}}-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Variant concept name</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+════════════════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>

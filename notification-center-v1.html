@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Center — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Notification Center Experiment ─── */
+.nc-app {
+  --bg: #f8f9fa;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%; height: 100%;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top bar */
+.nc-topbar {
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.nc-topbar-title { font-size: 15px; font-weight: 600; color: #111; }
+.nc-bell-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nc-bell-label:hover { background: #f3f4f6; }
+.nc-bell-label svg { width: 22px; height: 22px; color: #374151; }
+.nc-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 18px; height: 18px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* Page body placeholder */
+.nc-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Panel overlay & slide */
+.nc-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 20;
+}
+.nc-panel {
+  position: absolute;
+  top: 0; right: -400px;
+  width: 400px; height: 100%;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#nc-toggle:checked ~ .nc-overlay { opacity: 1; pointer-events: auto; }
+#nc-toggle:checked ~ .nc-panel { right: 0; }
+
+/* Panel header */
+.nc-panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nc-panel-header h2 { font-size: 16px; font-weight: 700; color: #111; }
+.nc-close-label {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer;
+  color: #6b7280;
+}
+.nc-close-label:hover { background: #f3f4f6; }
+.nc-close-label svg { width: 18px; height: 18px; }
+
+/* Panel content */
+.nc-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Group */
+.nc-group-label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  padding: 16px 20px 8px;
+}
+
+/* Notification item */
+.nc-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f5f5f5;
+  position: relative;
+}
+.nc-item.unread { background: #f0f4ff; }
+.nc-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 8px; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+.nc-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #fff;
+}
+.nc-dot.blue { background: #3b82f6; }
+.nc-dot.green { background: #10b981; }
+.nc-dot.orange { background: #f59e0b; }
+.nc-dot.purple { background: #8b5cf6; }
+.nc-dot.red { background: #ef4444; }
+.nc-item-body { flex: 1; min-width: 0; }
+.nc-item-text { font-size: 13px; color: #374151; line-height: 1.45; }
+.nc-item-text strong { font-weight: 600; color: #111; }
+.nc-item-time { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .nc-panel { width: 100%; right: -100%; }
+#preview-mobile:checked ~ .window #nc-toggle:checked ~ .nc-panel { right: 0; }
+#preview-mobile:checked ~ .window .nc-topbar { padding: 0 16px; }
+#preview-mobile:checked ~ .window .nc-item { padding: 12px 16px; }
+#preview-mobile:checked ~ .window .nc-group-label { padding: 14px 16px 6px; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Notification Center</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores a slide-out notification panel with grouped items (Today, Earlier, This Week), read/unread states, and a checkbox-driven open/close toggle. Pure CSS panel animation with no JavaScript.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v1: Basic panel with grouped items, open/close toggle, read/unread. Create a slide-out notification panel that opens from the right side using a checkbox toggle. Group notifications into Today, Earlier, and This Week sections. Show read/unread states with a blue dot indicator and subtle background highlight for unread items. Include a bell icon trigger button with a badge count.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="notification-center-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Toast notifications</span>
+        </a>
+        <a href="notification-center-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Density toggle</span>
+        </a>
+        <a href="notification-center-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Hover actions</span>
+        </a>
+        <a href="notification-center-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Category filters</span>
+        </a>
+        <a href="notification-center-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial slide-out panel</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="nc-app">
+        <input type="checkbox" id="nc-toggle">
+
+        <div class="nc-topbar">
+          <span class="nc-topbar-title">Dashboard</span>
+          <label for="nc-toggle" class="nc-bell-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="nc-badge">5</span>
+          </label>
+        </div>
+
+        <div class="nc-body">Click the bell icon to open notifications</div>
+
+        <label for="nc-toggle" class="nc-overlay"></label>
+
+        <div class="nc-panel">
+          <div class="nc-panel-header">
+            <h2>Notifications</h2>
+            <label for="nc-toggle" class="nc-close-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </label>
+          </div>
+          <div class="nc-panel-body">
+            <div class="nc-group-label">Today</div>
+
+            <div class="nc-item unread">
+              <div class="nc-dot blue">S</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>Sarah Chen</strong> mentioned you in a comment on <strong>Q4 Planning</strong></div>
+                <div class="nc-item-time">12 min ago</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread">
+              <div class="nc-dot green">D</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>Deploy Bot</strong> successfully deployed <strong>v2.4.1</strong> to production</div>
+                <div class="nc-item-time">1 hour ago</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread">
+              <div class="nc-dot purple">M</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>Mike Rivera</strong> assigned you to <strong>Bug #1234</strong></div>
+                <div class="nc-item-time">2 hours ago</div>
+              </div>
+            </div>
+
+            <div class="nc-group-label">Earlier</div>
+
+            <div class="nc-item">
+              <div class="nc-dot orange">A</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>Anna Kim</strong> approved your pull request <strong>#892</strong></div>
+                <div class="nc-item-time">Yesterday at 4:32 PM</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread">
+              <div class="nc-dot red">S</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>System</strong> detected elevated error rates on <strong>api-gateway</strong></div>
+                <div class="nc-item-time">Yesterday at 2:10 PM</div>
+              </div>
+            </div>
+
+            <div class="nc-group-label">This Week</div>
+
+            <div class="nc-item">
+              <div class="nc-dot blue">J</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>James Wu</strong> shared <strong>Design System v3</strong> with you</div>
+                <div class="nc-item-time">Monday at 10:15 AM</div>
+              </div>
+            </div>
+
+            <div class="nc-item">
+              <div class="nc-dot green">C</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>CI Pipeline</strong> completed 47 test suites with <strong>100% pass rate</strong></div>
+                <div class="nc-item-time">Monday at 9:00 AM</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread">
+              <div class="nc-dot purple">T</div>
+              <div class="nc-item-body">
+                <div class="nc-item-text"><strong>Team Standup</strong> reminder: Daily sync in 15 minutes</div>
+                <div class="nc-item-time">Last Sunday at 8:45 AM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

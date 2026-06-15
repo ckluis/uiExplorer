@@ -1,0 +1,5 @@
+.DS_Store
+**/.DS_Store
+.orchestrator/
+.claude/settings.local.json
+.gstack/

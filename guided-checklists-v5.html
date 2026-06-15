@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v5: Executive Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8fafc; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Executive Dashboard ─── */
+.dashboard { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #1e293b; overflow: hidden; }
+
+/* Left Sidebar Navigation */
+.dash-nav { width: 240px; background: #0f172a; color: #94a3b8; display: flex; flex-direction: column; flex-shrink: 0; }
+.dash-nav-brand { padding: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.dash-nav-logo { width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 800; }
+.dash-nav-name { font-size: 15px; font-weight: 700; color: #fff; }
+.dash-nav-items { flex: 1; padding: 12px 0; overflow-y: auto; }
+.dash-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.dash-nav-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+.dash-nav-item.active { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-right: 3px solid #3b82f6; }
+.dash-nav-item svg { width: 18px; height: 18px; opacity: 0.7; }
+.dash-nav-item.active svg { opacity: 1; }
+.dash-nav-item .nav-badge { margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+.dash-nav-item .nav-status { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; }
+.nav-status.green { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.5); }
+.nav-status.amber { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+.nav-status.red { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+
+.dash-nav-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 0; }
+
+.dash-nav-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+.dash-nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #d946ef); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.dash-nav-user { flex: 1; min-width: 0; }
+.dash-nav-user-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-nav-user-role { font-size: 11px; color: #64748b; }
+
+/* Main Dashboard Area */
+.dash-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Top Header */
+.dash-header { display: flex; align-items: center; gap: 20px; padding: 16px 28px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.dash-header-title { font-size: 20px; font-weight: 700; color: #0f172a; flex: 1; }
+.dash-header-time { display: flex; gap: 2px; background: #f1f5f9; border-radius: 8px; padding: 3px; }
+.time-label { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
+#time-24h:checked ~ .window .time-label[for="time-24h"],
+#time-7d:checked ~ .window .time-label[for="time-7d"],
+#time-30d:checked ~ .window .time-label[for="time-30d"] { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.dash-header-refresh { padding: 8px 16px; background: #f1f5f9; border-radius: 8px; font-size: 12px; font-weight: 600; color: #64748b; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.dash-header-refresh:hover { background: #e2e8f0; }
+
+/* Dashboard Body */
+.dash-body { flex: 1; overflow-y: auto; padding: 24px 28px; background: #f8fafc; }
+
+/* Executive Summary */
+.exec-summary { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-radius: 16px; padding: 28px 32px; margin-bottom: 24px; color: #fff; }
+.exec-summary-header { display: flex; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+.exec-summary-score { text-align: center; }
+.health-gauge { width: 120px; height: 120px; position: relative; }
+.health-gauge-bg { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#22c55e 0deg, #3b82f6 180deg, #f59e0b 230deg, #475569 263deg, #475569 360deg); }
+.health-gauge-inner { position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; background: #0f172a; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.health-score { font-size: 36px; font-weight: 800; color: #fff; line-height: 1; }
+.health-max { font-size: 12px; color: #64748b; margin-top: 2px; }
+.exec-summary-info { flex: 1; }
+.exec-summary-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 6px; }
+.exec-summary-headline { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 12px; line-height: 1.4; }
+.exec-summary-detail { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+
+/* Sparkline Row */
+.exec-sparklines { display: flex; gap: 20px; }
+.sparkline-card { flex: 1; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 14px 16px; }
+.sparkline-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sparkline-label { font-size: 11px; color: #94a3b8; }
+.sparkline-trend { font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 3px; }
+.sparkline-trend.up { color: #22c55e; }
+.sparkline-trend.down { color: #ef4444; }
+.sparkline-value { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.sparkline-chart { height: 32px; display: flex; align-items: flex-end; gap: 3px; }
+.sparkline-bar { flex: 1; background: rgba(59, 130, 246, 0.5); border-radius: 2px; transition: height 0.3s; }
+.sparkline-bar:last-child { background: #3b82f6; }
+
+/* Category Health Cards */
+.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.category-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative; overflow: hidden; }
+.category-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.category-card.excellent::before { background: linear-gradient(90deg, #22c55e, #10b981); }
+.category-card.good::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+.category-card.warning::before { background: linear-gradient(90deg, #f59e0b, #f97316); }
+.category-card.critical::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.category-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.category-name { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.category-score { font-size: 24px; font-weight: 800; color: #0f172a; }
+.category-bar { height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
+.category-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.category-card.excellent .category-bar-fill { background: #22c55e; }
+.category-card.good .category-bar-fill { background: #3b82f6; }
+.category-card.warning .category-bar-fill { background: #f59e0b; }
+.category-card.critical .category-bar-fill { background: #ef4444; }
+.category-issues { font-size: 11px; color: #94a3b8; }
+.category-issues strong { color: #0f172a; }
+
+/* Bottom Grid */
+.bottom-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+
+/* Issues Panel */
+.issues-panel { background: #fff; border-radius: 12px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.panel-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+.panel-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #fef2f2; color: #ef4444; }
+.issue-list { display: flex; flex-direction: column; gap: 10px; }
+.issue-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #f8fafc; border-radius: 10px; border-left: 4px solid #e2e8f0; transition: all 0.2s; }
+.issue-row:hover { background: #f1f5f9; }
+.issue-row.critical { border-left-color: #ef4444; }
+.issue-row.warning { border-left-color: #f59e0b; }
+.issue-row.info { border-left-color: #3b82f6; }
+.issue-severity { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.issue-row.critical .issue-severity { background: #fef2f2; color: #ef4444; }
+.issue-row.warning .issue-severity { background: #fffbeb; color: #f59e0b; }
+.issue-row.info .issue-severity { background: #eff6ff; color: #3b82f6; }
+.issue-content { flex: 1; min-width: 0; }
+.issue-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.issue-meta { display: flex; align-items: center; gap: 12px; font-size: 11px; color: #64748b; }
+.issue-source { display: flex; align-items: center; gap: 4px; }
+.issue-confidence { display: flex; align-items: center; gap: 6px; }
+.confidence-badge { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+.confidence-high { background: #dcfce7; color: #16a34a; }
+.confidence-medium { background: #fef3c7; color: #d97706; }
+.issue-delegate { position: relative; }
+.delegate-btn { padding: 8px 12px; background: #f1f5f9; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+.delegate-btn:hover { background: #e2e8f0; color: #0f172a; }
+.delegate-dropdown { position: absolute; top: 100%; right: 0; margin-top: 4px; background: #fff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 6px; min-width: 180px; display: none; z-index: 10; }
+.issue-delegate:focus-within .delegate-dropdown { display: block; }
+.delegate-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+.delegate-option:hover { background: #f1f5f9; }
+.delegate-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.delegate-avatar.blue { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+.delegate-avatar.purple { background: linear-gradient(135deg, #8b5cf6, #d946ef); }
+.delegate-avatar.green { background: linear-gradient(135deg, #22c55e, #10b981); }
+.delegate-avatar.amber { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.delegate-name { font-size: 12px; font-weight: 600; color: #0f172a; }
+.delegate-role { font-size: 10px; color: #64748b; }
+
+/* Stats Panel */
+.stats-panel { display: flex; flex-direction: column; gap: 16px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 8px; }
+.stat-value { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.stat-sub { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+.stat-trend { font-weight: 700; display: flex; align-items: center; gap: 2px; }
+.stat-trend.up { color: #22c55e; }
+.stat-trend.down { color: #ef4444; }
+.stat-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.stat-bar-label { font-size: 10px; color: #64748b; width: 60px; }
+.stat-bar-track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.stat-bar-fill { height: 100%; border-radius: 3px; }
+.stat-bar-fill.green { background: #22c55e; }
+.stat-bar-fill.blue { background: #3b82f6; }
+.stat-bar-fill.amber { background: #f59e0b; }
+.stat-bar-fill.red { background: #ef4444; }
+
+/* AI Insight Card */
+.ai-insight-card { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 12px; padding: 20px; color: #fff; }
+.ai-insight-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-insight-icon { width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.ai-insight-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.9; }
+.ai-insight-text { font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+.ai-insight-confidence { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.ai-confidence-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+.ai-confidence-fill { height: 100%; background: #fff; border-radius: 2px; }
+.ai-insight-feedback { display: flex; gap: 8px; margin-top: 12px; }
+.ai-feedback-btn { padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.ai-feedback-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .dash-nav { display: none; }
+#preview-mobile:checked ~ .window .dash-header { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+#preview-mobile:checked ~ .window .dash-header-title { font-size: 16px; width: 100%; order: -1; }
+#preview-mobile:checked ~ .window .dash-header-time { order: 1; }
+#preview-mobile:checked ~ .window .dash-header-refresh { display: none; }
+#preview-mobile:checked ~ .window .dash-body { padding: 16px; }
+#preview-mobile:checked ~ .window .exec-summary { padding: 20px; }
+#preview-mobile:checked ~ .window .exec-summary-header { flex-direction: column; align-items: center; text-align: center; }
+#preview-mobile:checked ~ .window .exec-sparklines { flex-direction: column; }
+#preview-mobile:checked ~ .window .category-grid { grid-template-columns: 1fr 1fr; }
+#preview-mobile:checked ~ .window .bottom-grid { grid-template-columns: 1fr; }
+#preview-mobile:checked ~ .window .issue-delegate { display: none; }
+#preview-mobile:checked ~ .window .issue-meta { flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A full-page strategic health dashboard for executives and managers. Shows high-level system health scores, trend sparklines, and issues that can be delegated to team members with one click. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Executive/manager persona who needs strategic overview, not details. Values delegation capabilities and confidence metrics. Large health score gauge, category breakdowns, issue list with severity badges and delegate actions.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>Build: Executive Dashboard (v5)</strong><br><br>
+        Tagline: "Your system health at a glance."<br><br>
+        Core Concept: A full-page strategic health dashboard for executives and managers. Shows high-level system health scores, trend sparklines, and issues that can be delegated to team members with one click.<br><br>
+        Exposure Method: Main navigation menu item "System Health" with status indicator.<br><br>
+        Presentation Style: Full-page dashboard with card grid. Health score gauges, category breakdowns, issue list with delegate actions.<br><br>
+        Target Persona: Executive, manager, VP. Needs strategic overview, not details. Values delegation and confidence metrics.<br><br>
+        Platform: Web (large screen optimized), simplified tablet view.<br><br>
+        Key UI Elements:<br>
+        - Large health score gauge (circular, 0-100)<br>
+        - Trend sparklines showing 7-day history<br>
+        - Category health cards (Integrations, Security, Performance, Data)<br>
+        - Issue list with severity badges<br>
+        - "Delegate to..." dropdown on each issue<br>
+        - Confidence percentage badges (87% confident)<br>
+        - "Executive Summary" section at top<br>
+        - Team member avatars for assignment<br>
+        - Quick stat cards (Open Issues, Resolved This Week, etc.)<br><br>
+        Sample Dashboard Data:<br>
+        - Overall Health: 73/100 (down 5 from last week)<br>
+        - Critical Issues: 2<br>
+        - Warnings: 8<br>
+        - Top Issue: "API Integration Degraded" &mdash; Confidence: 94% &mdash; Delegate to: Sarah M.<br>
+        - Trend: Improving in Security, Declining in Performance<br><br>
+        Color/Mood: Executive, clean, trustworthy. Navy and white with accent colors for status. Data visualization aesthetic.<br><br>
+        AI Feedback Pattern:<br>
+        - Confidence percentages on all predictions<br>
+        - "Was this insight helpful?" implicit via delegation (delegating = trusting the suggestion)<br>
+        - Trend confidence indicators<br><br>
+        Interaction Patterns:<br>
+        - Radio buttons for time range (24h / 7d / 30d)<br>
+        - Checkbox for card expand/collapse<br>
+        - Dropdown simulation with radio buttons for delegate assignment<br>
+        - Hover states on sparklines<br><br>
+        Device Preview: Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Time state -->
+    <input type="radio" name="time" id="time-24h" checked>
+    <input type="radio" name="time" id="time-7d">
+    <input type="radio" name="time" id="time-30d">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="dashboard">
+
+        <!-- Left Navigation -->
+        <nav class="dash-nav">
+          <div class="dash-nav-brand">
+            <div class="dash-nav-logo">A</div>
+            <div class="dash-nav-name">Acme Platform</div>
+          </div>
+
+          <div class="dash-nav-items">
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Overview
+            </div>
+            <div class="dash-nav-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              System Health
+              <span class="nav-status amber"></span>
+            </div>
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Team
+            </div>
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              Integrations
+            </div>
+            <div class="dash-nav-divider"></div>
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Alerts
+              <span class="nav-badge">10</span>
+            </div>
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Activity Log
+            </div>
+            <div class="dash-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
+            </div>
+          </div>
+
+          <div class="dash-nav-footer">
+            <div class="dash-nav-avatar">JD</div>
+            <div class="dash-nav-user">
+              <div class="dash-nav-user-name">Jennifer Davis</div>
+              <div class="dash-nav-user-role">VP of Operations</div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dash-main">
+
+          <!-- Header -->
+          <header class="dash-header">
+            <div class="dash-header-title">System Health</div>
+            <div class="dash-header-time">
+              <label for="time-24h" class="time-label">24h</label>
+              <label for="time-7d" class="time-label">7d</label>
+              <label for="time-30d" class="time-label">30d</label>
+            </div>
+            <div class="dash-header-refresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh
+            </div>
+          </header>
+
+          <!-- Dashboard Body -->
+          <div class="dash-body">
+
+            <!-- Executive Summary -->
+            <div class="exec-summary">
+              <div class="exec-summary-header">
+                <div class="exec-summary-score">
+                  <div class="health-gauge">
+                    <div class="health-gauge-bg"></div>
+                    <div class="health-gauge-inner">
+                      <div class="health-score">73</div>
+                      <div class="health-max">/ 100</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="exec-summary-info">
+                  <div class="exec-summary-title">Executive Summary</div>
+                  <div class="exec-summary-headline">System health is stable but declining. Performance issues require immediate attention.</div>
+                  <div class="exec-summary-detail">Overall health is down 5 points from last week. 2 critical issues need resolution within 24 hours. Security posture has improved 12% following last week's patches. Recommend delegating API integration issue to DevOps team.</div>
+                </div>
+              </div>
+
+              <div class="exec-sparklines">
+                <div class="sparkline-card">
+                  <div class="sparkline-header">
+                    <span class="sparkline-label">Health Trend (7d)</span>
+                    <span class="sparkline-trend down">&darr; 5pts</span>
+                  </div>
+                  <div class="sparkline-value">73</div>
+                  <div class="sparkline-chart">
+                    <div class="sparkline-bar" style="height: 85%;"></div>
+                    <div class="sparkline-bar" style="height: 82%;"></div>
+                    <div class="sparkline-bar" style="height: 78%;"></div>
+                    <div class="sparkline-bar" style="height: 80%;"></div>
+                    <div class="sparkline-bar" style="height: 76%;"></div>
+                    <div class="sparkline-bar" style="height: 74%;"></div>
+                    <div class="sparkline-bar" style="height: 73%;"></div>
+                  </div>
+                </div>
+                <div class="sparkline-card">
+                  <div class="sparkline-header">
+                    <span class="sparkline-label">Issues Resolved</span>
+                    <span class="sparkline-trend up">&uarr; 24%</span>
+                  </div>
+                  <div class="sparkline-value">18</div>
+                  <div class="sparkline-chart">
+                    <div class="sparkline-bar" style="height: 40%;"></div>
+                    <div class="sparkline-bar" style="height: 55%;"></div>
+                    <div class="sparkline-bar" style="height: 45%;"></div>
+                    <div class="sparkline-bar" style="height: 70%;"></div>
+                    <div class="sparkline-bar" style="height: 65%;"></div>
+                    <div class="sparkline-bar" style="height: 80%;"></div>
+                    <div class="sparkline-bar" style="height: 90%;"></div>
+                  </div>
+                </div>
+                <div class="sparkline-card">
+                  <div class="sparkline-header">
+                    <span class="sparkline-label">Avg Response Time</span>
+                    <span class="sparkline-trend down">&darr; 340ms</span>
+                  </div>
+                  <div class="sparkline-value">2.4h</div>
+                  <div class="sparkline-chart">
+                    <div class="sparkline-bar" style="height: 60%;"></div>
+                    <div class="sparkline-bar" style="height: 70%;"></div>
+                    <div class="sparkline-bar" style="height: 55%;"></div>
+                    <div class="sparkline-bar" style="height: 50%;"></div>
+                    <div class="sparkline-bar" style="height: 45%;"></div>
+                    <div class="sparkline-bar" style="height: 40%;"></div>
+                    <div class="sparkline-bar" style="height: 35%;"></div>
+                  </div>
+                </div>
+                <div class="sparkline-card">
+                  <div class="sparkline-header">
+                    <span class="sparkline-label">Team Capacity</span>
+                    <span class="sparkline-trend up">&uarr; 8%</span>
+                  </div>
+                  <div class="sparkline-value">72%</div>
+                  <div class="sparkline-chart">
+                    <div class="sparkline-bar" style="height: 55%;"></div>
+                    <div class="sparkline-bar" style="height: 60%;"></div>
+                    <div class="sparkline-bar" style="height: 58%;"></div>
+                    <div class="sparkline-bar" style="height: 65%;"></div>
+                    <div class="sparkline-bar" style="height: 68%;"></div>
+                    <div class="sparkline-bar" style="height: 70%;"></div>
+                    <div class="sparkline-bar" style="height: 72%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Health Cards -->
+            <div class="category-grid">
+              <div class="category-card excellent">
+                <div class="category-header">
+                  <span class="category-name">Security</span>
+                  <span class="category-score">91</span>
+                </div>
+                <div class="category-bar">
+                  <div class="category-bar-fill" style="width: 91%;"></div>
+                </div>
+                <div class="category-issues"><strong>0</strong> open issues &middot; Improving</div>
+              </div>
+              <div class="category-card good">
+                <div class="category-header">
+                  <span class="category-name">Data Integrity</span>
+                  <span class="category-score">84</span>
+                </div>
+                <div class="category-bar">
+                  <div class="category-bar-fill" style="width: 84%;"></div>
+                </div>
+                <div class="category-issues"><strong>2</strong> open issues &middot; Stable</div>
+              </div>
+              <div class="category-card warning">
+                <div class="category-header">
+                  <span class="category-name">Integrations</span>
+                  <span class="category-score">62</span>
+                </div>
+                <div class="category-bar">
+                  <div class="category-bar-fill" style="width: 62%;"></div>
+                </div>
+                <div class="category-issues"><strong>4</strong> open issues &middot; Needs attention</div>
+              </div>
+              <div class="category-card critical">
+                <div class="category-header">
+                  <span class="category-name">Performance</span>
+                  <span class="category-score">48</span>
+                </div>
+                <div class="category-bar">
+                  <div class="category-bar-fill" style="width: 48%;"></div>
+                </div>
+                <div class="category-issues"><strong>4</strong> open issues &middot; Declining</div>
+              </div>
+            </div>
+
+            <!-- Bottom Grid -->
+            <div class="bottom-grid">
+
+              <!-- Issues Panel -->
+              <div class="issues-panel">
+                <div class="panel-header">
+                  <div class="panel-title">Active Issues</div>
+                  <div class="panel-badge">10 issues</div>
+                </div>
+                <div class="issue-list">
+
+                  <div class="issue-row critical">
+                    <div class="issue-severity">!</div>
+                    <div class="issue-content">
+                      <div class="issue-title">API Integration Degraded &mdash; Salesforce Sync Failing</div>
+                      <div class="issue-meta">
+                        <span class="issue-source">Integrations &rarr; API Settings</span>
+                        <span class="issue-confidence">
+                          <span class="confidence-badge confidence-high">94% confident</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="issue-delegate" tabindex="0">
+                      <div class="delegate-btn">
+                        Delegate
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <div class="delegate-dropdown">
+                        <div class="delegate-option">
+                          <div class="delegate-avatar blue">SM</div>
+                          <div>
+                            <div class="delegate-name">Sarah Mitchell</div>
+                            <div class="delegate-role">DevOps Lead</div>
+                          </div>
+                        </div>
+                        <div class="delegate-option">
+                          <div class="delegate-avatar purple">JK</div>
+                          <div>
+                            <div class="delegate-name">James Kim</div>
+                            <div class="delegate-role">Platform Engineer</div>
+                          </div>
+                        </div>
+                        <div class="delegate-option">
+                          <div class="delegate-avatar green">LC</div>
+                          <div>
+                            <div class="delegate-name">Lisa Chen</div>
+                            <div class="delegate-role">Integration Specialist</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="issue-row critical">
+                    <div class="issue-severity">!</div>
+                    <div class="issue-content">
+                      <div class="issue-title">Database Response Time Elevated &mdash; 340ms Above Threshold</div>
+                      <div class="issue-meta">
+                        <span class="issue-source">Performance &rarr; Database</span>
+                        <span class="issue-confidence">
+                          <span class="confidence-badge confidence-high">91% confident</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="issue-delegate" tabindex="0">
+                      <div class="delegate-btn">
+                        Delegate
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <div class="delegate-dropdown">
+                        <div class="delegate-option">
+                          <div class="delegate-avatar amber">MR</div>
+                          <div>
+                            <div class="delegate-name">Marcus Rodriguez</div>
+                            <div class="delegate-role">DBA</div>
+                          </div>
+                        </div>
+                        <div class="delegate-option">
+                          <div class="delegate-avatar blue">SM</div>
+                          <div>
+                            <div class="delegate-name">Sarah Mitchell</div>
+                            <div class="delegate-role">DevOps Lead</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="issue-row warning">
+                    <div class="issue-severity">!</div>
+                    <div class="issue-content">
+                      <div class="issue-title">Rate Limiting Triggered &mdash; Partner API Throttled</div>
+                      <div class="issue-meta">
+                        <span class="issue-source">Integrations &rarr; Rate Limits</span>
+                        <span class="issue-confidence">
+                          <span class="confidence-badge confidence-high">87% confident</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="issue-delegate" tabindex="0">
+                      <div class="delegate-btn">
+                        Delegate
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <div class="delegate-dropdown">
+                        <div class="delegate-option">
+                          <div class="delegate-avatar green">LC</div>
+                          <div>
+                            <div class="delegate-name">Lisa Chen</div>
+                            <div class="delegate-role">Integration Specialist</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="issue-row warning">
+                    <div class="issue-severity">!</div>
+                    <div class="issue-content">
+                      <div class="issue-title">Cache Hit Ratio Declining &mdash; CDN Performance Impacted</div>
+                      <div class="issue-meta">
+                        <span class="issue-source">Performance &rarr; CDN</span>
+                        <span class="issue-confidence">
+                          <span class="confidence-badge confidence-medium">78% confident</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="issue-delegate" tabindex="0">
+                      <div class="delegate-btn">
+                        Delegate
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <div class="delegate-dropdown">
+                        <div class="delegate-option">
+                          <div class="delegate-avatar purple">JK</div>
+                          <div>
+                            <div class="delegate-name">James Kim</div>
+                            <div class="delegate-role">Platform Engineer</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="issue-row info">
+                    <div class="issue-severity">i</div>
+                    <div class="issue-content">
+                      <div class="issue-title">Data Sync Lag Detected &mdash; Warehouse 12min Behind</div>
+                      <div class="issue-meta">
+                        <span class="issue-source">Data &rarr; ETL Pipeline</span>
+                        <span class="issue-confidence">
+                          <span class="confidence-badge confidence-high">89% confident</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="issue-delegate" tabindex="0">
+                      <div class="delegate-btn">
+                        Delegate
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <div class="delegate-dropdown">
+                        <div class="delegate-option">
+                          <div class="delegate-avatar amber">MR</div>
+                          <div>
+                            <div class="delegate-name">Marcus Rodriguez</div>
+                            <div class="delegate-role">DBA</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Stats Panel -->
+              <div class="stats-panel">
+
+                <div class="stat-card">
+                  <div class="stat-label">Open Issues</div>
+                  <div class="stat-value">10</div>
+                  <div class="stat-sub">
+                    <span class="stat-trend down">&uarr; 3</span> from last week
+                  </div>
+                  <div class="stat-bar-row">
+                    <span class="stat-bar-label">Critical</span>
+                    <div class="stat-bar-track"><div class="stat-bar-fill red" style="width: 20%;"></div></div>
+                  </div>
+                  <div class="stat-bar-row">
+                    <span class="stat-bar-label">Warning</span>
+                    <div class="stat-bar-track"><div class="stat-bar-fill amber" style="width: 40%;"></div></div>
+                  </div>
+                  <div class="stat-bar-row">
+                    <span class="stat-bar-label">Info</span>
+                    <div class="stat-bar-track"><div class="stat-bar-fill blue" style="width: 40%;"></div></div>
+                  </div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-label">Resolved This Week</div>
+                  <div class="stat-value">18</div>
+                  <div class="stat-sub">
+                    <span class="stat-trend up">&uarr; 24%</span> vs last week
+                  </div>
+                </div>
+
+                <div class="ai-insight-card">
+                  <div class="ai-insight-header">
+                    <div class="ai-insight-icon">&star;</div>
+                    <div class="ai-insight-title">AI Insight</div>
+                  </div>
+                  <div class="ai-insight-text">The API integration issue is likely caused by a credential rotation that wasn't propagated to all environments. Recommend checking the staging environment first.</div>
+                  <div class="ai-insight-confidence">
+                    <span>87% confident</span>
+                    <div class="ai-confidence-bar">
+                      <div class="ai-confidence-fill" style="width: 87%;"></div>
+                    </div>
+                  </div>
+                  <div class="ai-insight-feedback">
+                    <div class="ai-feedback-btn">Helpful</div>
+                    <div class="ai-feedback-btn">Not helpful</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

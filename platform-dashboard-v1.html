@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Dashboard — v1 | UI Explorations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f5f4f1;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --text-dim: #999;
+    --border: #e8e5e1;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --radius: 14px;
+    --finance: #0066cc;
+    --finance-bg: #e8f1fc;
+    --supply: #0a8a8a;
+    --supply-bg: #e6f5f5;
+    --hr: #7c3aed;
+    --hr-bg: #f0ebfe;
+    --sales: #16803c;
+    --sales-bg: #e8f5ec;
+    --insight-bg: #1a1a2e;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-frame {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .experiment-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 24px 20px;
+    overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block;
+    background: rgba(139, 156, 247, 0.15);
+    color: #8b9cf7;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 16px;
+  }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p {
+    margin: 0;
+    color: #ccc;
+  }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    color: #bbb;
+    font-style: italic;
+  }
+  .experiment-sidebar .exp-prev { font-size: 12px; }
+
+  .experiment-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);
+  }
+
+  /* ─── Dashboard Layout ─── */
+  .dashboard {
+    padding: 40px 48px 80px;
+    max-width: 1400px;
+  }
+
+  .dashboard-header {
+    margin-bottom: 36px;
+  }
+
+  .dashboard-header h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .dashboard-header p {
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  /* ─── Insights Section ─── */
+  .insights-section {
+    margin-bottom: 56px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+  }
+
+  .insight-card {
+    background: var(--insight-bg);
+    border-radius: var(--radius);
+    padding: 28px 24px 20px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight-card.hero {
+    grid-row: 1 / 3;
+    padding: 32px 28px 24px;
+  }
+
+  .insight-sources {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .source-pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .source-pill.finance { background: var(--finance-bg); color: var(--finance); }
+  .source-pill.supply { background: var(--supply-bg); color: var(--supply); }
+  .source-pill.hr { background: var(--hr-bg); color: var(--hr); }
+  .source-pill.sales { background: var(--sales-bg); color: var(--sales); }
+
+  .insight-value {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .insight-card.hero .insight-value {
+    font-size: 48px;
+  }
+
+  .insight-label {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .insight-action {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8b9cf7;
+    margin-bottom: auto;
+    padding-bottom: 16px;
+  }
+
+  .insight-action:hover {
+    text-decoration: underline;
+  }
+
+  /* Feedback Row */
+  .insight-feedback {
+    display: flex;
+    gap: 2px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 14px;
+    margin-top: auto;
+  }
+
+  .insight-feedback input[type="radio"],
+  .insight-feedback input[type="checkbox"] {
+    display: none;
+  }
+
+  .feedback-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .feedback-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .feedback-btn .fb-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* Feedback states via radio/checkbox :checked */
+  input.fb-up:checked + .feedback-btn {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+  }
+
+  input.fb-down:checked + .feedback-btn {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+  }
+
+  input.fb-later:checked + .feedback-btn {
+    background: rgba(139, 156, 247, 0.15);
+    color: #8b9cf7;
+  }
+
+  /* ─── Product Carousel Section ─── */
+  .product-section {
+    margin-bottom: 48px;
+  }
+
+  .product-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .product-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .product-icon.finance { background: var(--finance); }
+  .product-icon.supply { background: var(--supply); }
+  .product-icon.hr { background: var(--hr); }
+  .product-icon.sales { background: var(--sales); }
+
+  .product-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .product-header .product-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .product-tag.finance { background: var(--finance-bg); color: var(--finance); }
+  .product-tag.supply { background: var(--supply-bg); color: var(--supply); }
+  .product-tag.hr { background: var(--hr-bg); color: var(--hr); }
+  .product-tag.sales { background: var(--sales-bg); color: var(--sales); }
+
+  /* Carousel Container */
+  .carousel-wrapper {
+    position: relative;
+  }
+
+  .carousel-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Carousel Cards */
+  .carousel-card {
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .carousel-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .carousel-card.wide {
+    flex: 0 0 360px;
+  }
+
+  .carousel-card.todo-card {
+    flex: 0 0 320px;
+  }
+
+  .card-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .card-metric {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .card-metric-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .card-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+
+  .card-trend.up { background: #e8f5ec; color: #16803c; }
+  .card-trend.down { background: #fde8e8; color: #cc1a1a; }
+  .card-trend.neutral { background: #f0f0f0; color: #666; }
+
+  .card-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: #f0eeeb;
+    margin-top: auto;
+    overflow: hidden;
+  }
+
+  .card-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  .card-bar-fill.finance { background: var(--finance); }
+  .card-bar-fill.supply { background: var(--supply); }
+  .card-bar-fill.hr { background: var(--hr); }
+  .card-bar-fill.sales { background: var(--sales); }
+
+  /* CTA cards */
+  .card-cta {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    margin-top: auto;
+    width: fit-content;
+  }
+
+  .card-cta.finance { background: var(--finance); }
+  .card-cta.supply { background: var(--supply); }
+  .card-cta.hr { background: var(--hr); }
+  .card-cta.sales { background: var(--sales); }
+
+  .card-cta:hover { opacity: 0.9; }
+
+  /* Todo Card */
+  .todo-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .todo-check {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 2px solid #d0ccc7;
+    border-radius: 5px;
+    margin-top: 1px;
+  }
+
+  .todo-item.done .todo-check {
+    background: #2ecc71;
+    border-color: #2ecc71;
+    position: relative;
+  }
+
+  .todo-item.done .todo-check::after {
+    content: "✓";
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .todo-item.done .todo-text {
+    text-decoration: line-through;
+    color: var(--text-dim);
+  }
+
+  .todo-count {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Carousel Navigation */
+  .carousel-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .carousel-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d0ccc7;
+    transition: background 0.2s;
+  }
+
+  .carousel-dot.active {
+    background: var(--text);
+    width: 20px;
+    border-radius: 4px;
+  }
+
+  .carousel-arrows {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .carousel-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .carousel-arrow:hover {
+    box-shadow: var(--shadow-hover);
+    color: var(--text);
+  }
+
+  /* ─── Mini Sparkline (CSS only) ─── */
+  .sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 32px;
+    margin: 8px 0 12px;
+  }
+
+  .sparkline-bar {
+    width: 6px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.25;
+  }
+
+  .sparkline-bar:last-child {
+    opacity: 0.8;
+  }
+
+  .sparkline-bar:nth-last-child(2) {
+    opacity: 0.5;
+  }
+
+  .sparkline-bar:nth-last-child(3) {
+    opacity: 0.35;
+  }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Platform Dashboard</h1>
+      <span class="exp-version">v1</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores a cross-product ERP dashboard with AI-derived insights at the top (with thumbs up/down/bookmark feedback), followed by Apple Store-style horizontal carousels per product line with stat cards, action cards, and todo lists.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        Read the claude.md first.<br><br>
+
+        We want to create a new experiment for a platform dashboard that shows insights from multiple products (use a fake erp in this case) the insights should be grouped at the top and have very clear value and label which products were used to derive these insights and guide the user to specific actions.  We want them to be able to see what to do.  Like netflix we want to know if these insights dervied value so besides tracking usage/behaviors in logs we also want a thumbs up/down on recommendations or a "ill come back to this" type option.<br><br>
+
+        Below the insights the dashboard should be broken up into carousels of stat cards like apple.com/store per product line with calls to action and/or links as appropriate.<br><br>
+
+        These carousels should have a dot indicator below them to show which ones are visible on page and a click option to scroll over to other cards (and/or) a left/right arrow below each carousel on the bottom left<br><br>
+
+        It is up to you if you think it makes sense to group the insights into a carousel like this with different sized cards based upon importance.  Make sure one of the carousel cards is a todo list for each product line.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="platform-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Contact modal polish</span>
+        </a>
+        <a href="platform-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Contact team cards</span>
+        </a>
+        <a href="platform-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Fullscreen mode</span>
+        </a>
+        <a href="platform-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Device preview switcher</span>
+        </a>
+        <a href="platform-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Insights carousel</span>
+        </a>
+        <a href="platform-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Fixed carousel dots</span>
+        </a>
+        <a href="platform-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Sparklines & carousels</span>
+        </a>
+        <a href="platform-dashboard-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial ERP dashboard</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="dashboard">
+
+      <!-- Header -->
+      <div class="dashboard-header">
+        <h2>Good morning, Casey</h2>
+        <p>Here's what needs your attention across NovaCorp ERP</p>
+      </div>
+
+      <!-- ─── Cross-Product Insights ─── -->
+      <div class="insights-section">
+        <div class="section-label">Recommended for you</div>
+        <div class="insights-grid">
+
+          <!-- Hero Insight -->
+          <div class="insight-card hero">
+            <div class="insight-sources">
+              <span class="source-pill finance">Finance</span>
+              <span class="source-pill supply">Supply Chain</span>
+            </div>
+            <div class="insight-value">$2.4M</div>
+            <div class="insight-label">Cash at risk from 38 overdue invoices tied to delayed shipments. 12 invoices over 90 days are linked to 3 suppliers with fulfillment issues.</div>
+            <a href="#" class="insight-action">Review overdue invoices →</a>
+            <div class="insight-feedback">
+              <input type="radio" name="fb1" id="fb1-up" class="fb-up">
+              <label for="fb1-up" class="feedback-btn"><span class="fb-icon">👍</span> Useful</label>
+              <input type="radio" name="fb1" id="fb1-down" class="fb-down">
+              <label for="fb1-down" class="feedback-btn"><span class="fb-icon">👎</span> Not relevant</label>
+              <input type="checkbox" id="fb1-later" class="fb-later">
+              <label for="fb1-later" class="feedback-btn"><span class="fb-icon">🔖</span> Come back</label>
+            </div>
+          </div>
+
+          <!-- Insight 2 -->
+          <div class="insight-card">
+            <div class="insight-sources">
+              <span class="source-pill hr">HR</span>
+              <span class="source-pill sales">Sales</span>
+            </div>
+            <div class="insight-value">23%</div>
+            <div class="insight-label">Sales team attrition is 23% — 4 reps left in Q4. Pipeline coverage dropped to 2.1x in their territories.</div>
+            <a href="#" class="insight-action">View affected territories →</a>
+            <div class="insight-feedback">
+              <input type="radio" name="fb2" id="fb2-up" class="fb-up">
+              <label for="fb2-up" class="feedback-btn"><span class="fb-icon">👍</span> Useful</label>
+              <input type="radio" name="fb2" id="fb2-down" class="fb-down">
+              <label for="fb2-down" class="feedback-btn"><span class="fb-icon">👎</span></label>
+              <input type="checkbox" id="fb2-later" class="fb-later">
+              <label for="fb2-later" class="feedback-btn"><span class="fb-icon">🔖</span></label>
+            </div>
+          </div>
+
+          <!-- Insight 3 -->
+          <div class="insight-card">
+            <div class="insight-sources">
+              <span class="source-pill supply">Supply Chain</span>
+            </div>
+            <div class="insight-value">6 SKUs</div>
+            <div class="insight-label">Below safety stock with 14-day lead times. Two are top sellers contributing $180K/mo revenue.</div>
+            <a href="#" class="insight-action">Reorder now →</a>
+            <div class="insight-feedback">
+              <input type="radio" name="fb3" id="fb3-up" class="fb-up">
+              <label for="fb3-up" class="feedback-btn"><span class="fb-icon">👍</span> Useful</label>
+              <input type="radio" name="fb3" id="fb3-down" class="fb-down">
+              <label for="fb3-down" class="feedback-btn"><span class="fb-icon">👎</span></label>
+              <input type="checkbox" id="fb3-later" class="fb-later">
+              <label for="fb3-later" class="feedback-btn"><span class="fb-icon">🔖</span></label>
+            </div>
+          </div>
+
+          <!-- Insight 4 -->
+          <div class="insight-card">
+            <div class="insight-sources">
+              <span class="source-pill finance">Finance</span>
+              <span class="source-pill hr">HR</span>
+            </div>
+            <div class="insight-value">$340K</div>
+            <div class="insight-label">Projected Q1 hiring costs exceed budget by $340K due to 8 unfilled engineering roles.</div>
+            <a href="#" class="insight-action">Adjust hiring plan →</a>
+            <div class="insight-feedback">
+              <input type="radio" name="fb4" id="fb4-up" class="fb-up">
+              <label for="fb4-up" class="feedback-btn"><span class="fb-icon">👍</span> Useful</label>
+              <input type="radio" name="fb4" id="fb4-down" class="fb-down">
+              <label for="fb4-down" class="feedback-btn"><span class="fb-icon">👎</span></label>
+              <input type="checkbox" id="fb4-later" class="fb-later">
+              <label for="fb4-later" class="feedback-btn"><span class="fb-icon">🔖</span></label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════ -->
+      <!-- FINANCE CAROUSEL                           -->
+      <!-- ═══════════════════════════════════════════ -->
+      <div class="product-section">
+        <div class="product-header">
+          <div class="product-icon finance">F</div>
+          <h3>Finance</h3>
+          <span class="product-tag finance">4 items need attention</span>
+        </div>
+        <div class="carousel-wrapper">
+          <div class="carousel-track">
+
+            <div class="carousel-card wide">
+              <div class="card-eyebrow">Revenue</div>
+              <div class="card-metric">$12.8M</div>
+              <div class="card-metric-label">Monthly recurring revenue</div>
+              <div class="card-trend up">↑ 8.2% vs last month</div>
+              <div class="sparkline" style="color: var(--finance);">
+                <span class="sparkline-bar" style="height:40%"></span>
+                <span class="sparkline-bar" style="height:55%"></span>
+                <span class="sparkline-bar" style="height:45%"></span>
+                <span class="sparkline-bar" style="height:60%"></span>
+                <span class="sparkline-bar" style="height:52%"></span>
+                <span class="sparkline-bar" style="height:70%"></span>
+                <span class="sparkline-bar" style="height:65%"></span>
+                <span class="sparkline-bar" style="height:80%"></span>
+                <span class="sparkline-bar" style="height:75%"></span>
+                <span class="sparkline-bar" style="height:90%"></span>
+              </div>
+              <div class="card-bar"><div class="card-bar-fill finance" style="width:82%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Accounts Receivable</div>
+              <div class="card-metric">$3.1M</div>
+              <div class="card-metric-label">Outstanding balance</div>
+              <div class="card-trend down">↑ 18% — above target</div>
+              <div class="card-bar"><div class="card-bar-fill finance" style="width:68%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Cash Flow</div>
+              <div class="card-metric">$1.4M</div>
+              <div class="card-metric-label">Net operating cash flow</div>
+              <div class="card-trend up">↑ 12% vs forecast</div>
+              <a href="#" class="card-cta finance">View cash forecast →</a>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Budget Variance</div>
+              <div class="card-metric">-4.2%</div>
+              <div class="card-metric-label">Q1 spend vs plan</div>
+              <div class="card-trend neutral">→ Within tolerance</div>
+              <a href="#" class="card-cta finance">Open budget report →</a>
+            </div>
+
+            <div class="carousel-card todo-card">
+              <div class="card-eyebrow">Finance To-Do</div>
+              <ul class="todo-list">
+                <li class="todo-item done">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Close January books</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Approve 12 pending invoices ($420K)</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Review Q1 budget reallocation</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Submit tax filing documents</span>
+                </li>
+              </ul>
+              <div class="todo-count">1 of 4 completed</div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Expense Report</div>
+              <div class="card-metric">47</div>
+              <div class="card-metric-label">Pending expense reports</div>
+              <a href="#" class="card-cta finance">Review expenses →</a>
+            </div>
+
+          </div>
+          <div class="carousel-nav">
+            <div class="carousel-dots">
+              <div class="carousel-dot active"></div>
+              <div class="carousel-dot"></div>
+              <div class="carousel-dot"></div>
+            </div>
+            <div class="carousel-arrows">
+              <div class="carousel-arrow">←</div>
+              <div class="carousel-arrow">→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════ -->
+      <!-- SUPPLY CHAIN CAROUSEL                      -->
+      <!-- ═══════════════════════════════════════════ -->
+      <div class="product-section">
+        <div class="product-header">
+          <div class="product-icon supply">S</div>
+          <h3>Supply Chain</h3>
+          <span class="product-tag supply">2 critical alerts</span>
+        </div>
+        <div class="carousel-wrapper">
+          <div class="carousel-track">
+
+            <div class="carousel-card wide">
+              <div class="card-eyebrow">Inventory Health</div>
+              <div class="card-metric">94.2%</div>
+              <div class="card-metric-label">Fill rate across all warehouses</div>
+              <div class="card-trend up">↑ 1.8% vs last week</div>
+              <div class="sparkline" style="color: var(--supply);">
+                <span class="sparkline-bar" style="height:70%"></span>
+                <span class="sparkline-bar" style="height:65%"></span>
+                <span class="sparkline-bar" style="height:75%"></span>
+                <span class="sparkline-bar" style="height:80%"></span>
+                <span class="sparkline-bar" style="height:72%"></span>
+                <span class="sparkline-bar" style="height:85%"></span>
+                <span class="sparkline-bar" style="height:88%"></span>
+                <span class="sparkline-bar" style="height:90%"></span>
+                <span class="sparkline-bar" style="height:92%"></span>
+                <span class="sparkline-bar" style="height:94%"></span>
+              </div>
+              <div class="card-bar"><div class="card-bar-fill supply" style="width:94%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Open POs</div>
+              <div class="card-metric">128</div>
+              <div class="card-metric-label">Purchase orders in transit</div>
+              <div class="card-trend neutral">→ Steady</div>
+              <a href="#" class="card-cta supply">Track shipments →</a>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Supplier Performance</div>
+              <div class="card-metric">87%</div>
+              <div class="card-metric-label">On-time delivery rate</div>
+              <div class="card-trend down">↓ 5% — 3 suppliers flagged</div>
+              <a href="#" class="card-cta supply">View supplier scorecard →</a>
+            </div>
+
+            <div class="carousel-card todo-card">
+              <div class="card-eyebrow">Supply Chain To-Do</div>
+              <ul class="todo-list">
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Reorder 6 below-safety-stock SKUs</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Approve warehouse transfer #WT-4421</span>
+                </li>
+                <li class="todo-item done">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Confirm Q2 supplier contracts</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Investigate APAC shipping delays</span>
+                </li>
+              </ul>
+              <div class="todo-count">1 of 4 completed</div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Warehouse Utilization</div>
+              <div class="card-metric">72%</div>
+              <div class="card-metric-label">Average across 5 facilities</div>
+              <div class="card-bar"><div class="card-bar-fill supply" style="width:72%"></div></div>
+            </div>
+
+          </div>
+          <div class="carousel-nav">
+            <div class="carousel-dots">
+              <div class="carousel-dot active"></div>
+              <div class="carousel-dot"></div>
+              <div class="carousel-dot"></div>
+            </div>
+            <div class="carousel-arrows">
+              <div class="carousel-arrow">←</div>
+              <div class="carousel-arrow">→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════ -->
+      <!-- HR CAROUSEL                                -->
+      <!-- ═══════════════════════════════════════════ -->
+      <div class="product-section">
+        <div class="product-header">
+          <div class="product-icon hr">H</div>
+          <h3>Human Resources</h3>
+          <span class="product-tag hr">8 open reqs</span>
+        </div>
+        <div class="carousel-wrapper">
+          <div class="carousel-track">
+
+            <div class="carousel-card wide">
+              <div class="card-eyebrow">Headcount</div>
+              <div class="card-metric">342</div>
+              <div class="card-metric-label">Active employees across 4 offices</div>
+              <div class="card-trend up">↑ 12 net new in Q4</div>
+              <div class="sparkline" style="color: var(--hr);">
+                <span class="sparkline-bar" style="height:60%"></span>
+                <span class="sparkline-bar" style="height:62%"></span>
+                <span class="sparkline-bar" style="height:58%"></span>
+                <span class="sparkline-bar" style="height:65%"></span>
+                <span class="sparkline-bar" style="height:68%"></span>
+                <span class="sparkline-bar" style="height:70%"></span>
+                <span class="sparkline-bar" style="height:72%"></span>
+                <span class="sparkline-bar" style="height:75%"></span>
+                <span class="sparkline-bar" style="height:80%"></span>
+                <span class="sparkline-bar" style="height:85%"></span>
+              </div>
+              <div class="card-bar"><div class="card-bar-fill hr" style="width:85%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Attrition</div>
+              <div class="card-metric">14%</div>
+              <div class="card-metric-label">Rolling 12-month turnover</div>
+              <div class="card-trend down">↑ 3% — above industry avg</div>
+              <a href="#" class="card-cta hr">Retention analysis →</a>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Open Positions</div>
+              <div class="card-metric">8</div>
+              <div class="card-metric-label">Active requisitions</div>
+              <div class="card-trend neutral">→ 3 in final stage</div>
+              <a href="#" class="card-cta hr">View pipeline →</a>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Employee Satisfaction</div>
+              <div class="card-metric">4.1/5</div>
+              <div class="card-metric-label">Latest pulse survey</div>
+              <div class="card-trend up">↑ 0.3 from last quarter</div>
+              <div class="card-bar"><div class="card-bar-fill hr" style="width:82%"></div></div>
+            </div>
+
+            <div class="carousel-card todo-card">
+              <div class="card-eyebrow">HR To-Do</div>
+              <ul class="todo-list">
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Schedule 3 final-round interviews</span>
+                </li>
+                <li class="todo-item done">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Complete annual review cycle</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Submit benefits renewal proposal</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Onboard 2 new engineering hires</span>
+                </li>
+              </ul>
+              <div class="todo-count">1 of 4 completed</div>
+            </div>
+
+          </div>
+          <div class="carousel-nav">
+            <div class="carousel-dots">
+              <div class="carousel-dot active"></div>
+              <div class="carousel-dot"></div>
+              <div class="carousel-dot"></div>
+            </div>
+            <div class="carousel-arrows">
+              <div class="carousel-arrow">←</div>
+              <div class="carousel-arrow">→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════ -->
+      <!-- SALES CAROUSEL                             -->
+      <!-- ═══════════════════════════════════════════ -->
+      <div class="product-section">
+        <div class="product-header">
+          <div class="product-icon sales">S</div>
+          <h3>Sales</h3>
+          <span class="product-tag sales">3 deals closing this week</span>
+        </div>
+        <div class="carousel-wrapper">
+          <div class="carousel-track">
+
+            <div class="carousel-card wide">
+              <div class="card-eyebrow">Pipeline</div>
+              <div class="card-metric">$8.6M</div>
+              <div class="card-metric-label">Weighted pipeline value</div>
+              <div class="card-trend up">↑ 14% vs last quarter</div>
+              <div class="sparkline" style="color: var(--sales);">
+                <span class="sparkline-bar" style="height:50%"></span>
+                <span class="sparkline-bar" style="height:55%"></span>
+                <span class="sparkline-bar" style="height:48%"></span>
+                <span class="sparkline-bar" style="height:62%"></span>
+                <span class="sparkline-bar" style="height:58%"></span>
+                <span class="sparkline-bar" style="height:70%"></span>
+                <span class="sparkline-bar" style="height:68%"></span>
+                <span class="sparkline-bar" style="height:78%"></span>
+                <span class="sparkline-bar" style="height:82%"></span>
+                <span class="sparkline-bar" style="height:92%"></span>
+              </div>
+              <div class="card-bar"><div class="card-bar-fill sales" style="width:72%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Win Rate</div>
+              <div class="card-metric">34%</div>
+              <div class="card-metric-label">Closed-won vs total opps</div>
+              <div class="card-trend up">↑ 4% from last quarter</div>
+              <a href="#" class="card-cta sales">See deal analysis →</a>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Quota Attainment</div>
+              <div class="card-metric">78%</div>
+              <div class="card-metric-label">Team avg with 2 months left</div>
+              <div class="card-trend neutral">→ On track</div>
+              <div class="card-bar"><div class="card-bar-fill sales" style="width:78%"></div></div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Deals Closing Soon</div>
+              <div class="card-metric">3</div>
+              <div class="card-metric-label">Expected to close this week — $1.2M total</div>
+              <a href="#" class="card-cta sales">Prep deal reviews →</a>
+            </div>
+
+            <div class="carousel-card todo-card">
+              <div class="card-eyebrow">Sales To-Do</div>
+              <ul class="todo-list">
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Send Acme Corp proposal by Friday</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Follow up on 5 stale opportunities</span>
+                </li>
+                <li class="todo-item done">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Update CRM for Q4 closed deals</span>
+                </li>
+                <li class="todo-item">
+                  <div class="todo-check"></div>
+                  <span class="todo-text">Prepare territory rebalance proposal</span>
+                </li>
+              </ul>
+              <div class="todo-count">1 of 4 completed</div>
+            </div>
+
+            <div class="carousel-card">
+              <div class="card-eyebrow">Avg Deal Size</div>
+              <div class="card-metric">$142K</div>
+              <div class="card-metric-label">Up from $118K last quarter</div>
+              <div class="card-trend up">↑ 20%</div>
+              <div class="card-bar"><div class="card-bar-fill sales" style="width:60%"></div></div>
+            </div>
+
+          </div>
+          <div class="carousel-nav">
+            <div class="carousel-dots">
+              <div class="carousel-dot active"></div>
+              <div class="carousel-dot"></div>
+              <div class="carousel-dot"></div>
+            </div>
+            <div class="carousel-arrows">
+              <div class="carousel-arrow">←</div>
+              <div class="carousel-arrow">→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

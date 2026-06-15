@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — Origination Prompt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+.experiment-sidebar .exp-origin-badge {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Variant Navigation Grid ─── */
+.experiment-sidebar .exp-variant-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.experiment-sidebar .exp-variant-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b9cf7;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.experiment-sidebar .exp-variant-nav a:hover {
+  background: rgba(139, 156, 247, 0.15);
+  border-color: rgba(139, 156, 247, 0.3);
+  text-decoration: none;
+}
+
+/* ─── Origin Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #0a0a14;
+  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.origin-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 40px 80px;
+}
+
+.origin-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.origin-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 32px 0 12px 0;
+}
+
+.origin-content p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #bbb;
+  margin: 0 0 16px 0;
+}
+
+.origin-prompt-block {
+  background: rgba(46, 204, 113, 0.06);
+  border: 1px solid rgba(46, 204, 113, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 24px 0 32px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #ccc;
+}
+
+.origin-prompt-block .label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2ecc71;
+  margin-bottom: 12px;
+}
+
+.research-domains {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 32px;
+}
+
+.research-domain {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.research-domain h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 6px 0;
+}
+
+.research-domain p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #999;
+  margin: 0;
+}
+
+.variant-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 32px;
+}
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.variant-row:hover {
+  background: rgba(139, 156, 247, 0.08);
+  border-color: rgba(139, 156, 247, 0.2);
+  text-decoration: none;
+}
+
+.variant-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ecc71;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.variant-info {
+  flex: 1;
+}
+
+.variant-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.variant-desc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.variant-tagline {
+  font-size: 11px;
+  color: #8b9cf7;
+  font-style: italic;
+}
+
+.execution-model {
+  background: rgba(139, 156, 247, 0.06);
+  border: 1px solid rgba(139, 156, 247, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.execution-model .step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.execution-model .step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(139, 156, 247, 0.15);
+  color: #8b9cf7;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.execution-model .arrow {
+  text-align: center;
+  color: #555;
+  font-size: 16px;
+  padding: 4px 0;
+}
+
+/* ─── AskUserQuestion Visualization ─── */
+.origin-ask {
+  background: rgba(139, 156, 247, 0.08);
+  border: 1px solid rgba(139, 156, 247, 0.2);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+.origin-ask-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b9cf7;
+  margin-bottom: 8px;
+}
+.origin-ask-question {
+  font-size: 13px;
+  color: #ddd;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.origin-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.origin-ask-option {
+  font-size: 12px;
+  color: #999;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.06);
+  line-height: 1.4;
+}
+.origin-ask-option.selected {
+  color: #fff;
+  background: rgba(139, 156, 247, 0.18);
+  border-color: rgba(139, 156, 247, 0.4);
+  font-weight: 600;
+}
+.origin-ask-answer {
+  font-size: 13px;
+  color: #ccc;
+  padding: 8px 10px;
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  border-radius: 5px;
+  line-height: 1.5;
+}
+.origin-ask-answer strong {
+  color: #2ecc71;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-origin-badge">Origination Prompt</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>This is the origination prompt for a 20-variant research series (two waves) exploring radically different UI paradigms for human/agent interaction &mdash; making orchestration, sub-agents, and recursive agent reasoning visible and beautiful.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Execution Model</h2>
+      <p>Research Agent &rarr; 10 Parallel Build Agents &rarr; Validation Agent</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variants</h2>
+      <div class="exp-variant-nav">
+        <a href="agent-orchestration-v1.html">01</a>
+        <a href="agent-orchestration-v2.html">02</a>
+        <a href="agent-orchestration-v3.html">03</a>
+        <a href="agent-orchestration-v4.html">04</a>
+        <a href="agent-orchestration-v5.html">05</a>
+        <a href="agent-orchestration-v6.html">06</a>
+        <a href="agent-orchestration-v7.html">07</a>
+        <a href="agent-orchestration-v8.html">08</a>
+        <a href="agent-orchestration-v9.html">09</a>
+        <a href="agent-orchestration-v10.html">10</a>
+        <a href="agent-orchestration-v11.html">11</a>
+        <a href="agent-orchestration-v12.html">12</a>
+        <a href="agent-orchestration-v13.html">13</a>
+        <a href="agent-orchestration-v14.html">14</a>
+        <a href="agent-orchestration-v15.html">15</a>
+        <a href="agent-orchestration-v16.html">16</a>
+        <a href="agent-orchestration-v17.html">17</a>
+        <a href="agent-orchestration-v18.html">18</a>
+        <a href="agent-orchestration-v19.html">19</a>
+        <a href="agent-orchestration-v20.html">20</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="origin-content">
+
+      <h2 id="origination-1">Origination Prompt #1</h2>
+      <p>This page documents the master prompts and research context that generated 20 autonomous human/agent orchestration variants across two waves. The first wave (v1-v10) explored fundamentally different visual metaphors. The second wave (v11-v20) enhanced each with device preview frameworks and CSS-only interactions.</p>
+
+      <div class="origin-prompt-block">
+        <div class="label">Verbatim Origination Prompt</div>
+        Let's evaluate 10 experimental designs for human/agent interaction.  We see chat, cli, email, slack, kanban as interfaces, but it feels like NONE of them do a good job of showing off orchestration, sub-agents, sub-sub-agents, etc.<br><br>
+        The important thing here is to GO WILD.   Do deep research first, but not let it confine your thinking.  Each approach should be WILDLY different from the current approaches.  We want to wow people with unique takes on it.  The prompts should be extra specially clear on why each variant is important.<br><br>
+        Title this experiement: Human/Agent Orchestration.<br><br>
+        We need to consider tools like "AskQuestionUserTool" that would be part of these interactions and the value of agents kicking off subagents just to ask better questions with potential answers.  Agents are soo much better at thinking.<br><br>
+        Go NUTS!
+      </div>
+
+      <h3>AskUserQuestion Interactions</h3>
+      <p>No AskUserQuestion interactions occurred during this session. The origination prompt was executed directly without clarifying questions.</p>
+
+      <h3>Research Domains</h3>
+      <div class="research-domains">
+        <div class="research-domain">
+          <h4>Agent Orchestration Patterns</h4>
+          <p>Multi-agent systems, orchestrator/worker patterns, recursive delegation, fan-out/fan-in, agent-to-agent communication protocols.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Human-AI Interaction Research</h4>
+          <p>Conversational UI patterns, progressive disclosure, mixed-initiative interaction, trust calibration, mental models of AI systems.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Nature's Orchestration Systems</h4>
+          <p>Mycelial networks, neural pathways, ocean ecosystems, particle physics, kitchen brigades &mdash; natural metaphors for coordination and delegation.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Information Visualization</h4>
+          <p>Edward Tufte's principles, network graphs, temporal visualizations, layered information architecture, sparklines and small multiples.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Sci-Fi &amp; Speculative Interfaces</h4>
+          <p>Mission control rooms, orchestra conductors, cartographic expeditions, weaving looms &mdash; metaphors that make invisible processes visible.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Cognitive Psychology</h4>
+          <p>How humans understand hierarchical processes, attention management, information foraging theory, progressive revelation of complexity.</p>
+        </div>
+      </div>
+
+      <h3>The 10 Variants</h3>
+      <div class="variant-grid">
+        <a href="agent-orchestration-v1.html" class="variant-row">
+          <span class="variant-num">01</span>
+          <div class="variant-info">
+            <div class="variant-name">Mycelium Network</div>
+            <div class="variant-desc">Organic fungal network where agents branch as glowing nodes connected by pulsing hyphae</div>
+            <div class="variant-tagline">"The underground intelligence."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v2.html" class="variant-row">
+          <span class="variant-num">02</span>
+          <div class="variant-info">
+            <div class="variant-name">Geological Strata</div>
+            <div class="variant-desc">Cross-section of earth where each orchestration layer is a geological stratum</div>
+            <div class="variant-tagline">"Depth reveals transformation."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v3.html" class="variant-row">
+          <span class="variant-num">03</span>
+          <div class="variant-info">
+            <div class="variant-name">Orchestra Score</div>
+            <div class="variant-desc">Horizontal musical score where each agent is an instrument line</div>
+            <div class="variant-tagline">"Hear the coordination."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v4.html" class="variant-row">
+          <span class="variant-num">04</span>
+          <div class="variant-info">
+            <div class="variant-name">Mission Control</div>
+            <div class="variant-desc">NASA Apollo-era operations room with console stations per agent</div>
+            <div class="variant-tagline">"Houston, we have orchestration."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v5.html" class="variant-row">
+          <span class="variant-num">05</span>
+          <div class="variant-info">
+            <div class="variant-name">Tidal Pool</div>
+            <div class="variant-desc">Vertical ocean cross-section with agents as deep-sea creatures</div>
+            <div class="variant-tagline">"Depth breeds specialization."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v6.html" class="variant-row">
+          <span class="variant-num">06</span>
+          <div class="variant-info">
+            <div class="variant-name">Kitchen Brigade</div>
+            <div class="variant-desc">Top-down restaurant kitchen with chef at the pass</div>
+            <div class="variant-tagline">"Service!"</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v7.html" class="variant-row">
+          <span class="variant-num">07</span>
+          <div class="variant-info">
+            <div class="variant-name">Cartographic Expedition</div>
+            <div class="variant-desc">Parchment map being drawn in real-time by expedition parties</div>
+            <div class="variant-tagline">"Chart the unknown."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v8.html" class="variant-row">
+          <span class="variant-num">08</span>
+          <div class="variant-info">
+            <div class="variant-name">Particle Chamber</div>
+            <div class="variant-desc">CERN bubble chamber where prompts decay into sub-particles</div>
+            <div class="variant-tagline">"Break it apart to understand it."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v9.html" class="variant-row">
+          <span class="variant-num">09</span>
+          <div class="variant-info">
+            <div class="variant-name">Weaving Loom</div>
+            <div class="variant-desc">Jacquard loom where agent threads weave into emergent patterns</div>
+            <div class="variant-tagline">"The fabric of thought."</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v10.html" class="variant-row">
+          <span class="variant-num">10</span>
+          <div class="variant-info">
+            <div class="variant-name">Terrarium</div>
+            <div class="variant-desc">Self-contained glass ecosystem with agents as symbiotic organisms</div>
+            <div class="variant-tagline">"A living system."</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>Execution Model</h3>
+      <div class="execution-model">
+        <div class="step">
+          <span class="step-num">1</span>
+          Research Agent &mdash; Deep research across agent orchestration, HCI, nature's coordination systems, and information visualization
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">2</span>
+          10 Build Agents (parallel) &mdash; Each agent receives a detailed prompt and builds one variant autonomously
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">3</span>
+          Validation Agent &mdash; Verifies all links, patterns, and consistency across the series
+        </div>
+      </div>
+
+      <h3>Design Constraints (Wave 1)</h3>
+      <p>Every variant follows the UI Explorations framework rules: pure HTML/CSS, no JavaScript, no external dependencies beyond Google Fonts. Each includes the standard experiment sidebar and depicts a frozen moment of an agent orchestration in progress &mdash; showing multiple levels of agent hierarchy, data flow, and the AskUserQuestion pattern rendered through each metaphor's unique visual language.</p>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 48px 0;">
+
+      <h2 id="origination-2">Origination Prompt #2</h2>
+      <p>After completing the first 10 variants, a second origination prompt was issued to create enhanced iterations (v11-v20). Each takes its corresponding v1-v10 variant and adds the device preview window framework and semi-functional CSS-only interactions.</p>
+
+      <div class="origin-prompt-block">
+        <div class="label">Verbatim Origination Prompt #2</div>
+        We need to add new versions of all 10 agent orchestration (which will be v11-v20), but will require a second origination prompt. This leads me to believe we will need to add Origination prompts inline to the cards so they can occur between autonomous generation.<br><br>
+        The new origination prompt for these new versions:<br><br>
+        1. each one needs to exist within the "window" framework and have desktop, mobile, full screen<br>
+        2. each version needs to be iterated to have a semi-functional ui with a couple of click/hover interactions<br><br>
+        This can be broken into a meta changelog for improvements to experiments.html and then also parsed into the 10 specific prompts that will be used to modify each original design according to the origination prompt instructions. Remember to carefully log the new generated prompt for each version (which should mention the original file it is modifying).<br><br>
+        Remember documentation is key.
+      </div>
+
+      <h3>AskUserQuestion Interactions</h3>
+      <p>No AskUserQuestion interactions occurred during this session. The origination prompt was executed directly without clarifying questions.</p>
+
+      <h3>The v11-v20 Variants (Enhanced Iterations)</h3>
+      <div class="variant-grid">
+        <a href="agent-orchestration-v11.html" class="variant-row">
+          <span class="variant-num">11</span>
+          <div class="variant-info">
+            <div class="variant-name">Mycelium Network (Enhanced)</div>
+            <div class="variant-desc">Device preview + checkbox node expansion, hover glow on hyphae, bioluminescent tooltips</div>
+            <div class="variant-tagline">Based on v1</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v12.html" class="variant-row">
+          <span class="variant-num">12</span>
+          <div class="variant-info">
+            <div class="variant-name">Geological Strata (Enhanced)</div>
+            <div class="variant-desc">Device preview + radio scrubber for layers, hover annotations, checkbox geysers</div>
+            <div class="variant-tagline">Based on v2</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v13.html" class="variant-row">
+          <span class="variant-num">13</span>
+          <div class="variant-info">
+            <div class="variant-name">Orchestra Score (Enhanced)</div>
+            <div class="variant-desc">Device preview + checkbox instrument muting, hover note tooltips, time scrubbing</div>
+            <div class="variant-tagline">Based on v3</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v14.html" class="variant-row">
+          <span class="variant-num">14</span>
+          <div class="variant-info">
+            <div class="variant-name">Mission Control (Enhanced)</div>
+            <div class="variant-desc">Device preview + radio station selection, hover telemetry panels, CAPCOM toggle</div>
+            <div class="variant-tagline">Based on v4</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v15.html" class="variant-row">
+          <span class="variant-num">15</span>
+          <div class="variant-info">
+            <div class="variant-name">Tidal Pool (Enhanced)</div>
+            <div class="variant-desc">Device preview + depth zone radios, hover creature status, signal chain checkboxes</div>
+            <div class="variant-tagline">Based on v5</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v16.html" class="variant-row">
+          <span class="variant-num">16</span>
+          <div class="variant-info">
+            <div class="variant-name">Kitchen Brigade (Enhanced)</div>
+            <div class="variant-desc">Device preview + checkbox station tickets, hover task/urgency, service phase radios</div>
+            <div class="variant-tagline">Based on v6</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v17.html" class="variant-row">
+          <span class="variant-num">17</span>
+          <div class="variant-info">
+            <div class="variant-name">Cartographic Expedition (Enhanced)</div>
+            <div class="variant-desc">Device preview + expedition phase radios, hover map notes, pigeon trail checkboxes</div>
+            <div class="variant-tagline">Based on v7</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v18.html" class="variant-row">
+          <span class="variant-num">18</span>
+          <div class="variant-info">
+            <div class="variant-name">Particle Chamber (Enhanced)</div>
+            <div class="variant-desc">Device preview + animation toggle, hover particle trails, collision type radios</div>
+            <div class="variant-tagline">Based on v8</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v19.html" class="variant-row">
+          <span class="variant-num">19</span>
+          <div class="variant-info">
+            <div class="variant-name">Weaving Loom (Enhanced)</div>
+            <div class="variant-desc">Device preview + pattern card radios, hover thread paths, weft checkboxes</div>
+            <div class="variant-tagline">Based on v9</div>
+          </div>
+        </a>
+        <a href="agent-orchestration-v20.html" class="variant-row">
+          <span class="variant-num">20</span>
+          <div class="variant-info">
+            <div class="variant-name">Terrarium (Enhanced)</div>
+            <div class="variant-desc">Device preview + organism flow checkboxes, hover symbiosis, day/night radios</div>
+            <div class="variant-tagline">Based on v10</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>Execution Model &mdash; Second Wave</h3>
+      <div class="execution-model">
+        <div class="step">
+          <span class="step-num">1</span>
+          Planning Agent &mdash; Designs multi-origination framework pattern, generates 10 specific build prompts
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">2</span>
+          10 Build Agents (parallel) &mdash; Each takes a v1-v10 variant and enhances it with device preview + CSS interactions
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">3</span>
+          Integration Agent &mdash; Updates experiments.html, changelog.html, and origin page with all new entries
+        </div>
+      </div>
+
+      <h3>Design Constraints (Wave 2)</h3>
+      <p>Same base constraints as Wave 1, plus: each variant must include the device preview switcher (desktop 1360&times;820, mobile 375&times;720, fullscreen), CSS-only interactions using checkbox hack, :hover, :focus-within, and radio buttons. Mobile layouts must adapt meaningfully, not just shrink.</p>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

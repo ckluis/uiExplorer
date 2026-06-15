@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Feed — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+input[name="preview"] { display: none; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8f9fc; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Timeline Feed v3 — Category Filtering ─── */
+.timeline-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 40px;
+  height: 100%;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.timeline-header { margin-bottom: 24px; }
+.timeline-header h1 { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.timeline-header p { font-size: 14px; color: #6b7280; }
+
+/* Filter checkboxes */
+input[id^="filter-"] { display: none; }
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 28px;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1.5px solid transparent;
+}
+
+.filter-label[for="filter-commit"] { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+.filter-label[for="filter-comment"] { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.filter-label[for="filter-deployment"] { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.filter-label[for="filter-review"] { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+.filter-label[for="filter-merge"] { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.filter-label[for="filter-alert"] { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+/* When filter is checked (hidden), dim its label and hide matching items */
+#filter-commit:checked ~ .filter-bar .filter-label[for="filter-commit"],
+#filter-comment:checked ~ .filter-bar .filter-label[for="filter-comment"],
+#filter-deployment:checked ~ .filter-bar .filter-label[for="filter-deployment"],
+#filter-review:checked ~ .filter-bar .filter-label[for="filter-review"],
+#filter-merge:checked ~ .filter-bar .filter-label[for="filter-merge"],
+#filter-alert:checked ~ .filter-bar .filter-label[for="filter-alert"] {
+  opacity: 0.35;
+  border-color: transparent;
+}
+
+#filter-commit:checked ~ .timeline .tl-commit,
+#filter-comment:checked ~ .timeline .tl-comment,
+#filter-deployment:checked ~ .timeline .tl-deployment,
+#filter-review:checked ~ .timeline .tl-review,
+#filter-merge:checked ~ .timeline .tl-merge,
+#filter-alert:checked ~ .timeline .tl-alert {
+  display: none;
+}
+
+.timeline { position: relative; padding-left: 40px; }
+.timeline::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: #e0e3eb; }
+
+.timeline-item { position: relative; padding-bottom: 28px; }
+.timeline-item:last-child { padding-bottom: 0; }
+
+.timeline-avatar {
+  position: absolute;
+  left: -40px;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Node hover animations */
+.timeline-avatar:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+}
+
+.timeline-item[data-type="commit"] .timeline-avatar { background: #6366f1; }
+.timeline-item[data-type="comment"] .timeline-avatar { background: #f59e0b; }
+.timeline-item[data-type="deployment"] .timeline-avatar { background: #10b981; }
+.timeline-item[data-type="review"] .timeline-avatar { background: #8b5cf6; }
+.timeline-item[data-type="merge"] .timeline-avatar { background: #3b82f6; }
+.timeline-item[data-type="alert"] .timeline-avatar { background: #ef4444; }
+
+.timeline-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.timeline-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.timeline-card-main { padding: 14px 18px; }
+
+.timeline-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.timeline-author { font-size: 13px; font-weight: 600; color: #1f2937; }
+
+.timeline-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.timeline-item[data-type="commit"] .timeline-type { background: #eef2ff; color: #4f46e5; }
+.timeline-item[data-type="comment"] .timeline-type { background: #fffbeb; color: #d97706; }
+.timeline-item[data-type="deployment"] .timeline-type { background: #ecfdf5; color: #059669; }
+.timeline-item[data-type="review"] .timeline-type { background: #f5f3ff; color: #7c3aed; }
+.timeline-item[data-type="merge"] .timeline-type { background: #eff6ff; color: #2563eb; }
+.timeline-item[data-type="alert"] .timeline-type { background: #fef2f2; color: #dc2626; }
+
+.timeline-time { font-size: 12px; color: #9ca3af; margin-left: auto; }
+.timeline-title { font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 4px; }
+.timeline-desc { font-size: 13px; color: #6b7280; line-height: 1.5; }
+
+/* Expandable details */
+.timeline-expand-toggle { display: none; }
+.timeline-expand-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 3px 10px;
+  background: #eef2ff;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.timeline-expand-label:hover { background: #e0e7ff; }
+
+.timeline-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background: #f9fafb;
+  border-top: 1px solid #f0f0f0;
+}
+.timeline-detail-inner { padding: 14px 18px; font-size: 12px; color: #6b7280; line-height: 1.6; }
+.timeline-detail-inner strong { color: #374151; }
+
+.timeline-expand-toggle:checked + .timeline-item .timeline-detail { max-height: 200px; }
+.timeline-expand-toggle:checked + .timeline-item .timeline-expand-label { background: #6366f1; color: #fff; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .timeline-container { padding: 20px 14px; }
+#preview-mobile:checked ~ .window .timeline-header h1 { font-size: 20px; }
+#preview-mobile:checked ~ .window .timeline { padding-left: 36px; }
+#preview-mobile:checked ~ .window .filter-bar { padding: 10px 12px; gap: 4px; }
+#preview-mobile:checked ~ .window .filter-label { font-size: 10px; padding: 4px 8px; }
+#preview-mobile:checked ~ .window .timeline-card-main { padding: 12px 14px; }
+#preview-mobile:checked ~ .window .timeline-card-header { flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Timeline Feed</h1>
+      <span class="exp-version">v3</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds CSS-only category filtering via checkboxes, hover animations on avatar nodes, and improved card hover states. Users can toggle event types on/off.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        v3: Checkbox-based category filtering, node hover animations. Add a filter bar at the top with colored toggle buttons for each event type. Clicking a filter hides that category's events using CSS sibling selectors. Add scale-up hover animation on avatar nodes and subtle shadow transitions on cards.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="timeline-feed-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Pulse animations</span>
+        </a>
+        <a href="timeline-feed-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Alternating layout</span>
+        </a>
+        <a href="timeline-feed-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Category filtering</span>
+        </a>
+        <a href="timeline-feed-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable cards</span>
+        </a>
+        <a href="timeline-feed-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial timeline</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="timeline-container">
+        <div class="timeline-header">
+          <h1>Activity Feed</h1>
+          <p>Recent events across your projects</p>
+        </div>
+
+        <!-- Filter checkboxes (checking = hide that type) -->
+        <input type="checkbox" id="filter-commit">
+        <input type="checkbox" id="filter-comment">
+        <input type="checkbox" id="filter-deployment">
+        <input type="checkbox" id="filter-review">
+        <input type="checkbox" id="filter-merge">
+        <input type="checkbox" id="filter-alert">
+
+        <div class="filter-bar">
+          <label for="filter-commit" class="filter-label">Commit</label>
+          <label for="filter-comment" class="filter-label">Comment</label>
+          <label for="filter-deployment" class="filter-label">Deployment</label>
+          <label for="filter-review" class="filter-label">Review</label>
+          <label for="filter-merge" class="filter-label">Merge</label>
+          <label for="filter-alert" class="filter-label">Alert</label>
+        </div>
+
+        <div class="timeline">
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-1">
+          <div class="timeline-item tl-deployment" data-type="deployment">
+            <div class="timeline-avatar">JR</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Jake Rivera</span>
+                  <span class="timeline-type">Deployment</span>
+                  <span class="timeline-time">2 min ago</span>
+                </div>
+                <div class="timeline-title">Production deploy succeeded</div>
+                <div class="timeline-desc">v2.4.1 deployed to production cluster us-east-1.</div>
+                <label for="expand-1" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Environment:</strong> production (us-east-1)<br>
+                  <strong>Version:</strong> v2.4.1 (build #1847)<br>
+                  <strong>Duration:</strong> 3m 42s<br>
+                  <strong>Health checks:</strong> All 12 endpoints passing
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-2">
+          <div class="timeline-item tl-commit" data-type="commit">
+            <div class="timeline-avatar">ML</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Maya Liu</span>
+                  <span class="timeline-type">Commit</span>
+                  <span class="timeline-time">18 min ago</span>
+                </div>
+                <div class="timeline-title">fix: resolve race condition in auth flow</div>
+                <div class="timeline-desc">Fixed timing issue where token refresh overlapped with authentication.</div>
+                <label for="expand-2" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Branch:</strong> fix/auth-race-condition<br>
+                  <strong>SHA:</strong> a3f7c2d<br>
+                  <strong>Files changed:</strong> 3<br>
+                  <strong>Lines:</strong> +47 / -12
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-3">
+          <div class="timeline-item tl-review" data-type="review">
+            <div class="timeline-avatar">SC</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Sarah Chen</span>
+                  <span class="timeline-type">Review</span>
+                  <span class="timeline-time">34 min ago</span>
+                </div>
+                <div class="timeline-title">PR #421 approved</div>
+                <div class="timeline-desc">Code review approved with minor suggestions.</div>
+                <label for="expand-3" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>PR:</strong> #421 — Add CSV export<br>
+                  <strong>Status:</strong> Approved<br>
+                  <strong>Comments:</strong> 3 inline suggestions
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-4">
+          <div class="timeline-item tl-comment" data-type="comment">
+            <div class="timeline-avatar">AK</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Alex Kim</span>
+                  <span class="timeline-type">Comment</span>
+                  <span class="timeline-time">1 hr ago</span>
+                </div>
+                <div class="timeline-title">Commented on issue #389</div>
+                <div class="timeline-desc">Reproduced the bug on Safari 17. CSS grid fallback issue.</div>
+                <label for="expand-4" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Issue:</strong> #389 — Grid layout broken<br>
+                  <strong>Browser:</strong> Safari 17.2<br>
+                  <strong>Workaround:</strong> Explicit grid-template-columns
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-5">
+          <div class="timeline-item tl-alert" data-type="alert">
+            <div class="timeline-avatar">SY</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">System</span>
+                  <span class="timeline-type">Alert</span>
+                  <span class="timeline-time">1 hr ago</span>
+                </div>
+                <div class="timeline-title">CPU spike on worker-03</div>
+                <div class="timeline-desc">Worker exceeded 90% CPU. Auto-scaling triggered.</div>
+                <label for="expand-5" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Node:</strong> worker-03<br>
+                  <strong>Peak CPU:</strong> 94.2%<br>
+                  <strong>Action:</strong> Scaled 3 to 5 instances<br>
+                  <strong>Status:</strong> Resolved — 43% now
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-6">
+          <div class="timeline-item tl-merge" data-type="merge">
+            <div class="timeline-avatar">DP</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">David Park</span>
+                  <span class="timeline-type">Merge</span>
+                  <span class="timeline-time">2 hrs ago</span>
+                </div>
+                <div class="timeline-title">Merged feature/dashboard-redesign</div>
+                <div class="timeline-desc">14 commits, 42 files. New analytics dashboard.</div>
+                <label for="expand-6" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Branch:</strong> feature/dashboard-redesign<br>
+                  <strong>Commits:</strong> 14<br>
+                  <strong>Files:</strong> 42 (+2,847 / -891)<br>
+                  <strong>Reviewers:</strong> Sarah Chen, Maya Liu
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-7">
+          <div class="timeline-item tl-commit" data-type="commit">
+            <div class="timeline-avatar">RO</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Rachel Okafor</span>
+                  <span class="timeline-type">Commit</span>
+                  <span class="timeline-time">3 hrs ago</span>
+                </div>
+                <div class="timeline-title">feat: add CSV export to reports</div>
+                <div class="timeline-desc">Users can export any report table as CSV.</div>
+                <label for="expand-7" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Branch:</strong> feature/csv-export<br>
+                  <strong>SHA:</strong> f82e1a9<br>
+                  <strong>Files changed:</strong> 5<br>
+                  <strong>Lines:</strong> +124 / -8
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="checkbox" class="timeline-expand-toggle" id="expand-8">
+          <div class="timeline-item tl-deployment" data-type="deployment">
+            <div class="timeline-avatar">JR</div>
+            <div class="timeline-card">
+              <div class="timeline-card-main">
+                <div class="timeline-card-header">
+                  <span class="timeline-author">Jake Rivera</span>
+                  <span class="timeline-type">Deployment</span>
+                  <span class="timeline-time">4 hrs ago</span>
+                </div>
+                <div class="timeline-title">Staging deploy v2.4.1-rc.2</div>
+                <div class="timeline-desc">Release candidate deployed to staging for QA.</div>
+                <label for="expand-8" class="timeline-expand-label">Details</label>
+              </div>
+              <div class="timeline-detail">
+                <div class="timeline-detail-inner">
+                  <strong>Environment:</strong> staging<br>
+                  <strong>Version:</strong> v2.4.1-rc.2<br>
+                  <strong>Duration:</strong> 2m 18s
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

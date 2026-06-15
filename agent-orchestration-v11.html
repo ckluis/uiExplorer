@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v11: Mycelium Network Enhanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  padding: 8px 10px 4px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-radio { display: none; }
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #0a0a14;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Mycelium Network Canvas ─── */
+.mycelium-canvas {
+  width: 100%;
+  min-height: 100%;
+  height: 100%;
+  background: #0a0a14;
+  background-image:
+    radial-gradient(ellipse 800px 600px at 50% 30%, rgba(0, 255, 136, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 30% 60%, rgba(80, 40, 120, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 70% 70%, rgba(0, 180, 100, 0.02) 0%, transparent 70%);
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px 60px;
+  overflow: auto;
+}
+
+/* ─── Tree Layout Container ─── */
+.tree {
+  position: relative;
+  width: 900px;
+  min-height: 600px;
+}
+
+/* ─── Shared Node Styles ─── */
+.node {
+  position: absolute;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  z-index: 2;
+}
+
+.node-name {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+
+.node-status {
+  font-size: 10px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.node-dot.active { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+.node-dot.waiting { background: #f39c12; box-shadow: 0 0 6px #f39c12; }
+.node-dot.working { background: #3498db; box-shadow: 0 0 6px #3498db; }
+
+/* ─── Human Task (Tree Trunk) ─── */
+.human-task {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1.5px solid rgba(139, 156, 247, 0.4);
+  box-shadow:
+    0 0 20px rgba(139, 156, 247, 0.15),
+    0 0 60px rgba(139, 156, 247, 0.05),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  color: #d4dcff;
+  width: 340px;
+}
+
+.human-task .node-name { color: #a8b4f0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.human-task .task-text { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; }
+
+/* ─── Orchestrator Node ─── */
+.orchestrator {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 120px;
+  background: linear-gradient(135deg, #0a2e1a 0%, #0f3d1f 100%);
+  border: 1.5px solid rgba(0, 255, 136, 0.4);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.2),
+    0 0 80px rgba(0, 255, 136, 0.08),
+    0 0 120px rgba(0, 255, 136, 0.03),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  color: #b0ffd8;
+  width: 260px;
+}
+
+.orchestrator .node-name { color: #00ff88; font-size: 14px; }
+
+/* ─── Level 2 Agents ─── */
+.agent-l2 {
+  top: 300px;
+  background: linear-gradient(135deg, #0d1f2d 0%, #0a2a2a 100%);
+  border: 1px solid rgba(0, 220, 130, 0.3);
+  box-shadow:
+    0 0 20px rgba(0, 220, 130, 0.12),
+    0 0 50px rgba(0, 220, 130, 0.04),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  color: #a0e8c8;
+  width: 180px;
+}
+
+.agent-frontend { left: 80px; }
+.agent-backend { left: 50%; transform: translateX(-50%); }
+.agent-database { right: 80px; }
+
+/* ─── CSS-only Node Toggle ─── */
+.node-toggle { display: none; }
+
+.node-toggle-label {
+  cursor: pointer;
+  display: block;
+}
+
+.node-detail {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #0d1f2d 0%, #0a2a2a 100%);
+  border: 1px solid rgba(0, 220, 130, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: #a0e8c8;
+  z-index: 5;
+  box-shadow: 0 0 20px rgba(0, 220, 130, 0.15);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.3s, max-height 0.3s;
+  pointer-events: none;
+}
+
+.node-detail-title {
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #00ff88;
+  margin-bottom: 6px;
+}
+
+.node-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  color: #80d0b0;
+}
+
+.node-detail-item::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 220, 130, 0.5);
+  flex-shrink: 0;
+}
+
+.mycelium-canvas #toggle-frontend:checked ~ .tree .frontend-detail,
+.mycelium-canvas #toggle-backend:checked ~ .tree .backend-detail,
+.mycelium-canvas #toggle-database:checked ~ .tree .database-detail {
+  opacity: 1;
+  max-height: 200px;
+  pointer-events: auto;
+}
+
+/* Toggle indicator */
+.node-toggle-label .toggle-hint {
+  font-size: 8px;
+  opacity: 0.5;
+  margin-top: 4px;
+  display: block;
+}
+
+.mycelium-canvas #toggle-frontend:checked ~ .tree .agent-frontend .toggle-hint::after { content: ' ▲'; }
+.mycelium-canvas #toggle-backend:checked ~ .tree .agent-backend .toggle-hint::after { content: ' ▲'; }
+.mycelium-canvas #toggle-database:checked ~ .tree .agent-database .toggle-hint::after { content: ' ▲'; }
+
+/* ─── Level 3 Agents ─── */
+.agent-l3 {
+  top: 480px;
+  background: linear-gradient(135deg, #101020 0%, #0d1a24 100%);
+  border: 1px solid rgba(0, 200, 120, 0.2);
+  box-shadow:
+    0 0 14px rgba(0, 200, 120, 0.08),
+    0 0 30px rgba(0, 200, 120, 0.03),
+    inset 0 1px 0 rgba(255,255,255,0.02);
+  color: #80d0b0;
+  width: 155px;
+  padding: 10px 14px;
+}
+
+.agent-l3 .node-name { font-size: 11px; }
+.agent-l3 .node-status { font-size: 9px; }
+
+.agent-component { left: 18px; }
+.agent-style { left: 195px; }
+.agent-api { left: 390px; }
+.agent-auth { left: 565px; }
+
+/* ─── Hyphae Threads (CSS lines) ─── */
+.thread {
+  position: absolute;
+  z-index: 1;
+  pointer-events: auto;
+  transition: box-shadow 0.3s, opacity 0.3s;
+}
+
+.thread:hover {
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.2);
+  opacity: 1;
+}
+
+/* Vertical threads from human to orchestrator */
+.thread-trunk {
+  left: 50%;
+  top: 70px;
+  width: 2px;
+  height: 50px;
+  background: linear-gradient(to bottom, rgba(139, 156, 247, 0.3), rgba(0, 255, 136, 0.4));
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+  transform: translateX(-50%);
+}
+
+/* Orchestrator to L2 vertical stem */
+.thread-orch-stem {
+  left: 50%;
+  top: 185px;
+  width: 2px;
+  height: 40px;
+  background: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.15);
+  transform: translateX(-50%);
+}
+
+/* Horizontal bar connecting L2 agents */
+.thread-h-bar {
+  top: 225px;
+  left: 170px;
+  right: 170px;
+  height: 2px;
+  background: rgba(0, 220, 130, 0.25);
+  box-shadow: 0 0 6px rgba(0, 220, 130, 0.12);
+}
+
+/* Vertical drops to L2 agents */
+.thread-drop-l { left: 170px; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); }
+.thread-drop-c { left: 50%; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); transform: translateX(-50%); }
+.thread-drop-r { right: 170px; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); }
+
+/* L2 to L3 threads — Frontend branch */
+.thread-fe-stem { left: 170px; top: 370px; width: 1px; height: 30px; background: rgba(0, 200, 120, 0.18); box-shadow: 0 0 4px rgba(0, 200, 120, 0.08); }
+.thread-fe-bar { left: 95px; top: 400px; width: 180px; height: 1px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 4px rgba(0, 200, 120, 0.06); }
+.thread-fe-drop-l { left: 95px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+.thread-fe-drop-r { left: 273px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+
+/* L2 to L3 threads — Backend branch */
+.thread-be-stem { left: 50%; top: 370px; width: 1px; height: 30px; background: rgba(0, 200, 120, 0.18); box-shadow: 0 0 4px rgba(0, 200, 120, 0.08); transform: translateX(-50%); }
+.thread-be-bar { left: 465px; top: 400px; width: 180px; height: 1px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 4px rgba(0, 200, 120, 0.06); }
+.thread-be-drop-l { left: 467px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+.thread-be-drop-r { left: 643px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+
+/* ─── Bioluminescent Pulse (Question bubble) ─── */
+.pulse-question {
+  position: absolute;
+  z-index: 10;
+  left: 545px;
+  top: 415px;
+  width: 200px;
+}
+
+.pulse-bubble {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.15) 0%, rgba(243, 156, 18, 0.08) 100%);
+  border: 1.5px solid rgba(243, 156, 18, 0.5);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow:
+    0 0 25px rgba(243, 156, 18, 0.2),
+    0 0 60px rgba(243, 156, 18, 0.08),
+    0 0 100px rgba(243, 156, 18, 0.03);
+  color: #f5d89a;
+  font-family: 'Inter', sans-serif;
+  transition: box-shadow 0.3s;
+}
+
+.pulse-bubble:hover {
+  box-shadow:
+    0 0 35px rgba(243, 156, 18, 0.35),
+    0 0 80px rgba(243, 156, 18, 0.15),
+    0 0 120px rgba(243, 156, 18, 0.06);
+}
+
+.pulse-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f39c12;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pulse-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f39c12;
+  box-shadow: 0 0 8px #f39c12;
+  display: inline-block;
+}
+
+.pulse-question-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffe0a0;
+  margin-bottom: 8px;
+}
+
+.pulse-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s, opacity 0.3s;
+}
+
+.pulse-bubble:hover .pulse-options {
+  max-height: 100px;
+  opacity: 1;
+}
+
+.pulse-option {
+  font-size: 10px;
+  padding: 4px 8px;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 6px;
+  color: #d4b06a;
+}
+
+/* Upward arrow indicator */
+.pulse-arrow {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 8px solid rgba(243, 156, 18, 0.5);
+  filter: drop-shadow(0 0 4px rgba(243, 156, 18, 0.4));
+}
+
+/* ─── Ambient spore dots ─── */
+.spore {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.1);
+  z-index: 0;
+}
+
+/* ─── Mobile Preview Overrides ─── */
+#preview-mobile:checked ~ .window .mycelium-canvas {
+  padding: 20px 10px 40px;
+}
+
+#preview-mobile:checked ~ .window .tree {
+  width: 350px;
+  transform: scale(0.75);
+  transform-origin: top center;
+}
+
+#preview-mobile:checked ~ .window .node {
+  padding: 10px 14px;
+}
+
+#preview-mobile:checked ~ .window .node-toggle-label {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v11</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Mycelium Network (v1) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Adding the device preview switcher (desktop/mobile/fullscreen) and CSS-only interactions to the base Mycelium Network concept &mdash; checkbox toggles expand agent detail panels, hover glow on hyphae threads, and the bioluminescent question bubble reveals options on hover.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v11.html as an enhanced iteration of v1 (Mycelium Network). Take the existing Mycelium Network visualization and make two changes: 1. Wrap everything in the device preview window framework (desktop 1360&times;820, mobile 375&times;720, fullscreen) with the standard preview bar and gradient background. 2. Add CSS-only interactions: checkbox toggles on nodes to expand/collapse showing sub-agent details, :hover glow on hyphae threads with pulsing animation, and the bioluminescent question bubble reveals text on :hover. Mobile: vertical tree layout, larger tap targets for node expansion. Preserve the dark canvas aesthetic with green bioluminescent palette.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View origination prompt #2 &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <a href="agent-orchestration.html#origination-1" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <div class="exp-vc-group-label">Wave 2 — Enhanced</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Enhanced Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Enhanced Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Enhanced Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Enhanced Cartographic</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Enhanced Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Enhanced Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Enhanced Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Enhanced Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Enhanced Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Enhanced Mycelium Network</span>
+        </a>
+        <div class="exp-vc-group-label">Wave 1 — Original</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked class="preview-radio">
+    <input type="radio" name="preview" id="preview-mobile" class="preview-radio">
+    <input type="radio" name="preview" id="preview-full" class="preview-radio">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="mycelium-canvas">
+
+        <!-- Ambient spores -->
+        <div class="spore" style="width:3px;height:3px;top:15%;left:10%;opacity:0.4"></div>
+        <div class="spore" style="width:2px;height:2px;top:25%;left:85%;opacity:0.3"></div>
+        <div class="spore" style="width:4px;height:4px;top:55%;left:5%;opacity:0.2"></div>
+        <div class="spore" style="width:2px;height:2px;top:70%;left:92%;opacity:0.35"></div>
+        <div class="spore" style="width:3px;height:3px;top:40%;left:15%;opacity:0.25"></div>
+        <div class="spore" style="width:2px;height:2px;top:80%;left:50%;opacity:0.2"></div>
+        <div class="spore" style="width:3px;height:3px;top:10%;left:70%;opacity:0.3"></div>
+        <div class="spore" style="width:2px;height:2px;top:65%;left:25%;opacity:0.15"></div>
+
+        <!-- Node toggle checkboxes -->
+        <input type="checkbox" id="toggle-frontend" class="node-toggle">
+        <input type="checkbox" id="toggle-backend" class="node-toggle">
+        <input type="checkbox" id="toggle-database" class="node-toggle">
+
+        <div class="tree">
+
+          <!-- ═══ THREADS (behind nodes) ═══ -->
+          <!-- Human → Orchestrator -->
+          <div class="thread thread-trunk"></div>
+
+          <!-- Orchestrator → L2 horizontal system -->
+          <div class="thread thread-orch-stem"></div>
+          <div class="thread thread-h-bar"></div>
+          <div class="thread thread-drop-l"></div>
+          <div class="thread thread-drop-c"></div>
+          <div class="thread thread-drop-r"></div>
+
+          <!-- Frontend → L3 -->
+          <div class="thread thread-fe-stem"></div>
+          <div class="thread thread-fe-bar"></div>
+          <div class="thread thread-fe-drop-l"></div>
+          <div class="thread thread-fe-drop-r"></div>
+
+          <!-- Backend → L3 -->
+          <div class="thread thread-be-stem"></div>
+          <div class="thread thread-be-bar"></div>
+          <div class="thread thread-be-drop-l"></div>
+          <div class="thread thread-be-drop-r"></div>
+
+          <!-- ═══ NODES ═══ -->
+
+          <!-- Human Task -->
+          <div class="node human-task">
+            <div class="node-name">Human Task</div>
+            <div class="task-text">Build a full-stack e-commerce platform</div>
+          </div>
+
+          <!-- Orchestrator -->
+          <div class="node orchestrator">
+            <div class="node-name"><span class="node-dot active"></span>Orchestrator Agent</div>
+            <div class="node-status">Decomposing task...</div>
+          </div>
+
+          <!-- L2 Agents with toggle labels -->
+          <div class="node agent-l2 agent-frontend" style="position:absolute;">
+            <label for="toggle-frontend" class="node-toggle-label">
+              <div class="node-name"><span class="node-dot working"></span>Frontend Agent</div>
+              <div class="node-status">Spawning sub-agents</div>
+              <span class="toggle-hint">Click to expand ▼</span>
+            </label>
+            <div class="node-detail frontend-detail">
+              <div class="node-detail-title">Sub-agents</div>
+              <div class="node-detail-item">Component Designer</div>
+              <div class="node-detail-item">Style System Agent</div>
+              <div class="node-detail-item">Layout Validator</div>
+            </div>
+          </div>
+
+          <div class="node agent-l2 agent-backend" style="position:absolute;">
+            <label for="toggle-backend" class="node-toggle-label">
+              <div class="node-name"><span class="node-dot waiting"></span>Backend Agent</div>
+              <div class="node-status">Awaiting sub-agent response</div>
+              <span class="toggle-hint">Click to expand ▼</span>
+            </label>
+            <div class="node-detail backend-detail">
+              <div class="node-detail-title">Sub-agents</div>
+              <div class="node-detail-item">API Route Agent</div>
+              <div class="node-detail-item">Auth Agent (blocked)</div>
+              <div class="node-detail-item">Middleware Agent</div>
+            </div>
+          </div>
+
+          <div class="node agent-l2 agent-database" style="position:absolute;">
+            <label for="toggle-database" class="node-toggle-label">
+              <div class="node-name"><span class="node-dot working"></span>Database Agent</div>
+              <div class="node-status">Designing schema</div>
+              <span class="toggle-hint">Click to expand ▼</span>
+            </label>
+            <div class="node-detail database-detail">
+              <div class="node-detail-title">Sub-agents</div>
+              <div class="node-detail-item">Schema Designer</div>
+              <div class="node-detail-item">Migration Agent</div>
+              <div class="node-detail-item">Seed Data Agent</div>
+            </div>
+          </div>
+
+          <!-- L3 Agents — Frontend branch -->
+          <div class="node agent-l3 agent-component">
+            <div class="node-name"><span class="node-dot working"></span>Component Designer</div>
+            <div class="node-status">Building product cards</div>
+          </div>
+
+          <div class="node agent-l3 agent-style">
+            <div class="node-name"><span class="node-dot active"></span>Style System Agent</div>
+            <div class="node-status">Generating tokens</div>
+          </div>
+
+          <!-- L3 Agents — Backend branch -->
+          <div class="node agent-l3 agent-api">
+            <div class="node-name"><span class="node-dot working"></span>API Route Agent</div>
+            <div class="node-status">Defining endpoints</div>
+          </div>
+
+          <div class="node agent-l3 agent-auth">
+            <div class="node-name"><span class="node-dot waiting"></span>Auth Agent</div>
+            <div class="node-status">Blocked &mdash; needs input</div>
+          </div>
+
+          <!-- ═══ BIOLUMINESCENT PULSE ═══ -->
+          <div class="pulse-question">
+            <div class="pulse-bubble">
+              <div class="pulse-arrow"></div>
+              <div class="pulse-label">AskUserQuestion</div>
+              <div class="pulse-question-text">OAuth provider preference?</div>
+              <div class="pulse-options">
+                <div class="pulse-option">Google</div>
+                <div class="pulse-option">GitHub</div>
+                <div class="pulse-option">Email / Password</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

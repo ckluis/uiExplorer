@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v8 Proactive Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Origination Variant Badge ─── */
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Proactive Monitor App ─── */
+.pm-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%; height: 100%; background: #f8f9fa;
+  display: flex; flex-direction: column; position: relative; overflow: hidden;
+}
+
+/* Top bar */
+.pm-topbar {
+  height: 60px; background: #fff; border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; flex-shrink: 0; z-index: 10;
+}
+.pm-topbar-left { display: flex; align-items: center; gap: 16px; }
+.pm-topbar-logo {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #1a1a2e, #2d2d4a);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.pm-topbar-title { font-size: 15px; font-weight: 600; color: #111; }
+.pm-topbar-right { display: flex; align-items: center; gap: 12px; }
+
+/* Bell with severity badge */
+.pm-bell-label {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.pm-bell-label:hover { background: #f3f4f6; }
+.pm-bell-label:active { transform: scale(0.95); }
+.pm-bell-label svg { width: 22px; height: 22px; color: #374151; }
+
+.pm-badge {
+  position: absolute; top: 2px; right: 2px; min-width: 20px; height: 20px;
+  background: #fff; color: #111; font-size: 10px; font-weight: 700;
+  border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 3px;
+  border: 2px solid #fff; padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.pm-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.pm-badge-dot.critical { background: #ef4444; }
+.pm-badge-dot.warning { background: #f59e0b; }
+.pm-badge-dot.info { background: #10b981; }
+
+.pm-user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+
+.pm-body {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #9ca3af; font-size: 14px; gap: 16px; padding: 40px;
+}
+.pm-body-icon { width: 48px; height: 48px; color: #d1d5db; }
+.pm-body-hint { font-size: 13px; color: #9ca3af; text-align: center; max-width: 280px; line-height: 1.5; }
+
+/* Overlay */
+.pm-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.25);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease; z-index: 20;
+  backdrop-filter: blur(2px);
+}
+
+/* Drawer */
+.pm-drawer {
+  position: absolute; top: 0; right: 0; width: 360px; height: 100%;
+  background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+  z-index: 30; display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+#pm-toggle:checked ~ .pm-overlay { opacity: 1; pointer-events: auto; }
+#pm-toggle:checked ~ .pm-drawer { transform: translateX(0); }
+
+/* Drawer header */
+.pm-drawer-header {
+  padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between;
+}
+.pm-drawer-header h2 { font-size: 16px; font-weight: 700; color: #111; display: flex; align-items: center; gap: 8px; }
+.pm-drawer-header h2 svg { width: 18px; height: 18px; color: #6366f1; }
+.pm-close-label {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; color: #6b7280; transition: all 0.12s;
+}
+.pm-close-label:hover { background: #f3f4f6; color: #111; }
+.pm-close-label svg { width: 18px; height: 18px; }
+
+/* Filter row */
+.pm-filter-row {
+  display: flex; align-items: center; gap: 6px; padding: 16px 20px 12px;
+}
+.pm-filter-label {
+  font-size: 11px; font-weight: 500; color: #6b7280;
+  padding: 5px 12px; border-radius: 16px; cursor: pointer;
+  transition: all 0.2s; border: 1px solid transparent;
+}
+.pm-filter-label:hover { background: #f3f4f6; }
+#pm-filter-all:checked ~ .pm-drawer .pm-filter-label[for="pm-filter-all"],
+#pm-filter-critical:checked ~ .pm-drawer .pm-filter-label[for="pm-filter-critical"],
+#pm-filter-warning:checked ~ .pm-drawer .pm-filter-label[for="pm-filter-warning"],
+#pm-filter-info:checked ~ .pm-drawer .pm-filter-label[for="pm-filter-info"] {
+  background: #111; color: #fff;
+}
+
+/* Filter visibility */
+#pm-filter-critical:checked ~ .pm-drawer .pm-prediction:not([data-severity="critical"]) { display: none; }
+#pm-filter-warning:checked ~ .pm-drawer .pm-prediction:not([data-severity="warning"]) { display: none; }
+#pm-filter-info:checked ~ .pm-drawer .pm-prediction:not([data-severity="info"]) { display: none; }
+#pm-filter-critical:checked ~ .pm-drawer .pm-group-label,
+#pm-filter-warning:checked ~ .pm-drawer .pm-group-label,
+#pm-filter-info:checked ~ .pm-drawer .pm-group-label { display: none; }
+
+.pm-drawer-divider { height: 1px; background: #f0f0f0; }
+
+/* Drawer body */
+.pm-drawer-body { flex: 1; overflow-y: auto; }
+.pm-drawer-body::-webkit-scrollbar { width: 6px; }
+.pm-drawer-body::-webkit-scrollbar-track { background: transparent; }
+.pm-drawer-body::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+.pm-drawer-body::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+.pm-group-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #9ca3af; padding: 16px 20px 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.pm-group-label svg { width: 12px; height: 12px; }
+
+/* Prediction card */
+.pm-prediction {
+  padding: 14px 20px; border-bottom: 1px solid rgba(0,0,0,0.04);
+  position: relative; transition: background 0.2s;
+}
+.pm-prediction:hover { background: #fafafa; }
+
+/* Severity left border */
+.pm-prediction::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.pm-prediction[data-severity="critical"]::before { background: #ef4444; }
+.pm-prediction[data-severity="warning"]::before { background: #f59e0b; }
+.pm-prediction[data-severity="info"]::before { background: #10b981; }
+
+.pm-pred-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pm-pred-title { font-size: 13px; font-weight: 600; color: #111; line-height: 1.4; flex: 1; }
+.pm-pred-eta {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.pm-pred-eta.critical { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
+.pm-pred-eta.warning { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+.pm-pred-eta.info { background: rgba(16, 185, 129, 0.1); color: #059669; }
+
+.pm-pred-detail { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+.pm-pred-detail strong { color: #374151; font-weight: 500; }
+
+/* Countdown progress bar */
+.pm-countdown {
+  margin-top: 10px; display: flex; align-items: center; gap: 8px;
+}
+.pm-countdown-bar {
+  flex: 1; height: 4px; background: #f3f4f6; border-radius: 2px; overflow: hidden;
+}
+.pm-countdown-fill {
+  height: 100%; border-radius: 2px; transition: width 0.3s;
+}
+.pm-countdown-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+.pm-countdown-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.pm-countdown-fill.info { background: linear-gradient(90deg, #10b981, #34d399); }
+.pm-countdown-text { font-size: 10px; color: #9ca3af; white-space: nowrap; }
+
+/* Trend indicator */
+.pm-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; margin-left: 8px; }
+.pm-trend.up { color: #ef4444; }
+.pm-trend.down { color: #10b981; }
+.pm-trend svg { width: 10px; height: 10px; }
+
+/* Actions row */
+.pm-pred-actions {
+  display: flex; align-items: center; gap: 6px; margin-top: 12px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.pm-prediction:hover .pm-pred-actions { opacity: 1; }
+
+.pm-action-btn {
+  font-size: 10px; font-weight: 500; padding: 5px 10px; border-radius: 5px;
+  cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+}
+.pm-action-btn svg { width: 12px; height: 12px; }
+.pm-action-primary {
+  background: #111; color: #fff;
+}
+.pm-action-primary:hover { background: #333; }
+.pm-action-secondary {
+  background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb;
+}
+.pm-action-secondary:hover { background: #e5e7eb; }
+.pm-action-snooze { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
+.pm-action-snooze:hover { background: rgba(245, 158, 11, 0.2); }
+.pm-action-dismiss { background: rgba(239, 68, 68, 0.08); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.15); }
+.pm-action-dismiss:hover { background: rgba(239, 68, 68, 0.15); }
+.pm-action-escalate { background: rgba(139, 92, 246, 0.1); color: #7c3aed; border: 1px solid rgba(139, 92, 246, 0.2); }
+.pm-action-escalate:hover { background: rgba(139, 92, 246, 0.2); }
+
+/* Reasoning tooltip on hover */
+.pm-reasoning {
+  display: none; margin-top: 10px; padding: 10px 12px;
+  background: #f9fafb; border-radius: 6px; border-left: 3px solid #8b5cf6;
+  font-size: 11px; color: #6b7280; line-height: 1.5;
+}
+.pm-prediction:hover .pm-reasoning { display: block; }
+.pm-reasoning-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #8b5cf6; margin-bottom: 4px; }
+
+/* Footer */
+.pm-drawer-footer {
+  padding: 12px 20px; border-top: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pm-footer-link {
+  font-size: 11px; font-weight: 500; color: #6b7280;
+  display: flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 5px 10px; border-radius: 5px; transition: all 0.12s;
+}
+.pm-footer-link:hover { background: #f3f4f6; color: #374151; }
+.pm-footer-link svg { width: 13px; height: 13px; }
+.pm-footer-stats { font-size: 10px; color: #9ca3af; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .pm-drawer { width: 100%; }
+#preview-mobile:checked ~ .window .pm-topbar { padding: 0 16px; }
+#preview-mobile:checked ~ .window .pm-prediction { padding: 12px 16px; }
+#preview-mobile:checked ~ .window .pm-pred-actions { opacity: 1; }
+#preview-mobile:checked ~ .window .pm-reasoning { display: block; }
+#preview-mobile:checked ~ .window .pm-drawer-header { padding: 16px 16px 0; }
+#preview-mobile:checked ~ .window .pm-filter-row { padding: 12px 16px 10px; flex-wrap: wrap; }
+#preview-mobile:checked ~ .window .pm-group-label { padding: 12px 16px 6px; }
+#preview-mobile:checked ~ .window .pm-drawer-footer { padding: 10px 16px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A notification drawer focused on FUTURE problems, not just current ones. Shows predictive warnings with countdown timers for operations admins who value early warning and preventive maintenance. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Proactive monitoring with time-based predictions. Menu bar notification bell exposes a severity-colored badge. Drawer groups predictions by urgency with visual countdown bars depleting toward critical thresholds. Emphasizes early intervention before issues become critical.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>Build guided-checklists-v8.html — the "Proactive Monitor" variant for the Guided Checklists experiment series.</strong><br><br>
+        <strong>Name:</strong> Proactive Monitor<br>
+        <strong>Tagline:</strong> "This will become a problem in 3 days."<br>
+        <strong>Version:</strong> v8<br><br>
+        <strong>Core Concept:</strong> A notification drawer focused on FUTURE problems, not just current ones. Shows predictive warnings with countdown timers. Emphasizes early intervention before issues become critical.<br><br>
+        <strong>Exposure Method:</strong> Menu bar notification bell with severity-colored badge. Badge shows count and most severe level (red/amber/green dot).<br><br>
+        <strong>Presentation Style:</strong> Notification drawer (~360px) sliding from right. Grouped by severity with time predictions.<br><br>
+        <strong>Target Persona:</strong> Operations admin, DevOps-minded user. Values early warning, preventive maintenance. Proactive rather than reactive.<br><br>
+        <strong>Platform:</strong> Web (desktop), with mobile drawer adaptation.<br><br>
+        <strong>Key UI Elements:</strong><br>
+        - Notification bell icon with colored badge<br>
+        - Severity grouping (Critical predictions, Warnings, Monitoring)<br>
+        - Time-based predictions ("Will become critical in 3 days")<br>
+        - Countdown timers (visual progress bars depleting)<br>
+        - Snooze options with duration picker<br>
+        - Acknowledge button (removes from active)<br>
+        - Escalation paths ("Escalate to: Team Lead")<br>
+        - Trend arrows (getting worse, improving)<br>
+        - "Dismiss as false positive" option (trains model)<br><br>
+        <strong>Sample Predictions:</strong><br>
+        1. CRITICAL IN 3 DAYS: "Storage will exceed quota" — Currently 87%, growing 5%/day<br>
+        2. WARNING IN 1 WEEK: "SSL certificate expires" — Expires Feb 13<br>
+        3. WARNING IN 2 DAYS: "API rate limit approaching" — Currently 78% of limit<br>
+        4. MONITORING: "Memory usage trending up" — 62%, +2% this week<br><br>
+        <strong>Color/Mood:</strong> Alert-focused but not alarming. Uses countdown aesthetic. Red/amber/green severity system. Dark drawer with light content.<br><br>
+        <strong>AI Feedback Pattern:</strong><br>
+        - "Dismiss as false positive" trains prediction model<br>
+        - Snooze duration signals urgency perception<br>
+        - Acknowledge without fixing = accepting prediction<br>
+        - Escalation = agreeing with severity assessment<br><br>
+        <strong>Interaction Patterns:</strong><br>
+        - Checkbox toggles drawer open/closed<br>
+        - Radio buttons for severity filter (All/Critical/Warning/Info)<br>
+        - CSS animations for countdown progress bars<br>
+        - Hover on predictions shows detailed reasoning<br><br>
+        <strong>Device Preview:</strong> Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="pm-app">
+        <input type="checkbox" id="pm-toggle">
+        <input type="radio" name="pm-filter" id="pm-filter-all" checked>
+        <input type="radio" name="pm-filter" id="pm-filter-critical">
+        <input type="radio" name="pm-filter" id="pm-filter-warning">
+        <input type="radio" name="pm-filter" id="pm-filter-info">
+
+        <div class="pm-topbar">
+          <div class="pm-topbar-left">
+            <div class="pm-topbar-logo">O</div>
+            <span class="pm-topbar-title">OpsHub</span>
+          </div>
+          <div class="pm-topbar-right">
+            <label for="pm-toggle" class="pm-bell-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="pm-badge">
+                <span class="pm-badge-dot critical"></span>
+                4
+              </span>
+            </label>
+            <div class="pm-user-avatar">KL</div>
+          </div>
+        </div>
+
+        <div class="pm-body">
+          <svg class="pm-body-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="pm-body-hint">Click the notification bell to open the proactive monitor. You have 4 predictions requiring attention.</span>
+        </div>
+
+        <label for="pm-toggle" class="pm-overlay"></label>
+
+        <div class="pm-drawer">
+          <div class="pm-drawer-header">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Proactive Monitor
+            </h2>
+            <label for="pm-toggle" class="pm-close-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </label>
+          </div>
+
+          <div class="pm-filter-row">
+            <label for="pm-filter-all" class="pm-filter-label">All</label>
+            <label for="pm-filter-critical" class="pm-filter-label">Critical</label>
+            <label for="pm-filter-warning" class="pm-filter-label">Warning</label>
+            <label for="pm-filter-info" class="pm-filter-label">Monitoring</label>
+          </div>
+          <div class="pm-drawer-divider"></div>
+
+          <div class="pm-drawer-body">
+
+            <!-- Critical Predictions -->
+            <div class="pm-group-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Critical Predictions
+            </div>
+
+            <div class="pm-prediction" data-severity="critical">
+              <div class="pm-pred-header">
+                <div class="pm-pred-title">
+                  Storage will exceed quota
+                  <span class="pm-trend up">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    +5%/day
+                  </span>
+                </div>
+                <span class="pm-pred-eta critical">3 days</span>
+              </div>
+              <div class="pm-pred-detail">Currently at <strong>87%</strong> of allocated storage. Growing at 5% per day based on 7-day trend.</div>
+              <div class="pm-countdown">
+                <div class="pm-countdown-bar">
+                  <div class="pm-countdown-fill critical" style="width: 13%;"></div>
+                </div>
+                <span class="pm-countdown-text">72h remaining</span>
+              </div>
+              <div class="pm-reasoning">
+                <div class="pm-reasoning-label">AI Reasoning</div>
+                Upload activity increased 340% after marketing campaign launch. Log retention policy unchanged since Q2. Recommend archiving logs older than 30 days.
+              </div>
+              <div class="pm-pred-actions">
+                <span class="pm-action-btn pm-action-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  Fix Now
+                </span>
+                <span class="pm-action-btn pm-action-snooze">Snooze 1d</span>
+                <span class="pm-action-btn pm-action-escalate">Escalate</span>
+                <span class="pm-action-btn pm-action-dismiss">False Positive</span>
+              </div>
+            </div>
+
+            <!-- Warning Predictions -->
+            <div class="pm-group-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Warning Predictions
+            </div>
+
+            <div class="pm-prediction" data-severity="warning">
+              <div class="pm-pred-header">
+                <div class="pm-pred-title">API rate limit approaching</div>
+                <span class="pm-pred-eta warning">2 days</span>
+              </div>
+              <div class="pm-pred-detail">Currently at <strong>78%</strong> of daily rate limit. Peak usage pattern detected during business hours.</div>
+              <div class="pm-countdown">
+                <div class="pm-countdown-bar">
+                  <div class="pm-countdown-fill warning" style="width: 22%;"></div>
+                </div>
+                <span class="pm-countdown-text">48h remaining</span>
+              </div>
+              <div class="pm-reasoning">
+                <div class="pm-reasoning-label">AI Reasoning</div>
+                Third-party integration "Salesforce Sync" responsible for 62% of API calls. New export feature driving additional 18%. Consider implementing request batching.
+              </div>
+              <div class="pm-pred-actions">
+                <span class="pm-action-btn pm-action-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.04.32.06.64.06.98v.09A1.65 1.65 0 0 0 21 12a2 2 0 0 1 0 4h-.09"/></svg>
+                  Configure
+                </span>
+                <span class="pm-action-btn pm-action-snooze">Snooze 4h</span>
+                <span class="pm-action-btn pm-action-dismiss">False Positive</span>
+              </div>
+            </div>
+
+            <div class="pm-prediction" data-severity="warning">
+              <div class="pm-pred-header">
+                <div class="pm-pred-title">SSL certificate expires</div>
+                <span class="pm-pred-eta warning">7 days</span>
+              </div>
+              <div class="pm-pred-detail">Certificate for <strong>api.company.com</strong> expires Feb 13, 2026. Auto-renewal appears disabled.</div>
+              <div class="pm-countdown">
+                <div class="pm-countdown-bar">
+                  <div class="pm-countdown-fill warning" style="width: 42%;"></div>
+                </div>
+                <span class="pm-countdown-text">168h remaining</span>
+              </div>
+              <div class="pm-reasoning">
+                <div class="pm-reasoning-label">AI Reasoning</div>
+                Certificate was manually issued 364 days ago. ACME auto-renewal failed 3 times last month due to DNS verification timeout. DNS provider: Route53.
+              </div>
+              <div class="pm-pred-actions">
+                <span class="pm-action-btn pm-action-primary">Renew Now</span>
+                <span class="pm-action-btn pm-action-secondary">View Certificate</span>
+                <span class="pm-action-btn pm-action-dismiss">False Positive</span>
+              </div>
+            </div>
+
+            <!-- Monitoring -->
+            <div class="pm-group-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Monitoring
+            </div>
+
+            <div class="pm-prediction" data-severity="info">
+              <div class="pm-pred-header">
+                <div class="pm-pred-title">
+                  Memory usage trending up
+                  <span class="pm-trend up">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    +2%/wk
+                  </span>
+                </div>
+                <span class="pm-pred-eta info">~3 weeks</span>
+              </div>
+              <div class="pm-pred-detail">Currently at <strong>62%</strong> of allocated memory. Gradual increase of 2% per week observed.</div>
+              <div class="pm-countdown">
+                <div class="pm-countdown-bar">
+                  <div class="pm-countdown-fill info" style="width: 62%;"></div>
+                </div>
+                <span class="pm-countdown-text">~504h remaining</span>
+              </div>
+              <div class="pm-reasoning">
+                <div class="pm-reasoning-label">AI Reasoning</div>
+                Memory increase correlates with new caching layer deployed 2 weeks ago. Cache eviction policy set to LRU with 24h TTL. Consider reducing TTL or increasing memory allocation.
+              </div>
+              <div class="pm-pred-actions">
+                <span class="pm-action-btn pm-action-secondary">Acknowledge</span>
+                <span class="pm-action-btn pm-action-snooze">Snooze 1w</span>
+                <span class="pm-action-btn pm-action-dismiss">False Positive</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="pm-drawer-footer">
+            <span class="pm-footer-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Prediction settings
+            </span>
+            <span class="pm-footer-stats">Model accuracy: 94%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

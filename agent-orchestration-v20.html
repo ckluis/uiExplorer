@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v20: Terrarium (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #555;
+  padding: 8px 10px 3px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #1a3025 0%, #0a1a10 50%, #1a2a1e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1100px;
+  height: 780px;
+  background: #0a0a14;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+  padding: 10px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Controls Panel ─── */
+.controls-panel {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.control-group-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.35);
+  margin-right: 4px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.control-btn:hover {
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.06);
+}
+
+.control-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  transition: all 0.2s;
+}
+
+/* Day/Night radio controls */
+#cycle-day:checked ~ .window .controls-panel label[for="cycle-day"] .control-btn,
+#cycle-night:checked ~ .window .controls-panel label[for="cycle-night"] .control-btn {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.15);
+}
+
+#cycle-day:checked ~ .window .controls-panel label[for="cycle-day"] .control-dot {
+  background: #f4d03f;
+  border-color: #f4d03f;
+  box-shadow: 0 0 6px rgba(244, 208, 63, 0.5);
+}
+
+#cycle-night:checked ~ .window .controls-panel label[for="cycle-night"] .control-dot {
+  background: #8b9cf7;
+  border-color: #8b9cf7;
+  box-shadow: 0 0 6px rgba(139, 156, 247, 0.5);
+}
+
+/* Checkbox organism flow toggle styling */
+#flow-fern:checked ~ .window .controls-panel label[for="flow-fern"] .control-btn,
+#flow-orchid:checked ~ .window .controls-panel label[for="flow-orchid"] .control-btn,
+#flow-moss:checked ~ .window .controls-panel label[for="flow-moss"] .control-btn {
+  color: #fff;
+  background: rgba(46, 204, 113, 0.12);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+#flow-fern:checked ~ .window .controls-panel label[for="flow-fern"] .control-dot {
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+
+#flow-orchid:checked ~ .window .controls-panel label[for="flow-orchid"] .control-dot {
+  background: #e8c840;
+  border-color: #e8c840;
+}
+
+#flow-moss:checked ~ .window .controls-panel label[for="flow-moss"] .control-dot {
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+
+/* ─── Terrarium Container ─── */
+.terrarium-scene {
+  position: relative;
+  width: 780px;
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s;
+}
+
+#preview-mobile:checked ~ .window .terrarium-scene {
+  width: 100%;
+  transform: scale(0.45);
+}
+
+/* ─── The Gardener (outside left) ─── */
+.gardener {
+  position: absolute;
+  left: -120px;
+  top: 140px;
+  text-align: center;
+  z-index: 10;
+}
+
+.gardener-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #f5e6c8, #d4a574);
+  margin: 0 auto 8px;
+  position: relative;
+  box-shadow: 0 0 20px rgba(244, 208, 63, 0.3);
+}
+
+.gardener-icon::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #6b4226, #3e2415);
+  top: 12px;
+  left: 15px;
+  box-shadow: inset 2px 2px 3px rgba(255,255,255,0.2);
+}
+
+.gardener-icon::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  top: 16px;
+  left: 20px;
+  box-shadow: 0 0 4px rgba(255,255,255,0.8);
+}
+
+.gardener-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #f4d03f;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.gardener-sublabel {
+  font-size: 9px;
+  color: rgba(244, 208, 63, 0.6);
+  margin-top: 2px;
+}
+
+/* ─── Light Beam ─── */
+.light-beam {
+  position: absolute;
+  left: -50px;
+  top: 165px;
+  width: 180px;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(244, 208, 63, 0.8), rgba(244, 208, 63, 0.05));
+  border-radius: 2px;
+  z-index: 5;
+  transform: rotate(12deg);
+  transform-origin: left center;
+  transition: opacity 0.4s;
+}
+
+.light-beam::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -8px;
+  width: 180px;
+  height: 20px;
+  background: linear-gradient(90deg, rgba(244, 208, 63, 0.15), rgba(244, 208, 63, 0));
+  border-radius: 10px;
+}
+
+.light-beam-label {
+  position: absolute;
+  left: -60px;
+  top: 200px;
+  font-size: 9px;
+  color: rgba(244, 208, 63, 0.5);
+  font-style: italic;
+  white-space: nowrap;
+  transition: opacity 0.4s;
+}
+
+/* Night mode: dim the light beam */
+#cycle-night:checked ~ .window .light-beam {
+  opacity: 0.15;
+}
+
+#cycle-night:checked ~ .window .light-beam-label {
+  opacity: 0.3;
+}
+
+/* ─── Terrarium Glass ─── */
+.terrarium {
+  position: relative;
+  width: 700px;
+  height: 550px;
+  margin-left: 40px;
+  border-radius: 30px 30px 20px 20px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 60px rgba(255, 255, 255, 0.03),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(46, 204, 113, 0.05);
+  transition: box-shadow 0.5s;
+}
+
+#cycle-night:checked ~ .window .terrarium {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 0 60px rgba(100, 100, 200, 0.03),
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(139, 156, 247, 0.05);
+}
+
+/* Glass reflection lines */
+.terrarium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.15) 0%,
+    rgba(255,255,255,0.05) 30%,
+    rgba(255,255,255,0.02) 60%,
+    rgba(255,255,255,0.08) 100%
+  );
+  z-index: 20;
+  pointer-events: none;
+}
+
+.terrarium::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 30px;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.02) 50%,
+    rgba(255,255,255,0.06) 100%
+  );
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* Water droplets on glass */
+.droplet {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 25;
+  pointer-events: none;
+}
+
+.droplet-1 { width: 6px; height: 8px; top: 40px; left: 60px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+.droplet-2 { width: 4px; height: 5px; top: 100px; right: 80px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+.droplet-3 { width: 5px; height: 7px; top: 180px; left: 120px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+.droplet-4 { width: 3px; height: 4px; top: 70px; right: 150px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+.droplet-5 { width: 5px; height: 6px; top: 250px; right: 45px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+
+/* ─── Glass Panel Observation Notes (hover) ─── */
+.glass-note {
+  position: absolute;
+  z-index: 30;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.glass-note-trigger {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: rgba(255,255,255,0.3);
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.glass-note:hover .glass-note-trigger {
+  border-color: rgba(244, 208, 63, 0.6);
+  background: rgba(244, 208, 63, 0.15);
+  color: #f4d03f;
+}
+
+.glass-note-content {
+  position: absolute;
+  left: 20px;
+  top: -4px;
+  background: rgba(10, 10, 20, 0.92);
+  border: 1px solid rgba(244, 208, 63, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 180px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.glass-note:hover .glass-note-content {
+  opacity: 1;
+}
+
+.glass-note-title {
+  font-size: 9px;
+  font-weight: 700;
+  color: #f4d03f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.glass-note-text {
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
+}
+
+.glass-note-1 { top: 55px; left: 40px; }
+.glass-note-2 { top: 260px; left: 40px; }
+.glass-note-3 { top: 420px; right: 40px; }
+.glass-note-3 .glass-note-content { left: auto; right: 20px; }
+
+/* ─── ATMOSPHERE Layer ─── */
+.layer-atmosphere {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 15%;
+  background: linear-gradient(180deg, #1a2a3a 0%, #1a3025 100%);
+  overflow: hidden;
+  transition: background 0.5s;
+}
+
+#cycle-night:checked ~ .window .layer-atmosphere {
+  background: linear-gradient(180deg, #0e1525 0%, #0e1a15 100%);
+}
+
+.layer-label {
+  position: absolute;
+  right: 16px;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.25);
+  pointer-events: none;
+}
+
+.layer-atmosphere .layer-label {
+  top: 6px;
+}
+
+.cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+}
+
+.cloud-1 { width: 80px; height: 20px; top: 15px; left: 100px; }
+.cloud-1::before {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  top: -12px;
+  left: 15px;
+}
+
+.cloud-2 { width: 60px; height: 16px; top: 25px; left: 400px; background: rgba(255,255,255,0.06); }
+.cloud-3 { width: 50px; height: 14px; top: 10px; left: 550px; background: rgba(255,255,255,0.05); }
+
+.floating-thought {
+  position: absolute;
+  top: 30px;
+  left: 200px;
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 9px;
+  color: rgba(139, 156, 247, 0.8);
+  white-space: nowrap;
+}
+
+/* Night floating thought */
+#cycle-night:checked ~ .window .floating-thought {
+  background: rgba(139, 156, 247, 0.06);
+  border-color: rgba(139, 156, 247, 0.15);
+  color: rgba(139, 156, 247, 0.5);
+}
+
+.evaporation {
+  position: absolute;
+  right: 80px;
+  top: 20px;
+  bottom: -10px;
+  width: 1px;
+  border-left: 1px dashed rgba(100, 180, 255, 0.2);
+}
+
+.evaporation-label {
+  position: absolute;
+  right: 60px;
+  top: 45px;
+  font-size: 7px;
+  color: rgba(100, 180, 255, 0.3);
+  transform: rotate(-90deg);
+  transform-origin: right center;
+  white-space: nowrap;
+}
+
+/* ─── CANOPY Layer ─── */
+.layer-canopy {
+  position: absolute;
+  top: 15%;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(180deg, #1a3025 0%, #14291e 100%);
+  overflow: visible;
+  transition: background 0.5s;
+}
+
+#cycle-night:checked ~ .window .layer-canopy {
+  background: linear-gradient(180deg, #0e1a15 0%, #0a150e 100%);
+}
+
+.layer-canopy .layer-label { top: 6px; }
+
+.great-oak {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 200px;
+  text-align: center;
+}
+
+.oak-trunk {
+  width: 16px;
+  height: 60px;
+  background: linear-gradient(90deg, #5a3a1a, #7a5a2a, #5a3a1a);
+  margin: 0 auto;
+  border-radius: 2px;
+  position: relative;
+}
+
+.oak-branch-l {
+  position: absolute;
+  top: 10px;
+  left: -30px;
+  width: 35px;
+  height: 3px;
+  background: #6a4a20;
+  transform: rotate(-20deg);
+  border-radius: 2px;
+}
+
+.oak-branch-r {
+  position: absolute;
+  top: 8px;
+  right: -28px;
+  width: 32px;
+  height: 3px;
+  background: #6a4a20;
+  transform: rotate(18deg);
+  border-radius: 2px;
+}
+
+.oak-crown {
+  position: relative;
+  margin-top: -20px;
+}
+
+.oak-crown-center {
+  width: 100px;
+  height: 55px;
+  background: radial-gradient(ellipse at 50% 70%, #2ecc71, #1a8a4a);
+  border-radius: 50% 50% 40% 40%;
+  margin: 0 auto;
+  box-shadow: 0 0 30px rgba(46, 204, 113, 0.15);
+  transition: all 0.5s;
+}
+
+#cycle-night:checked ~ .window .oak-crown-center {
+  background: radial-gradient(ellipse at 50% 70%, #1a6a3a, #0e4a2a);
+  box-shadow: 0 0 20px rgba(46, 204, 113, 0.08);
+}
+
+.oak-crown-left {
+  position: absolute;
+  width: 60px;
+  height: 40px;
+  background: radial-gradient(ellipse at 50% 60%, #27ae60, #1a7a3a);
+  border-radius: 50%;
+  top: 10px;
+  left: 20px;
+}
+
+.oak-crown-right {
+  position: absolute;
+  width: 55px;
+  height: 38px;
+  background: radial-gradient(ellipse at 50% 60%, #27ae60, #1a7a3a);
+  border-radius: 50%;
+  top: 12px;
+  right: 25px;
+}
+
+#cycle-night:checked ~ .window .oak-crown-left,
+#cycle-night:checked ~ .window .oak-crown-right {
+  background: radial-gradient(ellipse at 50% 60%, #1a6a3a, #0e4a2a);
+}
+
+.oak-label {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.oak-label-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  display: block;
+}
+
+.oak-label-role {
+  font-size: 7px;
+  color: rgba(46, 204, 113, 0.6);
+  display: block;
+}
+
+.oak-status {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 7px;
+  color: rgba(46, 204, 113, 0.7);
+  white-space: nowrap;
+  transition: all 0.4s;
+}
+
+#cycle-night:checked ~ .window .oak-status {
+  background: rgba(139, 156, 247, 0.1);
+  border-color: rgba(139, 156, 247, 0.2);
+  color: rgba(139, 156, 247, 0.6);
+}
+
+/* ─── Symbiotic Relationship Reveals (hover) ─── */
+.symbiosis-zone {
+  position: absolute;
+  z-index: 15;
+  pointer-events: auto;
+}
+
+.symbiosis-link {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.symbiosis-link-line {
+  background: rgba(46, 204, 113, 0.3);
+  border-radius: 1px;
+}
+
+.symbiosis-link-label {
+  font-size: 7px;
+  color: rgba(46, 204, 113, 0.7);
+  white-space: nowrap;
+  background: rgba(10, 10, 20, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+/* Hover on oak reveals symbiosis lines */
+.oak-hover-zone {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 200px;
+  height: 120px;
+  z-index: 15;
+}
+
+.oak-hover-zone:hover ~ .symbiosis-oak-fern,
+.oak-hover-zone:hover ~ .symbiosis-oak-moss {
+  opacity: 1;
+}
+
+.symbiosis-oak-fern {
+  left: 170px;
+  top: 60px;
+}
+
+.symbiosis-oak-moss {
+  right: 120px;
+  top: 60px;
+}
+
+/* ─── UNDERSTORY Layer ─── */
+.layer-understory {
+  position: absolute;
+  top: 35%;
+  left: 0;
+  right: 0;
+  height: 25%;
+  background: linear-gradient(180deg, #14291e 0%, #1a2416 60%, #2a1f10 100%);
+  overflow: visible;
+  transition: background 0.5s;
+}
+
+#cycle-night:checked ~ .window .layer-understory {
+  background: linear-gradient(180deg, #0a150e 0%, #0e1508 60%, #1a1408 100%);
+}
+
+.layer-understory .layer-label { top: 6px; }
+
+.sub-plant {
+  position: absolute;
+  bottom: 10px;
+  text-align: center;
+}
+
+.sub-plant-stem {
+  width: 3px;
+  height: 35px;
+  margin: 0 auto;
+  border-radius: 1px;
+}
+
+.sub-plant-leaf {
+  width: 24px;
+  height: 14px;
+  border-radius: 50% 0 50% 0;
+  position: absolute;
+}
+
+.sub-plant-label {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.sub-plant-status {
+  font-size: 7px;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+}
+
+.sub-plant-health {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin: 4px auto 0;
+}
+
+/* Fern */
+.plant-fern { left: 120px; }
+.plant-fern .sub-plant-stem { background: linear-gradient(0deg, #2a7a3a, #3a9a4a); }
+.plant-fern .sub-plant-leaf { background: #2ecc71; }
+.plant-fern .fern-l1 { top: 0; left: -14px; transform: rotate(-30deg); width: 20px; height: 10px; }
+.plant-fern .fern-l2 { top: -10px; left: -10px; transform: rotate(-20deg); width: 18px; height: 9px; }
+.plant-fern .fern-r1 { top: 2px; right: -14px; transform: rotate(30deg); border-radius: 0 50% 0 50%; width: 20px; height: 10px; }
+.plant-fern .fern-r2 { top: -8px; right: -10px; transform: rotate(20deg); border-radius: 0 50% 0 50%; width: 18px; height: 9px; }
+.plant-fern .sub-plant-health {
+  background: #2ecc71;
+  box-shadow: 0 0 6px rgba(46, 204, 113, 0.5);
+}
+
+/* Hover symbiosis on fern */
+.plant-fern:hover .fern-symbiosis { opacity: 1; }
+.fern-symbiosis {
+  position: absolute;
+  top: -45px;
+  left: -20px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.symbiosis-badge {
+  background: rgba(10, 10, 20, 0.9);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 6px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+.symbiosis-badge-title {
+  font-size: 8px;
+  font-weight: 700;
+  color: #2ecc71;
+  display: block;
+}
+
+.symbiosis-badge-text {
+  font-size: 7px;
+  color: rgba(255,255,255,0.5);
+  display: block;
+  margin-top: 1px;
+}
+
+/* Orchid */
+.plant-orchid { left: 310px; }
+.plant-orchid .sub-plant-stem {
+  background: linear-gradient(0deg, #8a7a30, #a89a40);
+  transform: rotate(15deg);
+  transform-origin: bottom center;
+}
+
+.orchid-flower {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #d4c460, #a89a40);
+  position: absolute;
+  top: -18px;
+  left: -6px;
+  transform: rotate(15deg);
+}
+
+.orchid-flower::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #e8d870, #c8b850);
+  position: absolute;
+  top: -5px;
+  left: 4px;
+}
+
+.plant-orchid .sub-plant-leaf { background: #8a9a40; }
+.plant-orchid .orchid-l1 { top: 5px; left: -16px; transform: rotate(-40deg); width: 18px; height: 9px; background: #8a9a40; }
+.plant-orchid .orchid-r1 { top: 3px; right: -12px; transform: rotate(20deg); border-radius: 0 50% 0 50%; width: 16px; height: 8px; background: #8a9a40; }
+.plant-orchid .sub-plant-health {
+  background: #e8c840;
+  box-shadow: 0 0 6px rgba(232, 200, 64, 0.4);
+}
+.plant-orchid .sub-plant-label { color: rgba(232, 200, 64, 0.6); }
+
+/* Hover symbiosis on orchid */
+.plant-orchid:hover .orchid-symbiosis { opacity: 1; }
+.orchid-symbiosis {
+  position: absolute;
+  top: -45px;
+  left: -30px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+/* Orchid needs-light bubble */
+.needs-light {
+  position: absolute;
+  left: 240px;
+  top: 20px;
+  background: rgba(244, 208, 63, 0.1);
+  border: 1px solid rgba(244, 208, 63, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 200px;
+  z-index: 15;
+}
+
+.needs-light::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 80px;
+  width: 10px;
+  height: 10px;
+  background: rgba(244, 208, 63, 0.1);
+  border-right: 1px solid rgba(244, 208, 63, 0.25);
+  border-bottom: 1px solid rgba(244, 208, 63, 0.25);
+  transform: rotate(45deg);
+}
+
+.needs-light-icon {
+  font-size: 10px;
+  color: #f4d03f;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.needs-light-text {
+  font-size: 8px;
+  color: rgba(244, 208, 63, 0.8);
+  line-height: 1.4;
+}
+
+/* Moss */
+.plant-moss { left: 500px; }
+.moss-cluster {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  position: relative;
+}
+
+.moss-dot {
+  width: 10px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #3a9a4a, #1a6a2a);
+}
+
+.moss-dot:nth-child(2) { width: 14px; height: 11px; margin-top: -3px; }
+.moss-dot:nth-child(3) { width: 11px; height: 9px; margin-top: -1px; }
+.moss-dot:nth-child(4) { width: 8px; height: 7px; }
+
+.plant-moss .sub-plant-health {
+  background: #2ecc71;
+  box-shadow: 0 0 6px rgba(46, 204, 113, 0.5);
+}
+
+/* Hover symbiosis on moss */
+.plant-moss:hover .moss-symbiosis { opacity: 1; }
+.moss-symbiosis {
+  position: absolute;
+  top: -45px;
+  left: -15px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+/* ─── Resource Flow Lines (checkbox toggled) ─── */
+.resource-flow {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 12;
+}
+
+.flow-line {
+  position: absolute;
+  border-radius: 2px;
+}
+
+.flow-arrow {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.flow-label {
+  position: absolute;
+  font-size: 7px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Fern resource flow */
+.fern-flow {
+  left: 120px;
+  top: 0;
+  width: 100px;
+  height: 100%;
+}
+
+.fern-flow .flow-line-up {
+  left: 20px;
+  top: 60%;
+  width: 2px;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(46, 204, 113, 0.5), rgba(46, 204, 113, 0.1));
+}
+
+.fern-flow .flow-line-down {
+  left: 30px;
+  top: 35%;
+  width: 2px;
+  height: 25%;
+  background: linear-gradient(0deg, rgba(52, 152, 219, 0.5), rgba(52, 152, 219, 0.1));
+}
+
+.fern-flow .flow-label-o2 {
+  left: 0;
+  top: 52%;
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.fern-flow .flow-label-co2 {
+  left: 35px;
+  top: 38%;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+#flow-fern:checked ~ .window .fern-flow { opacity: 1; }
+
+/* Orchid resource flow */
+.orchid-flow {
+  left: 300px;
+  top: 0;
+  width: 100px;
+  height: 100%;
+}
+
+.orchid-flow .flow-line-up {
+  left: 25px;
+  top: 60%;
+  width: 2px;
+  height: 25%;
+  background: linear-gradient(180deg, rgba(232, 200, 64, 0.4), rgba(232, 200, 64, 0.1));
+}
+
+.orchid-flow .flow-line-down {
+  left: 35px;
+  top: 35%;
+  width: 2px;
+  height: 25%;
+  background: linear-gradient(0deg, rgba(243, 156, 18, 0.4), rgba(243, 156, 18, 0.1));
+}
+
+.orchid-flow .flow-label-o2 {
+  left: 0;
+  top: 55%;
+  color: #e8c840;
+  background: rgba(232, 200, 64, 0.1);
+  border: 1px solid rgba(232, 200, 64, 0.2);
+}
+
+.orchid-flow .flow-label-nutrient {
+  left: 40px;
+  top: 40%;
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.1);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+#flow-orchid:checked ~ .window .orchid-flow { opacity: 1; }
+
+/* Moss resource flow */
+.moss-flow {
+  left: 490px;
+  top: 0;
+  width: 100px;
+  height: 100%;
+}
+
+.moss-flow .flow-line-up {
+  left: 25px;
+  top: 60%;
+  width: 2px;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(46, 204, 113, 0.5), rgba(46, 204, 113, 0.1));
+}
+
+.moss-flow .flow-line-down {
+  left: 35px;
+  top: 35%;
+  width: 2px;
+  height: 25%;
+  background: linear-gradient(0deg, rgba(52, 152, 219, 0.4), rgba(52, 152, 219, 0.1));
+}
+
+.moss-flow .flow-label-o2 {
+  left: 0;
+  top: 52%;
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.moss-flow .flow-label-h2o {
+  left: 40px;
+  top: 38%;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+#flow-moss:checked ~ .window .moss-flow { opacity: 1; }
+
+/* ─── SOIL Layer ─── */
+.layer-soil {
+  position: absolute;
+  top: 60%;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(180deg, #2a1f10 0%, #1e1508 50%, #181008 100%);
+  overflow: hidden;
+  transition: background 0.5s;
+}
+
+#cycle-night:checked ~ .window .layer-soil {
+  background: linear-gradient(180deg, #1a1408 0%, #120e04 50%, #0e0804 100%);
+}
+
+.layer-soil .layer-label { top: 6px; }
+
+.soil-label-sub {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  font-size: 8px;
+  color: rgba(180, 140, 80, 0.3);
+  font-weight: 500;
+}
+
+.decomposer {
+  position: absolute;
+  text-align: center;
+}
+
+.decomposer-shape { margin: 0 auto; }
+
+.decomposer-label {
+  font-size: 7px;
+  color: rgba(180, 140, 80, 0.5);
+  white-space: nowrap;
+  margin-top: 3px;
+}
+
+.beetle { left: 160px; top: 30px; }
+.beetle-body {
+  width: 14px;
+  height: 10px;
+  background: radial-gradient(ellipse at 50% 40%, #8a6a30, #5a4020);
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+.worm { left: 420px; top: 50px; }
+.worm-body {
+  width: 30px;
+  height: 6px;
+  background: linear-gradient(90deg, #7a5a30, #9a7a40, #7a5a30, #9a7a40);
+  border-radius: 10px;
+  margin: 0 auto;
+}
+
+/* Night mode: decomposers more active */
+#cycle-night:checked ~ .window .beetle-body {
+  box-shadow: 0 0 6px rgba(180, 140, 80, 0.3);
+}
+#cycle-night:checked ~ .window .worm-body {
+  box-shadow: 0 0 6px rgba(180, 140, 80, 0.3);
+}
+#cycle-night:checked ~ .window .decomposer-label {
+  color: rgba(180, 140, 80, 0.7);
+}
+
+.nutrient {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(180, 140, 80, 0.3);
+}
+
+.nutrient-1 { left: 100px; top: 20px; background: rgba(46, 204, 113, 0.3); }
+.nutrient-2 { left: 250px; top: 45px; }
+.nutrient-3 { left: 350px; top: 25px; background: rgba(139, 156, 247, 0.3); }
+.nutrient-4 { left: 500px; top: 55px; }
+.nutrient-5 { left: 580px; top: 35px; background: rgba(46, 204, 113, 0.2); }
+.nutrient-6 { left: 200px; top: 65px; }
+.nutrient-7 { left: 450px; top: 15px; background: rgba(180, 140, 80, 0.4); }
+.nutrient-8 { left: 300px; top: 70px; background: rgba(46, 204, 113, 0.2); }
+
+/* ─── ROOT NETWORK Layer ─── */
+.layer-roots {
+  position: absolute;
+  top: 80%;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(180deg, #181008 0%, #0e0a04 100%);
+  overflow: hidden;
+  transition: background 0.5s;
+}
+
+#cycle-night:checked ~ .window .layer-roots {
+  background: linear-gradient(180deg, #0e0804 0%, #080402 100%);
+}
+
+.layer-roots .layer-label { top: 6px; }
+
+.root-line {
+  position: absolute;
+  background: rgba(180, 140, 80, 0.15);
+  border-radius: 1px;
+}
+
+.root-main { left: 348px; top: 0; width: 2px; height: 70px; }
+.root-branch-1 { left: 300px; top: 20px; width: 50px; height: 1px; transform: rotate(15deg); }
+.root-branch-2 { left: 348px; top: 35px; width: 60px; height: 1px; transform: rotate(-10deg); }
+.root-branch-3 { left: 280px; top: 45px; width: 70px; height: 1px; transform: rotate(5deg); }
+.root-fern { left: 128px; top: 0; width: 1px; height: 50px; }
+.root-fern-b { left: 100px; top: 25px; width: 30px; height: 1px; transform: rotate(20deg); }
+.root-orchid { left: 320px; top: 0; width: 1px; height: 40px; }
+.root-moss { left: 510px; top: 0; width: 1px; height: 45px; }
+.root-moss-b { left: 510px; top: 30px; width: 40px; height: 1px; transform: rotate(-15deg); }
+
+.root-node {
+  position: absolute;
+  text-align: center;
+}
+
+.root-node-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(180, 140, 80, 0.4), rgba(120, 80, 40, 0.3));
+  border: 1px solid rgba(180, 140, 80, 0.2);
+  margin: 0 auto;
+}
+
+.root-node-label {
+  font-size: 7px;
+  color: rgba(180, 140, 80, 0.4);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.root-node-1 { left: 230px; top: 50px; }
+.root-node-2 { left: 460px; top: 40px; }
+
+.root-thread {
+  position: absolute;
+  height: 1px;
+  background: rgba(180, 140, 80, 0.1);
+}
+
+.root-thread-1 { left: 240px; top: 55px; width: 100px; transform: rotate(5deg); }
+.root-thread-2 { left: 350px; top: 50px; width: 115px; transform: rotate(-3deg); }
+.root-thread-3 { left: 130px; top: 45px; width: 105px; transform: rotate(8deg); }
+
+/* Night mode: bioluminescent roots */
+#cycle-night:checked ~ .window .root-node-dot {
+  background: radial-gradient(circle at 40% 40%, rgba(139, 156, 247, 0.4), rgba(100, 120, 200, 0.2));
+  border-color: rgba(139, 156, 247, 0.3);
+  box-shadow: 0 0 8px rgba(139, 156, 247, 0.2);
+}
+
+#cycle-night:checked ~ .window .root-thread {
+  background: rgba(139, 156, 247, 0.12);
+}
+
+/* ─── Health Dashboard ─── */
+.health-dashboard {
+  margin-top: 12px;
+  display: flex;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.health-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.health-dot-green {
+  background: #2ecc71;
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.4);
+}
+
+.health-dot-yellow {
+  background: #f39c12;
+  box-shadow: 0 0 4px rgba(243, 156, 18, 0.4);
+}
+
+.health-dot-blue {
+  background: #3498db;
+  box-shadow: 0 0 4px rgba(52, 152, 219, 0.4);
+}
+
+.health-label { color: rgba(255, 255, 255, 0.35); }
+.health-value { color: rgba(255, 255, 255, 0.7); font-weight: 600; }
+
+/* Night cycle indicator */
+.cycle-indicator {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+#cycle-night:checked ~ .window .cycle-indicator-night { display: flex; }
+#cycle-day:checked ~ .window .cycle-indicator-day { display: flex; }
+
+.cycle-indicator-night .health-dot {
+  background: #8b9cf7;
+  box-shadow: 0 0 4px rgba(139, 156, 247, 0.4);
+}
+
+.cycle-indicator-day .health-dot {
+  background: #f4d03f;
+  box-shadow: 0 0 4px rgba(244, 208, 63, 0.4);
+}
+
+/* ─── Mobile adjustments ─── */
+#preview-mobile:checked ~ .window .controls-panel {
+  flex-direction: column;
+  gap: 6px;
+}
+
+#preview-mobile:checked ~ .window .health-dashboard {
+  flex-direction: column;
+  gap: 6px;
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .glass-note { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v20</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Terrarium (v10) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + organism flow checkboxes, hover symbiosis, day/night radios</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v20.html as an enhanced iteration of v10 (Terrarium). Take the existing Terrarium and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: checkbox toggles per organism to show resource flow (nutrient cycling, CO2/O2), :hover on organisms reveals symbiotic relationships, radio buttons for day/night cycle (different agent behaviors), glass panel :hover shows human observation notes. Mobile: focused single-layer view, vertical stack. Preserve glass terrarium aesthetic with green/amber palette.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Terrarium (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Weaving Loom (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Particle Chamber (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Cartographic Expedition (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Kitchen Brigade (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Tidal Pool (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Mission Control (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Orchestra Score (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Geological Strata (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Mycelium Network (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <div class="exp-vc-group">Original Variants (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Day/Night cycle state -->
+    <input type="radio" name="cycle" id="cycle-day" checked>
+    <input type="radio" name="cycle" id="cycle-night">
+
+    <!-- Organism flow checkboxes -->
+    <input type="checkbox" id="flow-fern">
+    <input type="checkbox" id="flow-orchid">
+    <input type="checkbox" id="flow-moss">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Controls Panel -->
+      <div class="controls-panel">
+        <div class="control-group">
+          <span class="control-group-label">Cycle</span>
+          <label for="cycle-day"><div class="control-btn"><div class="control-dot"></div>Day</div></label>
+          <label for="cycle-night"><div class="control-btn"><div class="control-dot"></div>Night</div></label>
+        </div>
+        <div class="control-group">
+          <span class="control-group-label">Resource Flow</span>
+          <label for="flow-fern"><div class="control-btn"><div class="control-dot"></div>Fern</div></label>
+          <label for="flow-orchid"><div class="control-btn"><div class="control-dot"></div>Orchid</div></label>
+          <label for="flow-moss"><div class="control-btn"><div class="control-dot"></div>Moss</div></label>
+        </div>
+      </div>
+
+      <div class="terrarium-scene">
+
+        <!-- The Gardener -->
+        <div class="gardener">
+          <div class="gardener-icon"></div>
+          <div class="gardener-label">The Gardener</div>
+          <div class="gardener-sublabel">Human</div>
+        </div>
+
+        <!-- Light beam -->
+        <div class="light-beam"></div>
+        <div class="light-beam-label">Directed attention</div>
+
+        <!-- Terrarium -->
+        <div class="terrarium">
+          <!-- Water droplets on glass -->
+          <div class="droplet droplet-1"></div>
+          <div class="droplet droplet-2"></div>
+          <div class="droplet droplet-3"></div>
+          <div class="droplet droplet-4"></div>
+          <div class="droplet droplet-5"></div>
+
+          <!-- Glass observation notes (hover to reveal) -->
+          <div class="glass-note glass-note-1">
+            <div class="glass-note-trigger">?</div>
+            <div class="glass-note-content">
+              <div class="glass-note-title">Observation</div>
+              <div class="glass-note-text">Atmosphere layer shows high-level reasoning patterns. Cloud formations represent abstract task decomposition.</div>
+            </div>
+          </div>
+
+          <div class="glass-note glass-note-2">
+            <div class="glass-note-trigger">?</div>
+            <div class="glass-note-content">
+              <div class="glass-note-title">Observation</div>
+              <div class="glass-note-text">The orchid is phototropic &mdash; leaning toward the glass indicates this sub-agent needs human input to proceed.</div>
+            </div>
+          </div>
+
+          <div class="glass-note glass-note-3">
+            <div class="glass-note-trigger">?</div>
+            <div class="glass-note-content">
+              <div class="glass-note-title">Observation</div>
+              <div class="glass-note-text">Root network activity increases during night cycle. Decomposers become more active, processing cached results.</div>
+            </div>
+          </div>
+
+          <!-- Resource flow overlays -->
+          <div class="resource-flow fern-flow">
+            <div class="flow-line flow-line-up"></div>
+            <div class="flow-line flow-line-down"></div>
+            <div class="flow-label flow-label-o2">O&#8322; &#8593;</div>
+            <div class="flow-label flow-label-co2">CO&#8322; &#8595;</div>
+          </div>
+
+          <div class="resource-flow orchid-flow">
+            <div class="flow-line flow-line-up"></div>
+            <div class="flow-line flow-line-down"></div>
+            <div class="flow-label flow-label-o2">O&#8322; &#8593;</div>
+            <div class="flow-label flow-label-nutrient">Nutrients &#8595;</div>
+          </div>
+
+          <div class="resource-flow moss-flow">
+            <div class="flow-line flow-line-up"></div>
+            <div class="flow-line flow-line-down"></div>
+            <div class="flow-label flow-label-o2">O&#8322; &#8593;</div>
+            <div class="flow-label flow-label-h2o">H&#8322;O &#8595;</div>
+          </div>
+
+          <!-- ATMOSPHERE -->
+          <div class="layer-atmosphere">
+            <span class="layer-label">Atmosphere &mdash; High-level Reasoning</span>
+            <div class="cloud cloud-1"></div>
+            <div class="cloud cloud-2"></div>
+            <div class="cloud cloud-3"></div>
+            <div class="floating-thought">Task: Design a recommendation engine</div>
+            <div class="evaporation"></div>
+            <div class="evaporation-label">Results rising</div>
+          </div>
+
+          <!-- CANOPY -->
+          <div class="layer-canopy">
+            <span class="layer-label">Canopy &mdash; Orchestration</span>
+
+            <!-- Symbiosis hover zone for oak -->
+            <div class="oak-hover-zone"></div>
+
+            <!-- Symbiosis relationship badges (revealed on oak hover) -->
+            <div class="symbiosis-link symbiosis-oak-fern">
+              <div class="symbiosis-badge">
+                <span class="symbiosis-badge-title">Mutualism</span>
+                <span class="symbiosis-badge-text">Oak delegates data tasks to Fern</span>
+              </div>
+            </div>
+
+            <div class="symbiosis-link symbiosis-oak-moss">
+              <div class="symbiosis-badge">
+                <span class="symbiosis-badge-title">Commensalism</span>
+                <span class="symbiosis-badge-text">Moss benefits from Oak's canopy shade</span>
+              </div>
+            </div>
+
+            <div class="great-oak">
+              <div class="oak-label">
+                <span class="oak-label-name">Orchestrator &mdash; Great Oak</span>
+                <span class="oak-label-role">Keystone Species</span>
+              </div>
+              <div class="oak-crown">
+                <div class="oak-crown-left"></div>
+                <div class="oak-crown-center"></div>
+                <div class="oak-crown-right"></div>
+              </div>
+              <div class="oak-trunk">
+                <div class="oak-branch-l"></div>
+                <div class="oak-branch-r"></div>
+              </div>
+              <div class="oak-status">Photosynthesizing task into sub-components...</div>
+            </div>
+          </div>
+
+          <!-- UNDERSTORY -->
+          <div class="layer-understory">
+            <span class="layer-label">Understory &mdash; Sub-agents</span>
+
+            <!-- Data Pipeline Fern -->
+            <div class="sub-plant plant-fern">
+              <div class="fern-symbiosis">
+                <div class="symbiosis-badge">
+                  <span class="symbiosis-badge-title">Nitrogen Fixer</span>
+                  <span class="symbiosis-badge-text">Converts raw data into usable formats</span>
+                </div>
+              </div>
+              <div style="position: relative; width: 30px; margin: 0 auto;">
+                <div class="sub-plant-stem">
+                  <div class="sub-plant-leaf fern-l1"></div>
+                  <div class="sub-plant-leaf fern-l2"></div>
+                  <div class="sub-plant-leaf fern-r1"></div>
+                  <div class="sub-plant-leaf fern-r2"></div>
+                </div>
+              </div>
+              <div class="sub-plant-health"></div>
+              <div class="sub-plant-label">Data Pipeline Fern</div>
+              <div class="sub-plant-status">Filtering training data...</div>
+            </div>
+
+            <!-- Algorithm Orchid -->
+            <div class="sub-plant plant-orchid">
+              <div class="orchid-symbiosis">
+                <div class="symbiosis-badge">
+                  <span class="symbiosis-badge-title">Epiphyte</span>
+                  <span class="symbiosis-badge-text">Depends on human light for direction</span>
+                </div>
+              </div>
+              <div style="position: relative; width: 30px; margin: 0 auto;">
+                <div class="sub-plant-stem">
+                  <div class="orchid-flower"></div>
+                  <div class="sub-plant-leaf orchid-l1"></div>
+                  <div class="sub-plant-leaf orchid-r1"></div>
+                </div>
+              </div>
+              <div class="sub-plant-health"></div>
+              <div class="sub-plant-label">Algorithm Orchid</div>
+              <div class="sub-plant-status">Testing collaborative filtering...</div>
+            </div>
+
+            <!-- Needs light bubble -->
+            <div class="needs-light">
+              <div class="needs-light-icon">&#127793; Needs light</div>
+              <div class="needs-light-text">Which similarity metric? Cosine similarity, Euclidean distance, or Pearson correlation?</div>
+            </div>
+
+            <!-- API Moss -->
+            <div class="sub-plant plant-moss">
+              <div class="moss-symbiosis">
+                <div class="symbiosis-badge">
+                  <span class="symbiosis-badge-title">Decomposer Aid</span>
+                  <span class="symbiosis-badge-text">Retains moisture for soil organisms</span>
+                </div>
+              </div>
+              <div class="moss-cluster">
+                <div class="moss-dot"></div>
+                <div class="moss-dot"></div>
+                <div class="moss-dot"></div>
+                <div class="moss-dot"></div>
+              </div>
+              <div class="sub-plant-health"></div>
+              <div class="sub-plant-label">API Moss</div>
+              <div class="sub-plant-status">Wrapping endpoints...</div>
+            </div>
+          </div>
+
+          <!-- SOIL -->
+          <div class="layer-soil">
+            <span class="layer-label">Soil &mdash; Foundational Computation</span>
+
+            <div class="decomposer beetle">
+              <div class="decomposer-shape beetle-body"></div>
+              <div class="decomposer-label">Cache Beetle</div>
+            </div>
+
+            <div class="decomposer worm">
+              <div class="decomposer-shape worm-body"></div>
+              <div class="decomposer-label">Queue Worm</div>
+            </div>
+
+            <div class="nutrient nutrient-1"></div>
+            <div class="nutrient nutrient-2"></div>
+            <div class="nutrient nutrient-3"></div>
+            <div class="nutrient nutrient-4"></div>
+            <div class="nutrient nutrient-5"></div>
+            <div class="nutrient nutrient-6"></div>
+            <div class="nutrient nutrient-7"></div>
+            <div class="nutrient nutrient-8"></div>
+          </div>
+
+          <!-- ROOT NETWORK -->
+          <div class="layer-roots">
+            <span class="layer-label">Root Network &mdash; Data Retrieval</span>
+
+            <div class="root-line root-main"></div>
+            <div class="root-line root-branch-1"></div>
+            <div class="root-line root-branch-2"></div>
+            <div class="root-line root-branch-3"></div>
+            <div class="root-line root-fern"></div>
+            <div class="root-line root-fern-b"></div>
+            <div class="root-line root-orchid"></div>
+            <div class="root-line root-moss"></div>
+            <div class="root-line root-moss-b"></div>
+
+            <div class="root-thread root-thread-1"></div>
+            <div class="root-thread root-thread-2"></div>
+            <div class="root-thread root-thread-3"></div>
+
+            <div class="root-node root-node-1">
+              <div class="root-node-dot"></div>
+              <div class="root-node-label">Database Mycorrhiza</div>
+            </div>
+
+            <div class="root-node root-node-2">
+              <div class="root-node-dot"></div>
+              <div class="root-node-label">File System Fungus</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Health Dashboard -->
+      <div class="health-dashboard">
+        <div class="health-stat">
+          <div class="health-dot health-dot-green"></div>
+          <span class="health-label">Ecosystem Health:</span>
+          <span class="health-value">87%</span>
+        </div>
+        <div class="health-stat">
+          <div class="health-dot health-dot-green"></div>
+          <span class="health-label">O&#8322; Output:</span>
+          <span class="health-value">Nominal</span>
+        </div>
+        <div class="health-stat">
+          <div class="health-dot health-dot-yellow"></div>
+          <span class="health-label">CO&#8322; Input:</span>
+          <span class="health-value">1 pending</span>
+        </div>
+        <div class="health-stat">
+          <div class="health-dot health-dot-blue"></div>
+          <span class="health-label">Resource Cycles:</span>
+          <span class="health-value">3 active</span>
+        </div>
+        <div class="health-stat cycle-indicator cycle-indicator-day">
+          <div class="health-dot"></div>
+          <span class="health-label">Cycle:</span>
+          <span class="health-value">Day</span>
+        </div>
+        <div class="health-stat cycle-indicator cycle-indicator-night">
+          <div class="health-dot"></div>
+          <span class="health-label">Cycle:</span>
+          <span class="health-value">Night</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

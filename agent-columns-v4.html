@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Columns — v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139,156,247,0.12); border: 1px solid rgba(139,156,247,0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── AskUserQuestion Visualization ─── */
+.experiment-sidebar .exp-ask {
+  background: rgba(139, 156, 247, 0.08);
+  border: 1px solid rgba(139, 156, 247, 0.2);
+  border-radius: 6px; padding: 10px 12px; margin-top: 10px; font-style: normal;
+}
+.experiment-sidebar .exp-ask-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #8b9cf7; margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px; color: #ddd; font-style: normal; margin-bottom: 8px; line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-size: 10px; color: #999; padding: 3px 8px;
+  background: rgba(255,255,255,0.04); border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: #fff; background: rgba(139, 156, 247, 0.18);
+  border-color: rgba(139, 156, 247, 0.4); font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px; color: #ccc; font-style: normal;
+  padding: 6px 8px; background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.2); border-radius: 4px; line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: #2ecc71; font-weight: 600; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar {
+  display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+
+/* ─── Window ─── */
+.window {
+  --bg: #fafafa;
+  --surface: #f5f5f5;
+  --border: #ebebeb;
+  --border-subtle: #f0f0f2;
+  --text-primary: #2c2c2c;
+  --text-secondary: #777;
+  --text-tertiary: #aaa;
+  --accent: #6e7ac2;
+  --accent-subtle: rgba(110, 122, 194, 0.07);
+  --green: #3d9a5f;
+  --green-subtle: rgba(61, 154, 95, 0.07);
+  --amber: #c49a1a;
+  --amber-subtle: rgba(196, 154, 26, 0.07);
+  --red-dep: #d4726a;
+  --purple-dep: #b680cc;
+  --teal-dep: #5aabb8;
+  --gold-dep: #cba654;
+  --queued: #d1d1db;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.03);
+
+  /* Model colors — softer */
+  --model-opus: #b680cc;
+  --model-opus-bg: rgba(182, 128, 204, 0.07);
+  --model-sonnet: #6e7ac2;
+  --model-sonnet-bg: rgba(110, 122, 194, 0.07);
+  --model-haiku: #3d9a5f;
+  --model-haiku-bg: rgba(61, 154, 95, 0.07);
+
+  width: 1360px; height: 820px; background: var(--bg); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-primary);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Orchestrator Bar — Quieter ─── */
+.orch-bar {
+  height: 48px; min-height: 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 2;
+}
+.orch-left { display: flex; align-items: center; gap: 14px; }
+.orch-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.orch-status {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 500;
+}
+.orch-right { display: flex; align-items: center; gap: 20px; }
+.orch-cost {
+  font-size: 12px; color: var(--text-tertiary); font-weight: 400;
+}
+.orch-cost-amount { color: var(--text-secondary); font-weight: 500; }
+.orch-progress-wrap { display: flex; align-items: center; gap: 8px; }
+.orch-progress-bar {
+  width: 100px; height: 3px; background: var(--border); border-radius: 1.5px; overflow: hidden;
+}
+.orch-progress-fill {
+  height: 100%; width: 67%; background: var(--accent); border-radius: 1.5px;
+}
+.orch-progress-text { font-size: 12px; color: var(--text-tertiary); font-weight: 400; }
+
+/* Detail toggle — subtle text link */
+.orch-detail-link {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 500;
+  cursor: pointer; transition: color 0.15s;
+  user-select: none;
+}
+.orch-detail-link:hover { color: var(--accent); }
+#detail-toggle:checked ~ .window .orch-detail-link { color: var(--accent); }
+
+/* Detail toggle effects */
+#detail-toggle:checked ~ .window .agent-detail { max-height: 48px; opacity: 1; margin-top: 4px; }
+#detail-toggle:checked ~ .window .manager-detail { max-height: 60px; opacity: 1; margin-top: 8px; }
+
+/* ─── Columns Area ─── */
+.columns-area {
+  flex: 1; display: flex; overflow: hidden;
+}
+.manager-col {
+  flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.manager-col:last-child { border-right: none; }
+
+/* ─── Manager Header — Simplified ─── */
+.manager-header {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: rgba(250,250,250,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1;
+}
+.manager-top {
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.manager-name {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+}
+.manager-progress-text {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 400;
+  flex-shrink: 0;
+}
+.manager-bar {
+  height: 2px; background: var(--border); border-radius: 1px; overflow: hidden;
+  margin-top: 10px;
+}
+.manager-bar-fill {
+  height: 100%; border-radius: 1px; transition: width 0.3s ease;
+}
+.bar-done { background: var(--green); }
+.bar-active { background: var(--accent); }
+.bar-partial { background: linear-gradient(90deg, var(--green) 0%, var(--accent) 100%); }
+
+/* Manager detail — hidden by default, shown on hover or toggle */
+.manager-detail {
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
+  margin-top: 0;
+}
+.manager-header:hover .manager-detail {
+  max-height: 60px; opacity: 1; margin-top: 8px;
+}
+.manager-detail-inner {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.manager-role {
+  font-size: 11px; color: var(--text-tertiary); line-height: 1.4;
+}
+.manager-cost-text {
+  font-size: 11px; color: var(--text-tertiary);
+}
+.manager-cost-text .cost-val { color: var(--text-secondary); font-weight: 500; }
+
+/* Done manager */
+.manager-header.manager-done .manager-name { opacity: 0.65; }
+.manager-header.manager-done .manager-progress-text::after {
+  content: ' ✓'; color: var(--green);
+}
+
+/* ─── Phase Separators ─── */
+.phase-separator {
+  height: 1px; background: var(--border-subtle); margin: 8px 20px;
+}
+
+/* Minimal phase label — only if needed */
+.phase-hint {
+  font-size: 8px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-tertiary);
+  padding: 6px 20px 2px;
+}
+
+/* ─── Agent Rows — Clean ─── */
+.agent-list { padding: 4px 0 12px; }
+.agent-row {
+  display: flex; align-items: center; gap: 0;
+  padding: 10px 20px 10px 17px;
+  cursor: default;
+  transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+.agent-row:hover {
+  background: var(--surface);
+}
+.agent-info { flex: 1; min-width: 0; }
+.agent-name {
+  font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.agent-tokens {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 400;
+  white-space: nowrap; flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* Agent detail — hidden, shown on hover or toggle */
+.agent-detail {
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease, margin-top 0.2s ease;
+  margin-top: 0;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.agent-row:hover .agent-detail {
+  max-height: 48px; opacity: 1; margin-top: 4px;
+}
+.agent-desc {
+  font-size: 11px; color: var(--text-tertiary); line-height: 16px;
+  flex: 1; min-width: 0;
+}
+.agent-cost {
+  font-size: 11px; color: var(--text-secondary); font-weight: 500;
+  flex-shrink: 0;
+}
+.agent-dep {
+  font-size: 10px; font-weight: 500; flex-shrink: 0;
+}
+.agent-dep-red { color: var(--red-dep); }
+.agent-dep-purple { color: var(--purple-dep); }
+.agent-dep-teal { color: var(--teal-dep); }
+.agent-dep-gold { color: var(--gold-dep); }
+
+/* Model colors as left border */
+.agent-row.model-opus { border-left-color: var(--model-opus); }
+.agent-row.model-sonnet { border-left-color: var(--model-sonnet); }
+.agent-row.model-haiku { border-left-color: var(--model-haiku); }
+
+/* Status variants */
+.agent-row.done {
+  opacity: 0.55;
+}
+.agent-row.done:hover { opacity: 0.8; }
+.agent-row.done .agent-name {
+  text-decoration: line-through; text-decoration-color: var(--border);
+  color: var(--text-tertiary);
+}
+
+.agent-row.active { border-left-width: 3px; }
+.agent-row.active .agent-name { font-weight: 600; }
+
+@keyframes border-pulse {
+  0%, 100% { border-left-color: var(--model-opus); }
+  50% { border-left-color: rgba(182, 128, 204, 0.3); }
+}
+@keyframes border-pulse-sonnet {
+  0%, 100% { border-left-color: var(--model-sonnet); }
+  50% { border-left-color: rgba(110, 122, 194, 0.3); }
+}
+@keyframes border-pulse-haiku {
+  0%, 100% { border-left-color: var(--model-haiku); }
+  50% { border-left-color: rgba(61, 154, 95, 0.3); }
+}
+.agent-row.active.model-opus { animation: border-pulse 2.5s ease-in-out infinite; }
+.agent-row.active.model-sonnet { animation: border-pulse-sonnet 2.5s ease-in-out infinite; }
+.agent-row.active.model-haiku { animation: border-pulse-haiku 2.5s ease-in-out infinite; }
+
+.agent-row.queued {
+  border-left-color: var(--border) !important;
+}
+.agent-row.queued .agent-name { color: var(--text-tertiary); }
+.agent-row.queued .agent-tokens { color: var(--queued); }
+
+/* ─── Model Legend (bottom of window) ─── */
+.model-legend {
+  display: flex; align-items: center; justify-content: center; gap: 20px;
+  padding: 8px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--text-tertiary);
+}
+.legend-swatch {
+  width: 12px; height: 2px; border-radius: 1px;
+}
+.legend-opus { background: var(--model-opus); }
+.legend-sonnet { background: var(--model-sonnet); }
+.legend-haiku { background: var(--model-haiku); }
+
+/* ─── Mobile Responsive ─── */
+#preview-mobile:checked ~ .window .orch-bar {
+  height: auto; flex-wrap: wrap; padding: 12px 16px; gap: 8px;
+}
+#preview-mobile:checked ~ .window .orch-right { display: none; }
+#preview-mobile:checked ~ .window .columns-area { flex-direction: column; }
+#preview-mobile:checked ~ .window .manager-col {
+  border-right: none; border-bottom: 1px solid var(--border);
+  overflow-y: visible;
+}
+#preview-mobile:checked ~ .window .manager-col:last-child { border-bottom: none; }
+#preview-mobile:checked ~ .window .agent-tokens { display: none; }
+#preview-mobile:checked ~ .window .model-legend { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Agent Columns</h1>
+      <span class="exp-version">v4</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Reduces visual noise through strict information hierarchy. Model identity shown as colored left border accents instead of badges. Costs and descriptions discoverable on hover. Phase labels removed. Softer color palette. The goal: a dashboard you'd trust with your money.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        I think the "Cards" are a little busy. Work through this like a UI/UX obsessed designer who has 10 years to make this work right. Do not worry about level of effort. Spend it all. Obsess over the details get everything right. People are scared of their budgets. They are scared by not being able to see what they need. Evolve this project so that you would love to live inside of it and help humanity improve 1000x the day after it launched.
+
+        <div class="exp-ask">
+          <div class="exp-ask-label">AskUserQuestion</div>
+          <div class="exp-ask-question">Which cards are you referring to that feel too busy?</div>
+          <div class="exp-ask-options">
+            <div class="exp-ask-option">experiments.html cards — The experiment index cards with changelogs, tags, and badges</div>
+            <div class="exp-ask-option selected">agent-columns-v3 cards — The manager header cards and agent rows inside the orchestration dashboard</div>
+            <div class="exp-ask-option">pricing-page cards — The pricing tier cards</div>
+          </div>
+          <div class="exp-ask-answer"><strong>Answer:</strong> agent-columns-v3 cards</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-columns-v4.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Obsessive calm — simplified cards</span>
+        </a>
+        <a href="agent-columns-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Model badges, token/cost tracking</span>
+        </a>
+        <a href="agent-columns-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Dependencies, phase groups, manager cards</span>
+        </a>
+        <a href="agent-columns-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — Linear-style column layout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="checkbox" id="detail-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Orchestrator Bar -->
+      <div class="orch-bar">
+        <div class="orch-left">
+          <span class="orch-title">UI Framework v2.0</span>
+          <span class="orch-status">Executing</span>
+        </div>
+        <div class="orch-right">
+          <span class="orch-cost"><span class="orch-cost-amount">$3.01</span></span>
+          <div class="orch-progress-wrap">
+            <div class="orch-progress-bar"><div class="orch-progress-fill"></div></div>
+            <span class="orch-progress-text">12 / 18</span>
+          </div>
+          <label for="detail-toggle" class="orch-detail-link">Detail</label>
+        </div>
+      </div>
+
+      <!-- Columns -->
+      <div class="columns-area">
+
+        <!-- ═══ Layout System ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <span class="manager-name">Layout System</span>
+              <span class="manager-progress-text">3 of 5</span>
+            </div>
+            <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:60%"></div></div>
+            <div class="manager-detail">
+              <div class="manager-detail-inner">
+                <span class="manager-role">Spatial primitives & responsive grid infrastructure</span>
+                <span class="manager-cost-text"><span class="cost-val">$0.28</span> · 47.4K tokens</span>
+              </div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 — done agents -->
+            <div class="agent-row model-sonnet done">
+              <div class="agent-info">
+                <span class="agent-name">Grid primitives</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">12-column CSS grid with named areas and auto-flow</span>
+                  <span class="agent-cost">$0.11</span>
+                </div>
+              </div>
+              <span class="agent-tokens">14.2K</span>
+            </div>
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Flex utilities</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Responsive flex-wrap helpers with gap tokens</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">8.1K</span>
+            </div>
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Stack component</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Vertical/horizontal stack with spacing scale</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">6.4K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <!-- Phase 2 — active -->
+            <div class="agent-row model-sonnet active">
+              <div class="agent-info">
+                <span class="agent-name">Container queries</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Responsive primitives using container-type: inline-size</span>
+                  <span class="agent-cost">$0.15</span>
+                </div>
+              </div>
+              <span class="agent-tokens">18.7K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <!-- Phase 3 — queued -->
+            <div class="agent-row model-sonnet queued">
+              <div class="agent-info">
+                <span class="agent-name">Masonry layout</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">CSS-only masonry with column-count fallback</span>
+                  <span class="agent-dep agent-dep-teal">← Grid primitives</span>
+                </div>
+              </div>
+              <span class="agent-tokens">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Component Library ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <span class="manager-name">Component Library</span>
+              <span class="manager-progress-text">2 of 4</span>
+            </div>
+            <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:50%"></div></div>
+            <div class="manager-detail">
+              <div class="manager-detail-inner">
+                <span class="manager-role">Reusable UI building blocks with variant APIs</span>
+                <span class="manager-cost-text"><span class="cost-val">$0.96</span> · 45.0K tokens</span>
+              </div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Button system</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Primary, secondary, ghost, danger variants with size tokens</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">9.3K</span>
+            </div>
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Input fields</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Text, select, textarea with validation states</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">11.6K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <div class="agent-row model-opus active">
+              <div class="agent-info">
+                <span class="agent-name">Modal dialog</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Overlay with focus trap, size variants, and nested scroll</span>
+                  <span class="agent-cost">$0.94</span>
+                  <span class="agent-dep agent-dep-red">← Theme: Tokens</span>
+                </div>
+              </div>
+              <span class="agent-tokens">24.1K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <div class="agent-row model-sonnet queued">
+              <div class="agent-info">
+                <span class="agent-name">Data table</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Sortable, filterable table with sticky header</span>
+                  <span class="agent-dep agent-dep-teal">← Grid primitives</span>
+                </div>
+              </div>
+              <span class="agent-tokens">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Theme Engine ═══ -->
+        <div class="manager-col">
+          <div class="manager-header manager-done">
+            <div class="manager-top">
+              <span class="manager-name">Theme Engine</span>
+              <span class="manager-progress-text">4 of 4</span>
+            </div>
+            <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            <div class="manager-detail">
+              <div class="manager-detail-inner">
+                <span class="manager-role">Design token pipeline & multi-theme switching</span>
+                <span class="manager-cost-text"><span class="cost-val">$0.91</span> · 46.0K tokens</span>
+              </div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row model-opus done">
+              <div class="agent-info">
+                <span class="agent-name">Design tokens</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">CSS custom properties for color, space, radius, shadow</span>
+                  <span class="agent-cost">$0.72</span>
+                </div>
+              </div>
+              <span class="agent-tokens">18.4K</span>
+            </div>
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Light mode</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Default token set tuned for WCAG AA contrast</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">5.2K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <div class="agent-row model-sonnet done">
+              <div class="agent-info">
+                <span class="agent-name">Dark mode</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Inverted token set with automatic media-query switching</span>
+                  <span class="agent-cost">$0.10</span>
+                </div>
+              </div>
+              <span class="agent-tokens">12.8K</span>
+            </div>
+            <div class="agent-row model-sonnet done">
+              <div class="agent-info">
+                <span class="agent-name">High contrast</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Accessibility-first palette meeting WCAG AAA</span>
+                  <span class="agent-cost">$0.08</span>
+                </div>
+              </div>
+              <span class="agent-tokens">9.6K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Animation Kit ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <span class="manager-name">Animation Kit</span>
+              <span class="manager-progress-text">1 of 3</span>
+            </div>
+            <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:33%"></div></div>
+            <div class="manager-detail">
+              <div class="manager-detail-inner">
+                <span class="manager-role">Motion language with easing, spring & gesture presets</span>
+                <span class="manager-cost-text"><span class="cost-val">$0.84</span> · 26.1K tokens</span>
+              </div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Easing curves</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Cubic-bezier presets for enter, exit, and emphasis</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">4.8K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <div class="agent-row model-opus active">
+              <div class="agent-info">
+                <span class="agent-name">Spring physics</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">CSS spring() approximation with configurable damping</span>
+                  <span class="agent-cost">$0.83</span>
+                  <span class="agent-dep agent-dep-red">← Theme: Tokens</span>
+                </div>
+              </div>
+              <span class="agent-tokens">21.3K</span>
+            </div>
+
+            <div class="phase-separator"></div>
+
+            <div class="agent-row model-sonnet queued">
+              <div class="agent-info">
+                <span class="agent-name">Gesture responses</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Scroll-linked and hover-triggered motion</span>
+                  <span class="agent-dep agent-dep-purple">← Components: Modal</span>
+                </div>
+              </div>
+              <span class="agent-tokens">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Icon Set ═══ -->
+        <div class="manager-col">
+          <div class="manager-header manager-done">
+            <div class="manager-top">
+              <span class="manager-name">Icon Set</span>
+              <span class="manager-progress-text">2 of 2</span>
+            </div>
+            <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            <div class="manager-detail">
+              <div class="manager-detail-inner">
+                <span class="manager-role">Stroke-based SVG icon system with size tokens</span>
+                <span class="manager-cost-text"><span class="cost-val">$0.02</span> · 14.0K tokens</span>
+              </div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Core icon set</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">48 essential UI icons at 20px, stroke-based SVG</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">7.9K</span>
+            </div>
+            <div class="agent-row model-haiku done">
+              <div class="agent-info">
+                <span class="agent-name">Custom glyphs</span>
+                <div class="agent-detail">
+                  <span class="agent-desc">Brand-specific icons for product features and status</span>
+                  <span class="agent-cost">$0.01</span>
+                </div>
+              </div>
+              <span class="agent-tokens">6.1K</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Model Legend -->
+      <div class="model-legend">
+        <div class="legend-item"><span class="legend-swatch legend-opus"></span> Opus</div>
+        <div class="legend-item"><span class="legend-swatch legend-sonnet"></span> Sonnet</div>
+        <div class="legend-item"><span class="legend-swatch legend-haiku"></span> Haiku</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

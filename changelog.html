@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — UI Explorations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  /* THE UI LAB — "Lab Instrument" design system (shared tokens) */
+  :root {
+    --bg:        #0a0c10;
+    --surface-1: #0f1217;
+    --surface-2: #141821;
+    --surface-3: #1a1f2a;
+    --line:        rgba(255,255,255,0.07);
+    --line-strong: rgba(255,255,255,0.13);
+    --ink:       #e6e9ef;
+    --ink-dim:   #9aa4b2;
+    --ink-faint: #6b7480;
+    --accent:     #2ee6c6;
+    --accent-2:   #38bdf8;
+    --accent-dim: rgba(46,230,198,0.12);
+    --accent-line:rgba(46,230,198,0.30);
+    --opus:   #e5a63b;
+    --sonnet: #8b9cf7;
+    --haiku:  #5ec4d4;
+    --auto:   #f5a623;
+    --orig:   #2ecc71;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  ::selection { background: var(--accent-dim); color: #fff; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ─── Top Nav (shared shell chrome) ─── */
+  .lab-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 28px;
+    background: rgba(10,12,16,0.82);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .lab-nav .brand {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-weight: 600; font-size: 13px;
+    letter-spacing: 0.04em; color: #fff; text-decoration: none;
+  }
+  .lab-nav .brand .blip {
+    width: 8px; height: 8px; background: var(--accent);
+    border-radius: 2px; box-shadow: 0 0 10px var(--accent);
+    animation: blip 2.4s ease-in-out infinite;
+  }
+  @keyframes blip { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .lab-nav .nav-links {
+    display: flex; align-items: center; gap: 4px; margin-left: auto;
+    font-family: var(--mono); font-size: 12px;
+  }
+  .lab-nav .nav-links a {
+    color: var(--ink-dim); text-decoration: none; padding: 6px 12px;
+    border-radius: 6px; transition: color 0.15s, background 0.15s;
+  }
+  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
+  .lab-nav .nav-links a.current { color: var(--accent); }
+  .lab-nav .nav-links a.ext::after { content: ' ↗'; opacity: 0.5; }
+
+  /* ─── Header ─── */
+  .header {
+    padding: 48px 32px 28px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .header .back {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 18px;
+  }
+  .header .back:hover { text-decoration: underline; }
+  .header .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: 34px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .header .subtitle {
+    font-size: 14px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    line-height: 1.6;
+    max-width: 680px;
+  }
+
+  /* ─── Entries ─── */
+  .changelog {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+  .changelog-entries {
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 0;
+  }
+  .gc-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 16px;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .gc-entry:last-child { border-bottom: none; }
+  .gc-entry:hover { background: rgba(46,230,198,0.04); }
+
+  .gc-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    min-width: 80px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .gc-action {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    min-width: 56px;
+    flex-shrink: 0;
+  }
+  .gc-target {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+
+  /* ─── Run-metadata chips (effort + harness) ─── */
+  .gc-effort, .gc-harness {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    color: var(--ink-faint);
+    background: rgba(255,255,255,0.03);
+    letter-spacing: 0.02em;
+  }
+  .gc-effort::before {
+    content: '';
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: baseline;
+    background: var(--ink-faint);
+  }
+  .gc-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .gc-effort.medium::before { background: var(--accent-2); }
+  .gc-effort.low::before    { background: var(--ink-faint); }
+
+  /* ─── Meta entries (non-file-creation changes with prompt hover) ─── */
+  .gc-meta {
+    flex-wrap: wrap;
+    cursor: default;
+    position: relative;
+    border-left: 3px solid var(--accent-line);
+    padding-left: 13px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .gc-meta:hover {
+    border-left-color: var(--accent);
+    background: rgba(46,230,198,0.04);
+  }
+  .gc-meta .gc-desc {
+    width: 100%;
+    font-size: 12px;
+    color: var(--ink-dim);
+    padding: 4px 0 0 146px;
+  }
+  .gc-meta .gc-action { color: var(--accent); }
+  .gc-meta .gc-prompt-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-line);
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+  .gc-meta:hover .gc-prompt-badge { background: rgba(46,230,198,0.22); color: #fff; }
+  .gc-meta .gc-prompt {
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.3s ease;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .gc-meta:hover .gc-prompt {
+    max-height: 1400px;
+    opacity: 1;
+    padding: 10px 0 6px 0;
+  }
+  .gc-meta .gc-prompt-inner {
+    background: rgba(46,230,198,0.05);
+    border: 1px solid var(--accent-line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-dim);
+  }
+  .gc-meta .gc-prompt-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  /* ─── Model Badge ─── */
+  .gc-model {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .gc-model.opus { background: rgba(229,166,59,0.12); color: var(--opus); }
+  .gc-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+  .gc-model.haiku { background: rgba(94,196,212,0.12); color: var(--haiku); }
+
+  /* ─── Footer ─── */
+  .site-footer {
+    text-align: center;
+    padding: 24px 0 40px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .site-footer a { color: var(--accent); text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .gc-meta .gc-desc { padding-left: 0; }
+    .lab-nav .nav-links a.label-home { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="lab-nav">
+  <a href="index.html" class="brand"><span class="blip"></span>THE UI LAB</a>
+  <div class="nav-links">
+    <a href="index.html" class="label-home">Home</a>
+    <a href="experiments.html">Lab</a>
+    <a href="changelog.html" class="current">Changelog</a>
+    <a href="https://github.com/ckluis/uiExplorer" class="ext">GitHub</a>
+  </div>
+</nav>
+
+<div class="header">
+  <a href="experiments.html" class="back">← All Experiments</a>
+  <span class="eyebrow">Immutable build log</span>
+  <h1>Changelog</h1>
+  <p class="subtitle">Every action taken across all experiments — file creations, modifications, and structural changes — recorded with the prompt and the run settings (model · effort) that caused it. Hover any meta entry to read the exact prompt. This is how the framework explains itself.</p>
+</div>
+
+<div class="changelog">
+  <div class="changelog-entries">
+    <!-- Append new entries on top. Newest first. -->
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">6/15 5:58am</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">index.html · experiments.html · changelog.html · CLAUDE.md · templates/ · .claude/commands/uiExperiment/ · README.md · .github/</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Reframed the project as a forkable framework ("The UI Lab"). Bold "Lab Instrument" redesign of the project shell — new <code>index.html</code> landing page, restyled <code>experiments.html</code> + <code>changelog.html</code> (shared mono/cyan design tokens, sticky nav). Added GitHub Pages hosting (README, .nojekyll, Actions workflow), the <code>/uiExperiment</code> command suite, Lab Instrument experiment templates, and a provenance run-metadata model (model · effort · harness · autonomy). Existing experiment files left frozen with their original UI.</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Session prompts (verbatim)</div>
+        <strong>Initial request:</strong><br><br>
+        "I built this project a long time ago. Read its ethos. Explore it. I want to do a few things.<br><br>
+        Improve the ui/ux of the &quot;project shell&quot; (the sidebar, the browser/phone preview, the experiments index, the changelog, etc)<br><br>
+        Change this so it can be hosted on github.com as a project.<br><br>
+        Create a series of /uiExperiment commands to enable anyone to do this."<br><br>
+        <strong>Follow-up:</strong> "As part of that what do you think of the concept?"<br><br>
+        <strong>Decisions (AskUserQuestion):</strong><br><br>
+        • Hosting entry → <em>"I like the landing page explaining the project and the concept and then MY experiments are shown in the example, but my experiments are not the point the point is they can do the same thing."</em><br><br>
+        • Shell ambition → <em>Bold redesign</em>. • Command suite → <em>Full suite</em>. • Git → <em>Yes, full prep</em>. • Design language → <em>Lab Instrument</em>.<br><br>
+        <strong>Refinement:</strong> "We should also record /effort level and anything else appropriate. It's ok to leave old pages with old ui and then shift only the experiments.html, change log and new pages. The point is every change is self documenting in the change log and everyone sees what caused the changes (including the prompt/plan from this session)."<br><br>
+        <strong>Plan:</strong> (1) Lab Instrument design system + shell redesign across index/experiments/changelog; (2) GitHub Pages hosting (README, .nojekyll, deploy-pages workflow); (3) full <code>/uiExperiment</code> command suite + templates; (3.5) provenance run-metadata extension (effort + model + harness + autonomy); (3.6) self-document this session; (4) CLAUDE.md updates. Frozen experiment files retain their original shell.
+      </div></div>
+    </div>
+    <a href="index.html" class="gc-entry">
+      <span class="gc-time">6/15 5:46am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-target">index.html — framework landing page</span>
+    </a>
+    <a href="everything-app-v21.html" class="gc-entry">
+      <span class="gc-time">2/12 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v21.html</span>
+    </a>
+    <a href="everything-app-v20.html" class="gc-entry">
+      <span class="gc-time">2/12 11:45pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v20.html</span>
+    </a>
+    <a href="everything-app-v19.html" class="gc-entry">
+      <span class="gc-time">2/12 9:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v19.html</span>
+    </a>
+    <a href="everything-app-v18.html" class="gc-entry">
+      <span class="gc-time">2/12 6:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v18.html</span>
+    </a>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/12 4:30pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">CLAUDE.md</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Added Agent Trace enhancements: duration badges, hover timestamps, and click-to-expand full prompt toggles</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        Since we are now using teams and executing them. We added individual agents pathing/responsibilities and model version, but do you think we should also add time stamps to when they start-stop to see how long it takes the agents to operate on their own? I feel like there should be a way to see the prompts you generate for each agent.<br><br>Consider this and then make recommendations for how we could implement this in an aesthetically pleasing way (modal, hover-over, etc).<br><br>What's the best way to update the claude.md so this becomes part of the eco-system?
+      </div></div>
+    </div>
+    <a href="everything-app-v17.html" class="gc-entry">
+      <span class="gc-time">2/11 11:45pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v17.html</span>
+    </a>
+    <a href="flight-tracker-v1.html" class="gc-entry">
+      <span class="gc-time">2/11 9:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">flight-tracker-v1.html</span>
+    </a>
+    <a href="design-system-playground-v1.html" class="gc-entry">
+      <span class="gc-time">2/11 9:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">design-system-playground-v1.html</span>
+    </a>
+    <a href="analytics-observatory-v1.html" class="gc-entry">
+      <span class="gc-time">2/11 9:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">analytics-observatory-v1.html</span>
+    </a>
+    <a href="everything-app-v16.html" class="gc-entry">
+      <span class="gc-time">2/11 7:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v16.html</span>
+    </a>
+    <a href="everything-app-v15.html" class="gc-entry">
+      <span class="gc-time">2/11 3:45pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">everything-app-v15.html</span>
+    </a>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/11 3:45pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-model opus">Opus</span>
+      <span class="gc-target">CLAUDE.md, experiments.html, changelog.html</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Added model tracking badges, agent trace pattern, and formalized team system with defined roles (Lead, Researcher, Builder, Sidebar, Validator). Fixed grey changelog text to default purple. Added model badge CSS to experiments.html and changelog.html.</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        New meta improvement for the claude.md file.<br><br>1. We need to add which model was used to version numbers in the sidebar going forward.<br>2. We need to add which model was used to the change log going forward.<br>3. Some of the homepage versions are in grey text instead of purple or orange. I believe all of those should have been purple.<br>4. If we spawn subagents - we need to track their prompts/guidance and model as well. Depending on the task complexity it might be ok to switch the subagents to a lower model like sonnet.<br>5. I think it might be time to add some defined team members (as appropriate for the experiments) and those team members should be enumerated in the claude file. Then when they execute. How you split the work should appear in the sidebar as well. How you synthesize the work should be in the sidebar as well. I think we should have a sidebar agent.
+      </div></div>
+    </div>
+    <a href="everything-app-v14.html" class="gc-entry">
+      <span class="gc-time">2/11 12:15pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v14.html</span>
+    </a>
+    <a href="everything-app-v13.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v13.html</span>
+    </a>
+    <a href="everything-app-v12.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v12.html</span>
+    </a>
+    <a href="everything-app-v11.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v11.html</span>
+    </a>
+    <a href="everything-app-v10.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v10.html</span>
+    </a>
+    <a href="everything-app-v9.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v9.html</span>
+    </a>
+    <a href="everything-app-v8.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v8.html</span>
+    </a>
+    <a href="everything-app-v7.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v7.html</span>
+    </a>
+    <a href="everything-app-v6.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v6.html</span>
+    </a>
+    <a href="everything-app-v5.html" class="gc-entry">
+      <span class="gc-time">2/10 11:59pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v5.html</span>
+    </a>
+    <a href="everything-app-v4.html" class="gc-entry">
+      <span class="gc-time">2/10 11:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v4.html</span>
+    </a>
+    <a href="everything-app-v3.html" class="gc-entry">
+      <span class="gc-time">2/10 9:45pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v3.html</span>
+    </a>
+    <a href="everything-app-v2.html" class="gc-entry">
+      <span class="gc-time">2/10 6:15pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v2.html</span>
+    </a>
+    <a href="everything-app-v1.html" class="gc-entry">
+      <span class="gc-time">2/10 4:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">everything-app-v1.html</span>
+    </a>
+    <a href="platform-dashboard-v8.html" class="gc-entry">
+      <span class="gc-time">2/10 1:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v8.html</span>
+    </a>
+    <a href="platform-dashboard-v7.html" class="gc-entry">
+      <span class="gc-time">2/10 10:15am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v7.html</span>
+    </a>
+    <a href="guided-checklists-v10.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v10.html</span>
+    </a>
+    <a href="guided-checklists-v9.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v9.html</span>
+    </a>
+    <a href="guided-checklists-v8.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v8.html</span>
+    </a>
+    <a href="guided-checklists-v7.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v7.html</span>
+    </a>
+    <a href="guided-checklists-v6.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v6.html</span>
+    </a>
+    <a href="guided-checklists-v5.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v5.html</span>
+    </a>
+    <a href="guided-checklists-v4.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v4.html</span>
+    </a>
+    <a href="guided-checklists-v3.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v3.html</span>
+    </a>
+    <a href="guided-checklists-v2.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v2.html</span>
+    </a>
+    <a href="guided-checklists-v1.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists-v1.html</span>
+    </a>
+    <a href="guided-checklists.html" class="gc-entry">
+      <span class="gc-time">2/6 12:00pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">guided-checklists.html</span>
+    </a>
+    <a href="agent-columns-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:45pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-columns-v4.html</span>
+    </a>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 8:45pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">CLAUDE.md, agent-columns-v1.html</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Clarified version update rules — all previous files get Versions card updates, changelog entry now mandatory</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        We need to update the v1 of agent-columns with the v3 in its sidebar AND update the claude to make sure all iterations get updated with each update (and log in the overall changelog). Spawn subagents to do this.
+      </div></div>
+    </div>
+    <a href="agent-columns-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 8:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-columns-v3.html</span>
+    </a>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 8:05pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">CLAUDE.md, agent-columns-v1.html</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">QoL: Previous versions now get sidebar updates when new versions are created</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        I recently worked with you to generate agent-columns-v2.html, but it did not update the sidebar in agent-columns-v1.html. Can we:<br><br>1. update v1<br>2. update claude.md to make sure a sub-agent always gets spawned to do that<br>3. log this in the changelog as a quality of life improvement
+      </div></div>
+    </div>
+    <a href="agent-columns-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 7:15pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-columns-v2.html</span>
+    </a>
+    <a href="agent-columns-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 6:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-columns-v1.html</span>
+    </a>
+    <a href="agent-orchestration-v20.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v20.html</span>
+    </a>
+    <a href="agent-orchestration-v19.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v19.html</span>
+    </a>
+    <a href="agent-orchestration-v18.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v18.html</span>
+    </a>
+    <a href="agent-orchestration-v17.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v17.html</span>
+    </a>
+    <a href="agent-orchestration-v16.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v16.html</span>
+    </a>
+    <a href="agent-orchestration-v15.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v15.html</span>
+    </a>
+    <a href="agent-orchestration-v14.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v14.html</span>
+    </a>
+    <a href="agent-orchestration-v13.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v13.html</span>
+    </a>
+    <a href="agent-orchestration-v12.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v12.html</span>
+    </a>
+    <a href="agent-orchestration-v11.html" class="gc-entry">
+      <span class="gc-time">2/1 3:30pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v11.html</span>
+    </a>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 3:25pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">agent-orchestration.html</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Added origination prompt #2 section for v11-v20 wave (enhanced iterations with device preview + interactions)</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        We need to add new versions of all 10 agent orchestration (which will be v11-v20), but will require a second origination prompt. This leads me to believe we will need to add Origination prompts inline to the cards so they can occur between autonomous generation.<br><br>The new origination prompt for these new versions:<br><br>1. each one needs to exist within the "window" framework and have desktop, mobile, full screen<br>2. each version needs to be iterated to have a semi-functional ui with a couple of click/hover interactions<br><br>This can be broken into a meta changelog for improvements to experiments.html and then also parsed into the 10 specific prompts that will be used to modify each original design according to the origination prompt instructions. Remember to carefully log the new generated prompt for each version (which should mention the original file it is modifying).<br><br>Remember documentation is key.
+      </div></div>
+    </div>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 3:20pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">experiments.html, CLAUDE.md</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Added multi-origination pattern: inline changelog dividers, group labels, anchor-based linking for series with multiple prompt waves</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        Framework meta change: added support for multiple origination prompts within a single series. New CSS for changelog-origination-divider and exp-vc-group-label patterns. Updated CLAUDE.md with multi-origination documentation.
+      </div></div>
+    </div>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 12:15pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">changelog.html, CLAUDE.md</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Improved prompt hover: CSS expand with badge indicator, styled prompt panel, updated CLAUDE.md template</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        The hover-over for the prompt is not incredibly visible. can we somehow make it more obvious it has a hover effect? And style the hoverover nicer and larger?<br><br>Two remember this is a new change and should update the changelog.html BUT also generate a new entry
+      </div></div>
+    </div>
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">2/1 12:00pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">experiments.html, changelog.html, CLAUDE.md</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Moved activity log to standalone changelog.html, added prompt tracking for meta changes</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt</div>
+        1. I think the changelog at the bottom of experiments.html should be its own page changelog.html with a link in the footer instead of in the main page. 2. when we use a prompt like this to make changes to a page it should included as a reference in the changelog. Thus it would have a changelog that might read something like: moved changelog.html to its own page via prompt // the prompt should have a hoverover to show the prompt for improvements for non-new generation pages). The idea is the changelog encapsulates everything, but it becomes easy to update because each new change is just adding the new experiment/variation or improvement at the top. If a link to a new page exists great include it. Else make sure to log the change. Also make changes to claude.md so it understands this intention.
+      </div></div>
+    </div>
+    <a href="crm-dashboard-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:41am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v1.html</span>
+    </a>
+    <a href="platform-dashboard-v6.html" class="gc-entry">
+      <span class="gc-time">2/1 9:39am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v6.html</span>
+    </a>
+    <a href="platform-dashboard-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:28am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v5.html</span>
+    </a>
+    <a href="platform-dashboard-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:27am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v4.html</span>
+    </a>
+    <a href="platform-dashboard-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:27am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v3.html</span>
+    </a>
+    <a href="platform-dashboard-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:26am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v2.html</span>
+    </a>
+    <a href="tui-erp-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:26am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">tui-erp-v2.html</span>
+    </a>
+    <a href="innovative-cards-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:26am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">innovative-cards-v2.html</span>
+    </a>
+    <a href="music-dashboard-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:25am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">music-dashboard-v5.html</span>
+    </a>
+    <a href="music-dashboard-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:25am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">music-dashboard-v4.html</span>
+    </a>
+    <a href="music-dashboard-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:24am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">music-dashboard-v3.html</span>
+    </a>
+    <a href="kanban-board-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:24am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">kanban-board-v5.html</span>
+    </a>
+    <a href="kanban-board-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:23am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">kanban-board-v4.html</span>
+    </a>
+    <a href="kanban-board-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:23am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">kanban-board-v3.html</span>
+    </a>
+    <a href="music-dashboard-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:22am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">music-dashboard-v2.html</span>
+    </a>
+    <a href="kanban-board-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:22am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">kanban-board-v2.html</span>
+    </a>
+    <a href="email-client-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:22am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">email-client-v5.html</span>
+    </a>
+    <a href="email-client-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:21am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">email-client-v4.html</span>
+    </a>
+    <a href="email-client-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:21am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">email-client-v3.html</span>
+    </a>
+    <a href="pricing-page-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:21am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">pricing-page-v5.html</span>
+    </a>
+    <a href="pricing-page-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:21am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">pricing-page-v4.html</span>
+    </a>
+    <a href="pricing-page-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:21am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">pricing-page-v3.html</span>
+    </a>
+    <a href="email-client-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:20am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">email-client-v2.html</span>
+    </a>
+    <a href="pricing-page-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:20am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">pricing-page-v2.html</span>
+    </a>
+    <a href="settings-panel-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:19am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">settings-panel-v5.html</span>
+    </a>
+    <a href="settings-panel-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:19am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">settings-panel-v4.html</span>
+    </a>
+    <a href="settings-panel-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:19am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">settings-panel-v3.html</span>
+    </a>
+    <a href="settings-panel-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:18am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">settings-panel-v2.html</span>
+    </a>
+    <a href="timeline-feed-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:18am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">timeline-feed-v5.html</span>
+    </a>
+    <a href="timeline-feed-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:18am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">timeline-feed-v4.html</span>
+    </a>
+    <a href="timeline-feed-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:18am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">timeline-feed-v3.html</span>
+    </a>
+    <a href="timeline-feed-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:17am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">timeline-feed-v2.html</span>
+    </a>
+    <a href="data-table-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:17am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">data-table-v5.html</span>
+    </a>
+    <a href="data-table-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:17am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">data-table-v4.html</span>
+    </a>
+    <a href="data-table-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:16am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">data-table-v3.html</span>
+    </a>
+    <a href="data-table-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:16am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">data-table-v2.html</span>
+    </a>
+    <a href="notification-center-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:15am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">notification-center-v5.html</span>
+    </a>
+    <a href="notification-center-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:15am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">notification-center-v4.html</span>
+    </a>
+    <a href="notification-center-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:15am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">notification-center-v3.html</span>
+    </a>
+    <a href="notification-center-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:15am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">notification-center-v2.html</span>
+    </a>
+    <a href="onboarding-flow-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:11am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">onboarding-flow-v5.html</span>
+    </a>
+    <a href="onboarding-flow-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:11am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">onboarding-flow-v4.html</span>
+    </a>
+    <a href="onboarding-flow-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:11am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">onboarding-flow-v3.html</span>
+    </a>
+    <a href="onboarding-flow-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:11am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">onboarding-flow-v2.html</span>
+    </a>
+    <a href="command-palette-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 9:08am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">command-palette-v5.html</span>
+    </a>
+    <a href="command-palette-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 9:08am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">command-palette-v4.html</span>
+    </a>
+    <a href="command-palette-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 9:08am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">command-palette-v3.html</span>
+    </a>
+    <a href="command-palette-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 9:08am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">command-palette-v2.html</span>
+    </a>
+    <a href="command-palette-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:07am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">command-palette-v1.html</span>
+    </a>
+    <a href="platform-sidebar-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:07am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-sidebar-v1.html</span>
+    </a>
+    <a href="tui-erp-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:06am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">tui-erp-v1.html</span>
+    </a>
+    <a href="innovative-cards-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:06am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">innovative-cards-v1.html</span>
+    </a>
+    <a href="kanban-board-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">kanban-board-v1.html</span>
+    </a>
+    <a href="music-dashboard-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">music-dashboard-v1.html</span>
+    </a>
+    <a href="timeline-feed-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">timeline-feed-v1.html</span>
+    </a>
+    <a href="email-client-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">email-client-v1.html</span>
+    </a>
+    <a href="pricing-page-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">pricing-page-v1.html</span>
+    </a>
+    <a href="settings-panel-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">settings-panel-v1.html</span>
+    </a>
+    <a href="data-table-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">data-table-v1.html</span>
+    </a>
+    <a href="notification-center-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">notification-center-v1.html</span>
+    </a>
+    <a href="onboarding-flow-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">onboarding-flow-v1.html</span>
+    </a>
+    <a href="dual-sidebar-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:05am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">dual-sidebar-v1.html</span>
+    </a>
+    <a href="platform-dashboard-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 9:03am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">platform-dashboard-v1.html</span>
+    </a>
+    <a href="crm-dashboard.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard.html</span>
+    </a>
+    <a href="crm-dashboard-v9.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v9.html</span>
+    </a>
+    <a href="crm-dashboard-v8.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v8.html</span>
+    </a>
+    <a href="crm-dashboard-v7.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v7.html</span>
+    </a>
+    <a href="crm-dashboard-v6.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v6.html</span>
+    </a>
+    <a href="crm-dashboard-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v5.html</span>
+    </a>
+    <a href="crm-dashboard-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v4.html</span>
+    </a>
+    <a href="crm-dashboard-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v3.html</span>
+    </a>
+    <a href="crm-dashboard-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v2.html</span>
+    </a>
+    <a href="crm-dashboard-v10.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">crm-dashboard-v10.html</span>
+    </a>
+    <a href="agent-orchestration.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration.html</span>
+    </a>
+    <a href="agent-orchestration-v9.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v9.html</span>
+    </a>
+    <a href="agent-orchestration-v8.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v8.html</span>
+    </a>
+    <a href="agent-orchestration-v7.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v7.html</span>
+    </a>
+    <a href="agent-orchestration-v6.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v6.html</span>
+    </a>
+    <a href="agent-orchestration-v5.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v5.html</span>
+    </a>
+    <a href="agent-orchestration-v4.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v4.html</span>
+    </a>
+    <a href="agent-orchestration-v3.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v3.html</span>
+    </a>
+    <a href="agent-orchestration-v2.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v2.html</span>
+    </a>
+    <a href="agent-orchestration-v10.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v10.html</span>
+    </a>
+    <a href="agent-orchestration-v1.html" class="gc-entry">
+      <span class="gc-time">2/1 8:55am</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-target">agent-orchestration-v1.html</span>
+    </a>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <a href="experiments.html">← All Experiments</a>
+</footer>
+
+</body>
+</html>

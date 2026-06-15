@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v10 Ambient Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Origination Variant Badge ─── */
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8f9fa; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Ambient Intelligence App ─── */
+.ai-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%; height: 100%; background: #f8f9fa;
+  display: flex; flex-direction: column; position: relative; overflow: hidden;
+}
+
+/* Status Bar at Top */
+.ai-status-bar {
+  height: 36px; background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #6b7280;
+  gap: 8px; flex-shrink: 0; z-index: 5;
+  transition: all 0.3s ease;
+}
+
+.ai-status-bar:hover {
+  background: #f0fdf4;
+}
+
+.ai-status-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.ai-status-icon svg { width: 14px; height: 14px; }
+
+.ai-status-icon.ok { color: #10b981; }
+.ai-status-icon.warning { color: #f59e0b; }
+
+.ai-status-text { font-weight: 500; }
+.ai-status-count {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ai-status-link {
+  color: #3b82f6;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ai-status-bar:hover .ai-status-link { opacity: 1; }
+
+/* Top bar */
+.ai-topbar {
+  height: 60px; background: #fff; border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; flex-shrink: 0; z-index: 10;
+}
+
+.ai-topbar-left { display: flex; align-items: center; gap: 16px; }
+
+.ai-topbar-logo {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+
+.ai-topbar-title { font-size: 15px; font-weight: 600; color: #111; }
+
+.ai-topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.ai-nav-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #6b7280; cursor: pointer; transition: all 0.15s;
+}
+
+.ai-nav-btn:hover { background: #f3f4f6; color: #111; }
+.ai-nav-btn svg { width: 20px; height: 20px; }
+
+.ai-user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+
+/* Main body */
+.ai-body {
+  flex: 1; display: flex; flex-direction: column; overflow-y: auto;
+}
+
+.ai-dashboard {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.ai-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.ai-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 12px;
+}
+
+.ai-card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.ai-card-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.ai-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.ai-card-item-name { color: #374151; }
+.ai-card-item-value { color: #10b981; font-weight: 600; }
+
+/* Toast Container at Bottom */
+.ai-toast-container {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  width: 420px;
+}
+
+/* Individual Toast */
+.ai-toast {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  animation: toast-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ai-toast-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.ai-toast-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.ai-toast-icon.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+
+.ai-toast-icon svg { width: 14px; height: 14px; }
+
+.ai-toast-body { flex: 1; min-width: 0; }
+
+.ai-toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-toast-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.ai-toast-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ai-toast-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ai-toast-btn.undo {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.ai-toast-btn.undo:hover {
+  background: #fee2e2;
+}
+
+.ai-toast-btn.expand {
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-toast-btn.expand:hover { background: #e5e7eb; color: #374151; }
+.ai-toast-btn.expand svg { width: 12px; height: 12px; transition: transform 0.2s; }
+
+/* Countdown Progress Bar */
+.ai-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #f3f4f6;
+}
+
+.ai-toast-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  animation: countdown 10s linear forwards;
+}
+
+@keyframes countdown {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+/* Expand/collapse for details */
+.ai-toast-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  background: #f9fafb;
+  border-top: 1px solid transparent;
+}
+
+#toast-1-expand:checked ~ .ai-toast-container .ai-toast:nth-child(1) .ai-toast-details,
+#toast-2-expand:checked ~ .ai-toast-container .ai-toast:nth-child(2) .ai-toast-details,
+#toast-3-expand:checked ~ .ai-toast-container .ai-toast:nth-child(3) .ai-toast-details {
+  max-height: 200px;
+  padding: 12px 16px;
+  border-top-color: #e5e7eb;
+}
+
+#toast-1-expand:checked ~ .ai-toast-container .ai-toast:nth-child(1) .ai-toast-btn.expand svg,
+#toast-2-expand:checked ~ .ai-toast-container .ai-toast:nth-child(2) .ai-toast-btn.expand svg,
+#toast-3-expand:checked ~ .ai-toast-container .ai-toast:nth-child(3) .ai-toast-btn.expand svg {
+  transform: rotate(180deg);
+}
+
+.ai-toast-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.ai-toast-detail-item:last-child { margin-bottom: 0; }
+
+.ai-toast-detail-item svg { width: 14px; height: 14px; color: #9ca3af; }
+
+.ai-toast-learn {
+  font-size: 11px;
+  color: #3b82f6;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ai-toast-learn:hover { text-decoration: underline; }
+
+.ai-toast-dont-fix {
+  font-size: 11px;
+  color: #f59e0b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  margin-left: 12px;
+}
+
+.ai-toast-dont-fix:hover { text-decoration: underline; }
+
+/* Undo States via Radio */
+.ai-toast.undone { opacity: 0.5; pointer-events: none; }
+.ai-toast.undone .ai-toast-progress-bar { animation: none; width: 0; }
+
+#undo-1:checked ~ .ai-toast-container .ai-toast:nth-child(1),
+#undo-2:checked ~ .ai-toast-container .ai-toast:nth-child(2),
+#undo-3:checked ~ .ai-toast-container .ai-toast:nth-child(3) { opacity: 0.4; }
+
+#undo-1:checked ~ .ai-toast-container .ai-toast:nth-child(1) .ai-toast-title::after,
+#undo-2:checked ~ .ai-toast-container .ai-toast:nth-child(2) .ai-toast-title::after,
+#undo-3:checked ~ .ai-toast-container .ai-toast:nth-child(3) .ai-toast-title::after {
+  content: " (Undone)";
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+#undo-1:checked ~ .ai-toast-container .ai-toast:nth-child(1) .ai-toast-progress-bar,
+#undo-2:checked ~ .ai-toast-container .ai-toast:nth-child(2) .ai-toast-progress-bar,
+#undo-3:checked ~ .ai-toast-container .ai-toast:nth-child(3) .ai-toast-progress-bar {
+  animation: none; width: 0;
+}
+
+/* Stacked toast visual */
+.ai-toast:nth-child(2) { animation-delay: 0.1s; }
+.ai-toast:nth-child(3) { animation-delay: 0.2s; }
+
+/* History Panel Toggle */
+.ai-history-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+  z-index: 40;
+}
+
+.ai-history-btn:hover {
+  background: #f3f4f6;
+  color: #111;
+  transform: scale(1.05);
+}
+
+.ai-history-btn svg { width: 20px; height: 20px; }
+
+.ai-history-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background: #10b981;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f8f9fa;
+}
+
+/* History Panel */
+.ai-history-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 60;
+  backdrop-filter: blur(2px);
+}
+
+.ai-history-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+  z-index: 70;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+#history-toggle:checked ~ .ai-history-overlay { opacity: 1; pointer-events: auto; }
+#history-toggle:checked ~ .ai-history-panel { transform: translateY(0); }
+
+.ai-history-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-history-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.ai-history-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+
+.ai-history-close:hover { background: #f3f4f6; color: #111; }
+.ai-history-close svg { width: 16px; height: 16px; }
+
+.ai-history-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.ai-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ai-history-item:last-child { border-bottom: none; }
+
+.ai-history-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ai-history-icon.confirmed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.ai-history-icon svg { width: 16px; height: 16px; }
+
+.ai-history-info { flex: 1; }
+
+.ai-history-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+}
+
+.ai-history-meta {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.ai-history-status {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.ai-history-status.confirmed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* Mobile Overrides */
+#preview-mobile:checked ~ .window .ai-dashboard {
+  grid-template-columns: 1fr;
+  padding: 16px;
+}
+
+#preview-mobile:checked ~ .window .ai-toast-container {
+  width: calc(100% - 32px);
+  left: 16px;
+  transform: none;
+  bottom: 16px;
+}
+
+#preview-mobile:checked ~ .window .ai-status-bar {
+  font-size: 11px;
+  padding: 0 12px;
+}
+
+#preview-mobile:checked ~ .window .ai-topbar {
+  padding: 0 16px;
+}
+
+#preview-mobile:checked ~ .window .ai-history-btn {
+  right: 16px;
+  bottom: 16px;
+  width: 44px;
+  height: 44px;
+}
+
+#preview-mobile:checked ~ .window .ai-history-panel {
+  height: 60%;
+}
+
+#preview-mobile:checked ~ .window .ai-toast-actions {
+  flex-direction: column;
+  gap: 4px;
+}
+
+#preview-mobile:checked ~ .window .ai-toast-main {
+  padding: 12px 14px;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v10</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores an "Ambient Intelligence" approach where the system automatically fixes issues and only notifies users AFTER the fact. Undo-centric rather than approval-centric. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Auto-remediation with minimal friction for users who hate interruptions. The system acts first and asks forgiveness later via undo-capable toast notifications. Trust-building through transparency and easy reversal.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>Build guided-checklists-v10.html — the "Ambient Intelligence" variant for the Guided Checklists experiment series.</strong><br><br>
+        <strong>Name:</strong> Ambient Intelligence<br>
+        <strong>Tagline:</strong> "We fixed it. Undo if we got it wrong."<br>
+        <strong>Version:</strong> v10<br><br>
+        <strong>Core Concept:</strong> The system automatically fixes issues and only notifies users AFTER the fact. Undo-centric rather than approval-centric. For users who hate interruptions — they see toasts telling them what was auto-fixed with a countdown to undo.<br><br>
+        <strong>Exposure Method:</strong> Thin status bar indicator at top showing system status. Toast notifications appear when auto-fixes happen.<br><br>
+        <strong>Presentation Style:</strong> Expandable snackbar/toast. Compact by default, expands to show details. Undo button with countdown.<br><br>
+        <strong>Target Persona:</strong> Regular user who hates interruptions. Trusts the system, just wants to be informed (not asked). Prefers undo to approval.<br><br>
+        <strong>Platform:</strong> Both web and mobile.<br><br>
+        <strong>Key UI Elements:</strong><br>
+        - Thin status bar ("All systems normal" / "2 issues auto-fixed")<br>
+        - Toast notifications sliding up from bottom<br>
+        - Expand arrow on toasts to see details<br>
+        - 10-second undo countdown (visual progress bar)<br>
+        - "Don't auto-fix this type" learning button<br>
+        - Stacked toasts for multiple auto-fixes<br>
+        - Green checkmark for confirmed fixes<br>
+        - "Learn more" link in expanded state<br><br>
+        <strong>Sample Auto-Fix Toasts:</strong><br>
+        1. "Refreshed expired API token" — [Undo 8s] [Details]<br>
+        2. "Cleared stale cache (saved 2GB)" — [Undo 5s]<br>
+        3. "Reconnected Slack webhook" — [Undo 10s]<br>
+        4. "Updated timezone to match browser" — [Undo 3s]<br><br>
+        <strong>Color/Mood:</strong> Calm, minimal, confident. Green for success. Unobtrusive but informative. Trust-building aesthetic.<br><br>
+        <strong>AI Feedback Pattern:</strong><br>
+        - "Undo" teaches what NOT to auto-fix<br>
+        - Letting countdown expire = confirming good fix<br>
+        - "Don't auto-fix this type" = explicit training<br>
+        - "Learn more" = wanting more control<br><br>
+        <strong>Interaction Patterns:</strong><br>
+        - Checkbox for toast expand/collapse<br>
+        - CSS animation for countdown progress bar (depleting)<br>
+        - Toast stacking with transform translateY<br>
+        - Status bar :hover shows details<br>
+        - Radio buttons for undo state (pending/undone/confirmed)<br><br>
+        <strong>Device Preview:</strong> Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="ai-app">
+        <!-- State Controls -->
+        <input type="checkbox" id="toast-1-expand">
+        <input type="checkbox" id="toast-2-expand">
+        <input type="checkbox" id="toast-3-expand">
+        <input type="radio" name="undo-1" id="undo-1-none" checked>
+        <input type="radio" name="undo-1" id="undo-1">
+        <input type="radio" name="undo-2" id="undo-2-none" checked>
+        <input type="radio" name="undo-2" id="undo-2">
+        <input type="radio" name="undo-3" id="undo-3-none" checked>
+        <input type="radio" name="undo-3" id="undo-3">
+        <input type="checkbox" id="history-toggle">
+
+        <!-- Status Bar -->
+        <div class="ai-status-bar">
+          <span class="ai-status-icon ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span class="ai-status-text">All systems normal</span>
+          <span class="ai-status-count">3 auto-fixed today</span>
+          <span class="ai-status-link">View history</span>
+        </div>
+
+        <!-- Top Bar -->
+        <div class="ai-topbar">
+          <div class="ai-topbar-left">
+            <div class="ai-topbar-logo">A</div>
+            <span class="ai-topbar-title">Ambient</span>
+          </div>
+          <div class="ai-topbar-right">
+            <div class="ai-nav-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <div class="ai-nav-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38.17.63.54.68.94V12a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div class="ai-user-avatar">TK</div>
+          </div>
+        </div>
+
+        <!-- Main Body with Dashboard -->
+        <div class="ai-body">
+          <div class="ai-dashboard">
+            <div class="ai-card">
+              <h3>System Health</h3>
+              <div class="ai-card-value">98%</div>
+              <div class="ai-card-label">All services operational</div>
+            </div>
+            <div class="ai-card">
+              <h3>Auto-Fixes This Week</h3>
+              <div class="ai-card-value">12</div>
+              <div class="ai-card-label">0 undone by user</div>
+            </div>
+            <div class="ai-card">
+              <h3>Time Saved</h3>
+              <div class="ai-card-value">3.2h</div>
+              <div class="ai-card-label">Estimated manual effort avoided</div>
+            </div>
+            <div class="ai-card" style="grid-column: span 2;">
+              <h3>Recent Auto-Fix Categories</h3>
+              <div class="ai-card-list">
+                <div class="ai-card-item">
+                  <span class="ai-card-item-name">Token Refresh</span>
+                  <span class="ai-card-item-value">5 fixes</span>
+                </div>
+                <div class="ai-card-item">
+                  <span class="ai-card-item-name">Cache Cleanup</span>
+                  <span class="ai-card-item-value">3 fixes</span>
+                </div>
+                <div class="ai-card-item">
+                  <span class="ai-card-item-name">Webhook Reconnect</span>
+                  <span class="ai-card-item-value">2 fixes</span>
+                </div>
+                <div class="ai-card-item">
+                  <span class="ai-card-item-name">Config Sync</span>
+                  <span class="ai-card-item-value">2 fixes</span>
+                </div>
+              </div>
+            </div>
+            <div class="ai-card">
+              <h3>Learning Progress</h3>
+              <div class="ai-card-value" style="font-size: 24px;">High Trust</div>
+              <div class="ai-card-label">Based on 0 undos this month</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div class="ai-toast-container">
+          <!-- Toast 1: API Token -->
+          <div class="ai-toast">
+            <div class="ai-toast-main">
+              <div class="ai-toast-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-toast-body">
+                <div class="ai-toast-title">Refreshed expired API token</div>
+                <div class="ai-toast-desc">Stripe integration restored</div>
+              </div>
+              <div class="ai-toast-actions">
+                <label for="undo-1" class="ai-toast-btn undo">Undo</label>
+                <label for="toast-1-expand" class="ai-toast-btn expand">
+                  Details
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </label>
+              </div>
+            </div>
+            <div class="ai-toast-details">
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Token expired at 2:34 PM, refreshed automatically
+              </div>
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                New token valid for 30 days
+              </div>
+              <div>
+                <span class="ai-toast-learn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Learn more
+                </span>
+                <span class="ai-toast-dont-fix">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Don't auto-fix this type
+                </span>
+              </div>
+            </div>
+            <div class="ai-toast-progress">
+              <div class="ai-toast-progress-bar"></div>
+            </div>
+          </div>
+
+          <!-- Toast 2: Cache -->
+          <div class="ai-toast">
+            <div class="ai-toast-main">
+              <div class="ai-toast-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-toast-body">
+                <div class="ai-toast-title">Cleared stale cache</div>
+                <div class="ai-toast-desc">Freed 2.1 GB of storage</div>
+              </div>
+              <div class="ai-toast-actions">
+                <label for="undo-2" class="ai-toast-btn undo">Undo</label>
+                <label for="toast-2-expand" class="ai-toast-btn expand">
+                  Details
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </label>
+              </div>
+            </div>
+            <div class="ai-toast-details">
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Cache entries older than 7 days removed
+              </div>
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                Storage now at 68% capacity
+              </div>
+              <div>
+                <span class="ai-toast-learn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Learn more
+                </span>
+                <span class="ai-toast-dont-fix">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Don't auto-fix this type
+                </span>
+              </div>
+            </div>
+            <div class="ai-toast-progress">
+              <div class="ai-toast-progress-bar" style="animation-duration: 8s;"></div>
+            </div>
+          </div>
+
+          <!-- Toast 3: Slack Webhook -->
+          <div class="ai-toast">
+            <div class="ai-toast-main">
+              <div class="ai-toast-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-toast-body">
+                <div class="ai-toast-title">Reconnected Slack webhook</div>
+                <div class="ai-toast-desc">#alerts channel restored</div>
+              </div>
+              <div class="ai-toast-actions">
+                <label for="undo-3" class="ai-toast-btn undo">Undo</label>
+                <label for="toast-3-expand" class="ai-toast-btn expand">
+                  Details
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </label>
+              </div>
+            </div>
+            <div class="ai-toast-details">
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Connection lost at 1:45 PM, reconnected automatically
+              </div>
+              <div class="ai-toast-detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Test message sent successfully
+              </div>
+              <div>
+                <span class="ai-toast-learn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Learn more
+                </span>
+                <span class="ai-toast-dont-fix">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Don't auto-fix this type
+                </span>
+              </div>
+            </div>
+            <div class="ai-toast-progress">
+              <div class="ai-toast-progress-bar" style="animation-duration: 6s;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History FAB -->
+        <label for="history-toggle" class="ai-history-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="ai-history-badge">12</span>
+        </label>
+
+        <!-- History Overlay -->
+        <label for="history-toggle" class="ai-history-overlay"></label>
+
+        <!-- History Panel -->
+        <div class="ai-history-panel">
+          <div class="ai-history-header">
+            <h3>Auto-Fix History</h3>
+            <label for="history-toggle" class="ai-history-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </label>
+          </div>
+          <div class="ai-history-body">
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Refreshed expired API token</div>
+                <div class="ai-history-meta">2:34 PM today &bull; Stripe integration</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Cleared stale cache</div>
+                <div class="ai-history-meta">2:20 PM today &bull; Freed 2.1 GB</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Reconnected Slack webhook</div>
+                <div class="ai-history-meta">1:52 PM today &bull; #alerts channel</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Updated timezone to match browser</div>
+                <div class="ai-history-meta">Yesterday &bull; PST → EST</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Renewed SSL certificate</div>
+                <div class="ai-history-meta">Yesterday &bull; api.example.com</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+            <div class="ai-history-item">
+              <div class="ai-history-icon confirmed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ai-history-info">
+                <div class="ai-history-title">Optimized database indexes</div>
+                <div class="ai-history-meta">2 days ago &bull; Query time improved 40%</div>
+              </div>
+              <span class="ai-history-status confirmed">Confirmed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Columns — v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139,156,247,0.12); border: 1px solid rgba(139,156,247,0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar {
+  display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+
+/* ─── Window ─── */
+.window {
+  --bg: #ffffff;
+  --surface: #f8f8fb;
+  --border: #e8e8ec;
+  --border-subtle: #f0f0f4;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b6b80;
+  --text-tertiary: #9b9bae;
+  --accent: #5e6ad2;
+  --accent-subtle: rgba(94, 106, 210, 0.08);
+  --green: #2da44e;
+  --green-subtle: rgba(45, 164, 78, 0.08);
+  --amber: #d4a017;
+  --amber-subtle: rgba(212, 160, 23, 0.08);
+  --red-dep: #e06c75;
+  --purple-dep: #c678dd;
+  --teal-dep: #56b6c2;
+  --gold-dep: #e5c07b;
+  --queued: #d1d1db;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.03);
+
+  width: 1360px; height: 820px; background: var(--bg); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-primary);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Orchestrator Bar ─── */
+.orch-bar {
+  height: 56px; min-height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--border), 0 4px 12px -4px rgba(94, 106, 210, 0.06);
+  position: relative; z-index: 2;
+}
+.orch-left { display: flex; align-items: center; gap: 12px; }
+.orch-icon {
+  width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.orch-icon svg { width: 16px; height: 16px; color: #fff; }
+.orch-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.orch-status {
+  font-size: 12px; color: var(--accent); font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.orch-pulse {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.orch-right { display: flex; align-items: center; gap: 16px; }
+.orch-progress-wrap { display: flex; align-items: center; gap: 8px; }
+.orch-progress-bar {
+  width: 120px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.orch-progress-fill {
+  height: 100%; width: 67%; background: var(--accent); border-radius: 2px;
+}
+.orch-progress-text { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
+.orch-toggle-wrap { display: flex; align-items: center; gap: 6px; }
+.orch-toggle-label { font-size: 11px; color: var(--text-tertiary); font-weight: 500; cursor: pointer; }
+.orch-toggle {
+  width: 32px; height: 18px; background: #ddd; border-radius: 9px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.orch-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+/* Detail toggle */
+#detail-toggle:checked ~ .window .orch-toggle { background: var(--accent); }
+#detail-toggle:checked ~ .window .orch-toggle::after { transform: translateX(14px); }
+#detail-toggle:checked ~ .window .agent-desc { max-height: 40px; opacity: 1; }
+#detail-toggle:checked ~ .window .dep-badge { max-width: 160px; }
+#detail-toggle:checked ~ .window .dep-from { opacity: 1; }
+
+/* ─── Columns Area ─── */
+.columns-area {
+  flex: 1; display: flex; overflow: hidden;
+}
+.manager-col {
+  flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto;
+  background-image: linear-gradient(to bottom, var(--border) 0%, transparent 20%, transparent 80%, var(--border) 100%);
+  background-size: 1px 100%;
+  background-repeat: no-repeat;
+  background-position: right;
+}
+.manager-col:last-child { background-image: none; }
+
+/* ─── Manager Header Card ─── */
+.manager-header {
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky; top: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  z-index: 1;
+  transition: box-shadow 0.2s;
+}
+.manager-header:hover {
+  box-shadow: var(--shadow-sm);
+}
+.manager-top {
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.manager-icon {
+  width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  display: flex; align-items: center; justify-content: center;
+}
+.manager-icon svg { width: 16px; height: 16px; color: var(--accent); stroke-width: 1.5; }
+.manager-icon-done { background: var(--green-subtle); }
+.manager-icon-done svg { color: var(--green); }
+.manager-name-wrap { flex: 1; min-width: 0; }
+.manager-name {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+}
+.manager-name .status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.manager-role {
+  font-size: 11px; color: var(--text-tertiary); line-height: 1.4; margin-top: 2px;
+}
+
+/* I/O badges */
+.manager-io {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;
+}
+.manager-io-item {
+  font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  letter-spacing: -0.02em;
+}
+.manager-io-item.io-in {
+  color: var(--text-tertiary); background: var(--surface);
+  border: 1px solid var(--border-subtle);
+}
+.manager-io-item.io-out {
+  color: var(--accent); background: var(--accent-subtle);
+  border: 1px solid rgba(94, 106, 210, 0.12);
+}
+.manager-io-item.io-out-done {
+  color: var(--green); background: var(--green-subtle);
+  border: 1px solid rgba(45, 164, 78, 0.12);
+}
+
+/* Manager progress */
+.manager-meta {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+}
+.manager-count {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 500;
+}
+.manager-bar {
+  flex: 1; height: 3px; background: var(--border-subtle); border-radius: 1.5px; overflow: hidden;
+}
+.manager-bar-fill {
+  height: 100%; border-radius: 1.5px; transition: width 0.3s ease;
+}
+
+/* ─── Phase Groups ─── */
+.phase-group { padding: 0; }
+.phase-label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px 4px;
+}
+.phase-num {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-tertiary);
+}
+.phase-type {
+  font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.phase-type.p-parallel {
+  color: var(--accent); background: var(--accent-subtle);
+}
+.phase-type.p-sequential {
+  color: var(--amber); background: var(--amber-subtle);
+}
+.phase-type.p-blocked {
+  color: var(--red-dep); background: rgba(224, 108, 117, 0.08);
+}
+
+/* ─── Agent Rows ─── */
+.agent-list { padding: 0 0 8px; }
+.agent-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 7px 12px; cursor: default;
+  transition: background 0.12s, transform 0.12s, box-shadow 0.15s;
+  border-radius: var(--radius-sm);
+  margin: 0 6px;
+}
+.agent-row:hover {
+  background: var(--surface);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+.agent-dot-wrap {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  margin-top: 1px;
+}
+.agent-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.agent-info { flex: 1; min-width: 0; }
+.agent-name-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.agent-name {
+  font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.agent-desc {
+  font-size: 11px; color: var(--text-tertiary); line-height: 16px;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+}
+.agent-row:hover .agent-desc { max-height: 40px; opacity: 1; }
+
+/* ─── Dependency Badges ─── */
+.dep-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 600;
+  border-radius: 10px; padding: 1px 6px;
+  max-width: 18px; overflow: hidden;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap; flex-shrink: 0;
+}
+.dep-badge:hover { max-width: 180px; }
+.dep-icon { font-size: 8px; flex-shrink: 0; }
+.dep-from { opacity: 0; transition: opacity 0.15s 0.1s; font-weight: 500; }
+.dep-badge:hover .dep-from { opacity: 1; }
+
+/* Dependency colors */
+.dep-red { color: var(--red-dep); background: rgba(224,108,117,0.08); border: 1px solid rgba(224,108,117,0.2); }
+.dep-purple { color: var(--purple-dep); background: rgba(198,120,221,0.08); border: 1px solid rgba(198,120,221,0.2); }
+.dep-teal { color: var(--teal-dep); background: rgba(86,182,194,0.08); border: 1px solid rgba(86,182,194,0.2); }
+.dep-gold { color: var(--gold-dep); background: rgba(229,192,123,0.08); border: 1px solid rgba(229,192,123,0.2); }
+
+/* Source rings on done tasks */
+.dep-source-red .agent-dot-wrap { box-shadow: 0 0 0 2.5px rgba(224,108,117,0.25); border-radius: 50%; }
+.dep-source-purple .agent-dot-wrap { box-shadow: 0 0 0 2.5px rgba(198,120,221,0.25); border-radius: 50%; }
+.dep-source-teal .agent-dot-wrap { box-shadow: 0 0 0 2.5px rgba(86,182,194,0.25); border-radius: 50%; }
+.dep-source-gold .agent-dot-wrap { box-shadow: 0 0 0 2.5px rgba(229,192,123,0.25); border-radius: 50%; }
+
+/* Status Variants */
+.dot-done { background: var(--green); }
+.dot-active {
+  background: var(--accent);
+  animation: active-ring 2.5s ease-in-out infinite;
+}
+@keyframes active-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(94,106,210,0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(94,106,210,0); }
+}
+.dot-queued { background: var(--queued); }
+
+.agent-row.done .agent-name {
+  text-decoration: line-through; color: #b0b0be;
+}
+.agent-row.done .agent-desc { color: #c8c8d4; }
+.agent-row.queued .agent-name { color: var(--text-tertiary); }
+
+/* Done checkmark */
+.agent-check { width: 7px; height: 7px; display: none; }
+.agent-row.done .agent-dot { display: none; }
+.agent-row.done .agent-check { display: block; }
+
+/* Manager status colors */
+.bar-done { background: var(--green); }
+.bar-active { background: var(--accent); }
+.bar-partial { background: linear-gradient(90deg, var(--green) 0%, var(--accent) 100%); }
+.dot-manager-done { background: var(--green); }
+.dot-manager-active { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+
+/* ─── Mobile Responsive ─── */
+#preview-mobile:checked ~ .window .orch-bar {
+  height: auto; flex-wrap: wrap; padding: 12px 16px; gap: 8px;
+}
+#preview-mobile:checked ~ .window .orch-right { display: none; }
+#preview-mobile:checked ~ .window .columns-area { flex-direction: column; }
+#preview-mobile:checked ~ .window .manager-col {
+  background-image: none; border-bottom: 1px solid var(--border);
+  overflow-y: visible;
+}
+#preview-mobile:checked ~ .window .manager-col:last-child { border-bottom: none; }
+#preview-mobile:checked ~ .window .manager-io { display: none; }
+#preview-mobile:checked ~ .window .dep-badge { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Agent Columns</h1>
+      <span class="exp-version">v2</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Evolves the Linear-style orchestration dashboard with richer manager description cards, cross-column dependency visualization via color-coded badges, and parallel/sequential phase grouping within each column. Shows the complexity of agent coordination — what can run simultaneously vs what must wait.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        I think we can do a better job of showing some of the complexities with dependencies. And each column should have a little more detail (maybe a card) that explains what its doing and what its reponsible for managing before the subagents that are working. We should also show what can work in parrallel vs not.<br><br>Think about the state of art and add some of those flourishes to this design (but do not deviate from the clean linear quality design).
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-columns-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Obsessive calm — simplified cards</span>
+        </a>
+        <a href="agent-columns-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Model badges, token/cost tracking</span>
+        </a>
+        <a href="agent-columns-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Dependencies, phase groups, manager cards</span>
+        </a>
+        <a href="agent-columns-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — Linear-style column layout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="checkbox" id="detail-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Orchestrator Bar -->
+      <div class="orch-bar">
+        <div class="orch-left">
+          <div class="orch-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            </svg>
+          </div>
+          <span class="orch-title">UI Framework v2.0</span>
+          <div class="orch-status">
+            <span class="orch-pulse"></span>
+            Executing
+          </div>
+        </div>
+        <div class="orch-right">
+          <div class="orch-progress-wrap">
+            <div class="orch-progress-bar"><div class="orch-progress-fill"></div></div>
+            <span class="orch-progress-text">12 / 18</span>
+          </div>
+          <div class="orch-toggle-wrap">
+            <label for="detail-toggle" class="orch-toggle-label">Detail</label>
+            <label for="detail-toggle" class="orch-toggle"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columns -->
+      <div class="columns-area">
+
+        <!-- ═══ Layout System ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <div class="manager-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                </svg>
+              </div>
+              <div class="manager-name-wrap">
+                <div class="manager-name">
+                  Layout System
+                  <span class="status-dot dot-manager-active"></span>
+                </div>
+                <div class="manager-role">Spatial primitives & responsive grid infrastructure</div>
+              </div>
+            </div>
+            <div class="manager-io">
+              <span class="manager-io-item io-in">← spacing-scale</span>
+              <span class="manager-io-item io-out">→ layout.css</span>
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">3 / 5</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:60%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 — Parallel -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 1</span>
+                <span class="phase-type p-parallel">Parallel</span>
+              </div>
+              <div class="agent-row done dep-source-teal">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Grid primitives</span>
+                  </div>
+                  <div class="agent-desc">12-column CSS grid with named areas and auto-flow</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Flex utilities</span>
+                  </div>
+                  <div class="agent-desc">Responsive flex-wrap helpers with gap tokens</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Stack component</span>
+                  </div>
+                  <div class="agent-desc">Vertical/horizontal stack with spacing scale</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 2 — Sequential -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 2</span>
+                <span class="phase-type p-sequential">Sequential</span>
+              </div>
+              <div class="agent-row">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Container queries</span>
+                  </div>
+                  <div class="agent-desc">Responsive primitives using container-type: inline-size</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 3 — Blocked -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 3</span>
+                <span class="phase-type p-blocked">Blocked</span>
+              </div>
+              <div class="agent-row queued">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Masonry layout</span>
+                    <span class="dep-badge dep-teal"><span class="dep-icon">←</span><span class="dep-from">Grid primitives</span></span>
+                  </div>
+                  <div class="agent-desc">CSS-only masonry with column-count fallback. Requires grid system.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Component Library ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <div class="manager-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                </svg>
+              </div>
+              <div class="manager-name-wrap">
+                <div class="manager-name">
+                  Component Library
+                  <span class="status-dot dot-manager-active"></span>
+                </div>
+                <div class="manager-role">Reusable UI building blocks with variant APIs</div>
+              </div>
+            </div>
+            <div class="manager-io">
+              <span class="manager-io-item io-in">← tokens.css</span>
+              <span class="manager-io-item io-in">← layout.css</span>
+              <span class="manager-io-item io-out">→ components.css</span>
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">2 / 4</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:50%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 — Parallel -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 1</span>
+                <span class="phase-type p-parallel">Parallel</span>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Button system</span>
+                  </div>
+                  <div class="agent-desc">Primary, secondary, ghost, danger variants with size tokens</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Input fields</span>
+                  </div>
+                  <div class="agent-desc">Text, select, textarea with validation states</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 2 — Sequential (depends on Theme tokens) -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 2</span>
+                <span class="phase-type p-sequential">Sequential</span>
+              </div>
+              <div class="agent-row">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Modal dialog</span>
+                    <span class="dep-badge dep-red"><span class="dep-icon">←</span><span class="dep-from">Theme: Tokens</span></span>
+                  </div>
+                  <div class="agent-desc">Overlay with focus trap, size variants, and nested scroll</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 3 — Blocked (depends on Layout Grid + Modal) -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 3</span>
+                <span class="phase-type p-blocked">Blocked</span>
+              </div>
+              <div class="agent-row queued">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Data table</span>
+                    <span class="dep-badge dep-teal"><span class="dep-icon">←</span><span class="dep-from">Grid primitives</span></span>
+                  </div>
+                  <div class="agent-desc">Sortable, filterable table with sticky header. Needs grid system.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Theme Engine ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <div class="manager-icon manager-icon-done">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+              </div>
+              <div class="manager-name-wrap">
+                <div class="manager-name">
+                  Theme Engine
+                  <span class="status-dot dot-manager-done"></span>
+                </div>
+                <div class="manager-role">Design token pipeline & multi-theme switching</div>
+              </div>
+            </div>
+            <div class="manager-io">
+              <span class="manager-io-item io-in">← brand-spec</span>
+              <span class="manager-io-item io-out-done">→ tokens.css ✓</span>
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">4 / 4</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 — Parallel -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 1</span>
+                <span class="phase-type p-parallel">Parallel</span>
+              </div>
+              <div class="agent-row done dep-source-red">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Design tokens</span>
+                  </div>
+                  <div class="agent-desc">CSS custom properties for color, space, radius, shadow</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Light mode</span>
+                  </div>
+                  <div class="agent-desc">Default token set tuned for WCAG AA contrast</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 2 — Sequential (depends on tokens) -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 2</span>
+                <span class="phase-type p-sequential">Sequential</span>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Dark mode</span>
+                  </div>
+                  <div class="agent-desc">Inverted token set with automatic media-query switching</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">High contrast</span>
+                  </div>
+                  <div class="agent-desc">Accessibility-first palette meeting WCAG AAA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Animation Kit ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <div class="manager-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
+                </svg>
+              </div>
+              <div class="manager-name-wrap">
+                <div class="manager-name">
+                  Animation Kit
+                  <span class="status-dot dot-manager-active"></span>
+                </div>
+                <div class="manager-role">Motion language with easing, spring & gesture presets</div>
+              </div>
+            </div>
+            <div class="manager-io">
+              <span class="manager-io-item io-in">← tokens.css</span>
+              <span class="manager-io-item io-out">→ motion.css</span>
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">1 / 3</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:33%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 1</span>
+                <span class="phase-type p-parallel">Parallel</span>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Easing curves</span>
+                  </div>
+                  <div class="agent-desc">Cubic-bezier presets for enter, exit, and emphasis</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 2 — depends on tokens -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 2</span>
+                <span class="phase-type p-sequential">Sequential</span>
+              </div>
+              <div class="agent-row">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Spring physics</span>
+                    <span class="dep-badge dep-red"><span class="dep-icon">←</span><span class="dep-from">Theme: Tokens</span></span>
+                  </div>
+                  <div class="agent-desc">CSS spring() approximation with configurable damping</div>
+                </div>
+              </div>
+            </div>
+            <!-- Phase 3 — depends on Modal -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 3</span>
+                <span class="phase-type p-blocked">Blocked</span>
+              </div>
+              <div class="agent-row queued">
+                <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Gesture responses</span>
+                    <span class="dep-badge dep-purple"><span class="dep-icon">←</span><span class="dep-from">Components: Modal</span></span>
+                  </div>
+                  <div class="agent-desc">Scroll-linked and hover-triggered motion. Needs modal transitions.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Icon Set ═══ -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-top">
+              <div class="manager-icon manager-icon-done">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </div>
+              <div class="manager-name-wrap">
+                <div class="manager-name">
+                  Icon Set
+                  <span class="status-dot dot-manager-done"></span>
+                </div>
+                <div class="manager-role">Stroke-based SVG icon system with size tokens</div>
+              </div>
+            </div>
+            <div class="manager-io">
+              <span class="manager-io-item io-in">← brand-spec</span>
+              <span class="manager-io-item io-out-done">→ icons.svg ✓</span>
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">2 / 2</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <!-- Phase 1 — All done in parallel -->
+            <div class="phase-group">
+              <div class="phase-label">
+                <span class="phase-num">Phase 1</span>
+                <span class="phase-type p-parallel">Parallel</span>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Core icon set</span>
+                  </div>
+                  <div class="agent-desc">48 essential UI icons at 20px, stroke-based SVG</div>
+                </div>
+              </div>
+              <div class="agent-row done">
+                <div class="agent-dot-wrap">
+                  <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="agent-dot dot-done"></span>
+                </div>
+                <div class="agent-info">
+                  <div class="agent-name-row">
+                    <span class="agent-name">Custom glyphs</span>
+                  </div>
+                  <div class="agent-desc">Brand-specific icons for product features and status</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

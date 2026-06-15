@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban Board — v1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+    /* ─── Experiment Info Sidebar ─── */
+    .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+    .experiment-sidebar {
+      width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+      padding: 24px 20px; overflow-y: auto;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px;
+    }
+    .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+    .experiment-sidebar a:hover { text-decoration: underline; }
+    .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+    .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+    .experiment-sidebar .exp-version {
+      display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+    }
+    .experiment-sidebar .exp-autonomous {
+      display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+    }
+    .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+    .experiment-sidebar .exp-section h2 {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+    }
+    .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+    .experiment-sidebar .exp-prompt {
+      background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+      font-size: 12px; color: #bbb; font-style: italic;
+    }
+    .experiment-sidebar .exp-prev { font-size: 12px; }
+
+    /* ─── Device Preview Switcher ─── */
+    .experiment-content {
+      flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+    .preview-btn {
+      display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+      border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+    }
+    .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+    .preview-btn svg { width: 20px; height: 20px; }
+    #preview-web:checked ~ .preview-bar label[for="preview-web"],
+    #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+    #preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+    .window {
+      width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+      position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+    #preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+    #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+    /* ─── Kanban Board ─── */
+    .kanban {
+      --bg: #f0f2f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f2f5;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .kanban-header {
+      padding: 20px 24px 12px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .kanban-header h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    .kanban-columns {
+      display: flex; gap: 16px; padding: 8px 24px 24px;
+      flex: 1; overflow-x: auto; overflow-y: hidden;
+    }
+    .kanban-col {
+      min-width: 280px; width: 280px; background: #e8eaef;
+      border-radius: 12px; display: flex; flex-direction: column;
+      max-height: 100%;
+    }
+    .col-header {
+      padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .col-header h3 { font-size: 13px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.04em; }
+    .col-count {
+      background: rgba(0,0,0,0.1); color: #666; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .col-cards { padding: 0 10px 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 10px; line-height: 1.3; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-avatar {
+      width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .avatar-blue { background: #4a7cf7; }
+    .avatar-green { background: #2ecc71; }
+    .avatar-orange { background: #e67e22; }
+    .avatar-purple { background: #9b59b6; }
+    .avatar-red { background: #e74c3c; }
+    .priority {
+      font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .priority-high { background: #fde8e8; color: #c0392b; }
+    .priority-medium { background: #fef3e2; color: #d68910; }
+    .priority-low { background: #e8f8f0; color: #27ae60; }
+
+    /* Column accent tops */
+    .col-todo .col-header { border-top: 3px solid #4a7cf7; border-radius: 12px 12px 0 0; }
+    .col-progress .col-header { border-top: 3px solid #f39c12; border-radius: 12px 12px 0 0; }
+    .col-review .col-header { border-top: 3px solid #9b59b6; border-radius: 12px 12px 0 0; }
+    .col-done .col-header { border-top: 3px solid #2ecc71; border-radius: 12px 12px 0 0; }
+
+    /* Mobile overrides */
+    #preview-mobile:checked ~ .window .kanban-columns { flex-direction: column; overflow-y: auto; overflow-x: hidden; padding: 8px 12px 24px; gap: 12px; }
+    #preview-mobile:checked ~ .window .kanban-col { min-width: 100%; width: 100%; max-height: none; }
+    #preview-mobile:checked ~ .window .kanban-header { padding: 14px 12px 8px; }
+    #preview-mobile:checked ~ .window .kanban-header h2 { font-size: 15px; }
+
+    /* ─── Sidebar Versions Card ─── */
+    .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+    .experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+    .experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+    .experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+    .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+    .experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+    .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+    .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+  </style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Kanban Board</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explore a project management kanban board layout with 4 columns, task cards featuring assignee avatars and priority badges, and column header counts. Foundation for iterative improvements.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v1: Basic 4-column kanban with cards, avatars, priority badges. Create a project management kanban board with To Do, In Progress, Review, and Done columns. Each card has a title, assignee avatar (initials in a colored circle), and a priority badge (high/medium/low). Column headers show task counts. Include device preview switcher with mobile responsive layout that stacks columns vertically.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="kanban-board-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Subtask progress</span>
+        </a>
+        <a href="kanban-board-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Filters & collapsible</span>
+        </a>
+        <a href="kanban-board-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Theme toggle</span>
+        </a>
+        <a href="kanban-board-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable details</span>
+        </a>
+        <a href="kanban-board-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 4-column kanban</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="kanban">
+        <div class="kanban-header">
+          <h2>Project Alpha</h2>
+        </div>
+        <div class="kanban-columns">
+          <!-- To Do -->
+          <div class="kanban-col col-todo">
+            <div class="col-header">
+              <h3>To Do</h3>
+              <span class="col-count">4</span>
+            </div>
+            <div class="col-cards">
+              <div class="card">
+                <div class="card-title">Design new onboarding flow</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-blue">AK</div>
+                  <span class="priority priority-high">High</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Write API documentation</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-green">MJ</div>
+                  <span class="priority priority-medium">Medium</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Set up CI/CD pipeline</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-orange">RP</div>
+                  <span class="priority priority-high">High</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Update dependency versions</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-purple">SL</div>
+                  <span class="priority priority-low">Low</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- In Progress -->
+          <div class="kanban-col col-progress">
+            <div class="col-header">
+              <h3>In Progress</h3>
+              <span class="col-count">3</span>
+            </div>
+            <div class="col-cards">
+              <div class="card">
+                <div class="card-title">Implement user authentication</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-red">DW</div>
+                  <span class="priority priority-high">High</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Build dashboard charts</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-blue">AK</div>
+                  <span class="priority priority-medium">Medium</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Create email templates</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-green">MJ</div>
+                  <span class="priority priority-low">Low</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review -->
+          <div class="kanban-col col-review">
+            <div class="col-header">
+              <h3>Review</h3>
+              <span class="col-count">2</span>
+            </div>
+            <div class="col-cards">
+              <div class="card">
+                <div class="card-title">Refactor database queries</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-orange">RP</div>
+                  <span class="priority priority-medium">Medium</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Add unit tests for payments</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-red">DW</div>
+                  <span class="priority priority-high">High</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Done -->
+          <div class="kanban-col col-done">
+            <div class="col-header">
+              <h3>Done</h3>
+              <span class="col-count">3</span>
+            </div>
+            <div class="col-cards">
+              <div class="card">
+                <div class="card-title">Project kickoff meeting</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-purple">SL</div>
+                  <span class="priority priority-low">Low</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Set up project repository</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-orange">RP</div>
+                  <span class="priority priority-medium">Medium</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Define tech stack</div>
+                <div class="card-footer">
+                  <div class="card-avatar avatar-blue">AK</div>
+                  <span class="priority priority-low">Low</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

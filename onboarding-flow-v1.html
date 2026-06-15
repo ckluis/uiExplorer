@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding Flow — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-autonomous {
+  display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Onboarding Wizard ─── */
+.wizard {
+  font-family: 'Inter', sans-serif;
+  height: 100%; display: flex; flex-direction: column;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 4px; background: #e9ecef; position: relative;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.4s ease;
+}
+#step1:checked ~ .window .progress-fill { width: 25%; }
+#step2:checked ~ .window .progress-fill { width: 50%; }
+#step3:checked ~ .window .progress-fill { width: 75%; }
+#step4:checked ~ .window .progress-fill { width: 100%; }
+#step-done:checked ~ .window .progress-fill { width: 100%; }
+
+/* Step indicators */
+.step-indicators {
+  display: flex; justify-content: center; gap: 32px; padding: 24px 0 16px;
+}
+.step-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ddd; transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: #667eea; transform: scale(1.3); }
+
+#step1:checked ~ .window .step-dot:nth-child(1),
+#step2:checked ~ .window .step-dot:nth-child(2),
+#step3:checked ~ .window .step-dot:nth-child(3),
+#step4:checked ~ .window .step-dot:nth-child(4) { background: #667eea; transform: scale(1.3); }
+
+/* Steps container */
+.steps-container { flex: 1; position: relative; overflow: hidden; }
+.step {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; text-align: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#step1:checked ~ .window .step-welcome,
+#step2:checked ~ .window .step-profile,
+#step3:checked ~ .window .step-preferences,
+#step4:checked ~ .window .step-team,
+#step-done:checked ~ .window .step-done { opacity: 1; pointer-events: auto; }
+
+.step h2 { font-size: 28px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+.step p { font-size: 16px; color: #666; max-width: 480px; line-height: 1.6; margin-bottom: 32px; }
+
+/* Form elements */
+.form-group { width: 100%; max-width: 400px; text-align: left; margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+.form-group input[type="text"],
+.form-group input[type="email"] {
+  width: 100%; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+  font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s;
+}
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus { border-color: #667eea; }
+
+/* Preference chips */
+.pref-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 480px; }
+.pref-chip {
+  padding: 10px 20px; border: 1.5px solid #ddd; border-radius: 24px;
+  font-size: 14px; color: #555; cursor: default; transition: all 0.2s;
+}
+.pref-chip:hover { border-color: #667eea; color: #667eea; }
+
+/* Team invite placeholders */
+.invite-row {
+  display: flex; gap: 12px; width: 100%; max-width: 480px; margin-bottom: 12px;
+}
+.invite-row input {
+  flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+  font-size: 14px; font-family: inherit;
+}
+
+/* Navigation buttons */
+.nav-buttons { display: flex; gap: 12px; padding: 24px 40px; justify-content: center; }
+.nav-btn {
+  display: none; padding: 12px 32px; border-radius: 8px;
+  font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+  text-decoration: none; text-align: center; transition: all 0.2s;
+}
+.btn-primary { background: #667eea; color: #fff; border: none; }
+.btn-primary:hover { background: #5a6fd6; }
+.btn-secondary { background: #fff; color: #667eea; border: 1.5px solid #667eea; }
+.btn-secondary:hover { background: #f0f0ff; }
+
+/* Show correct nav buttons per step */
+#step1:checked ~ .window .nav-s1,
+#step2:checked ~ .window .nav-s2,
+#step3:checked ~ .window .nav-s3,
+#step4:checked ~ .window .nav-s4,
+#step-done:checked ~ .window .nav-s5 { display: inline-block; }
+
+/* Done state */
+.step-done .check-circle {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 24px;
+}
+.step-done .check-circle svg { width: 40px; height: 40px; color: #fff; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .step h2 { font-size: 22px; }
+#preview-mobile:checked ~ .window .step p { font-size: 14px; }
+#preview-mobile:checked ~ .window .step { padding: 24px; }
+#preview-mobile:checked ~ .window .form-group { max-width: 100%; }
+#preview-mobile:checked ~ .window .pref-grid { max-width: 100%; }
+#preview-mobile:checked ~ .window .invite-row { flex-direction: column; max-width: 100%; }
+#preview-mobile:checked ~ .window .nav-buttons { padding: 16px 24px; }
+#preview-mobile:checked ~ .window .step-indicators { gap: 20px; padding: 16px 0 8px; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Onboarding Flow</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores a multi-step onboarding wizard driven entirely by CSS radio buttons. Tests whether smooth step transitions, progress indicators, and form layouts can be achieved without any JavaScript.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v1: Basic 4-step wizard with progress bar, radio navigation. Create a multi-step onboarding wizard with radio buttons driving step navigation (step 1-4 + completion). Include a progress bar, step dot indicators, and Previous/Next navigation via labels for radio buttons. Steps: welcome, profile, preferences, team invite, done.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="onboarding-flow-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Confetti animation</span>
+        </a>
+        <a href="onboarding-flow-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Branching paths</span>
+        </a>
+        <a href="onboarding-flow-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Two-column layout</span>
+        </a>
+        <a href="onboarding-flow-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Numbered step circles</span>
+        </a>
+        <a href="onboarding-flow-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 4-step wizard</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Step state radios -->
+    <input type="radio" name="step" id="step1" checked>
+    <input type="radio" name="step" id="step2">
+    <input type="radio" name="step" id="step3">
+    <input type="radio" name="step" id="step4">
+    <input type="radio" name="step" id="step-done">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="wizard">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+
+        <div class="step-indicators">
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+
+        <div class="steps-container">
+          <!-- Step 1: Welcome -->
+          <div class="step step-welcome">
+            <h2>Welcome aboard!</h2>
+            <p>We're excited to have you. This quick setup will help us personalize your experience. It only takes a couple of minutes.</p>
+          </div>
+
+          <!-- Step 2: Profile -->
+          <div class="step step-profile">
+            <h2>Set up your profile</h2>
+            <p>Tell us a bit about yourself so your team knows who you are.</p>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" placeholder="Jane Doe">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" placeholder="jane@company.com">
+            </div>
+            <div class="form-group">
+              <label>Role</label>
+              <input type="text" placeholder="Product Designer">
+            </div>
+          </div>
+
+          <!-- Step 3: Preferences -->
+          <div class="step step-preferences">
+            <h2>Pick your interests</h2>
+            <p>Select topics you care about so we can tailor your dashboard.</p>
+            <div class="pref-grid">
+              <span class="pref-chip">Design</span>
+              <span class="pref-chip">Engineering</span>
+              <span class="pref-chip">Marketing</span>
+              <span class="pref-chip">Product</span>
+              <span class="pref-chip">Analytics</span>
+              <span class="pref-chip">Sales</span>
+              <span class="pref-chip">Support</span>
+              <span class="pref-chip">Operations</span>
+            </div>
+          </div>
+
+          <!-- Step 4: Team Invite -->
+          <div class="step step-team">
+            <h2>Invite your team</h2>
+            <p>Collaboration is better together. Add teammates by email.</p>
+            <div class="invite-row">
+              <input type="email" placeholder="teammate1@company.com">
+            </div>
+            <div class="invite-row">
+              <input type="email" placeholder="teammate2@company.com">
+            </div>
+            <div class="invite-row">
+              <input type="email" placeholder="teammate3@company.com">
+            </div>
+          </div>
+
+          <!-- Step 5: Done -->
+          <div class="step step-done">
+            <div class="check-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h2>You're all set!</h2>
+            <p>Your workspace is ready. Dive in and start exploring.</p>
+          </div>
+        </div>
+
+        <div class="nav-buttons">
+          <label for="step2" class="nav-btn btn-primary nav-s1">Get Started</label>
+
+          <label for="step1" class="nav-btn btn-secondary nav-s2">Back</label>
+          <label for="step3" class="nav-btn btn-primary nav-s2">Next</label>
+
+          <label for="step2" class="nav-btn btn-secondary nav-s3">Back</label>
+          <label for="step4" class="nav-btn btn-primary nav-s3">Next</label>
+
+          <label for="step3" class="nav-btn btn-secondary nav-s4">Back</label>
+          <label for="step-done" class="nav-btn btn-primary nav-s4">Finish</label>
+
+          <label for="step1" class="nav-btn btn-primary nav-s5">Start Over</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

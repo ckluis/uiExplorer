@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Dashboard — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #121212; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Dashboard Layout ─── */
+.dashboard { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #fff; }
+
+/* Music Sidebar */
+.music-sidebar { width: 240px; min-width: 240px; background: #000; padding: 20px 16px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; }
+.music-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #1db954; }
+.nav-section h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #b3b3b3; cursor: default; transition: background 0.15s; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-icon { width: 20px; height: 20px; border-radius: 4px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+.playlist-item { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #b3b3b3; cursor: default; }
+.playlist-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.playlist-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Main Content Area */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* View Toggle: Albums vs Artist */
+.view-area { flex: 1; overflow: hidden; position: relative; }
+
+/* Genre Filters */
+.genre-bar { padding: 16px 24px; display: flex; gap: 8px; flex-shrink: 0; }
+.genre-pill { display: inline-block; padding: 7px 18px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.08); color: #b3b3b3; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.genre-pill:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* View toggle pills */
+.view-bar { padding: 0 24px 8px; display: flex; gap: 6px; flex-shrink: 0; }
+.view-pill { display: inline-block; padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.05); color: #888; cursor: pointer; transition: all 0.2s; }
+.view-pill:hover { background: rgba(255,255,255,0.1); color: #b3b3b3; }
+
+#genre-all:checked ~ .dashboard .main-content .genre-bar label[for="genre-all"],
+#genre-pop:checked ~ .dashboard .main-content .genre-bar label[for="genre-pop"],
+#genre-rock:checked ~ .dashboard .main-content .genre-bar label[for="genre-rock"],
+#genre-electronic:checked ~ .dashboard .main-content .genre-bar label[for="genre-electronic"],
+#genre-jazz:checked ~ .dashboard .main-content .genre-bar label[for="genre-jazz"] {
+  background: #1db954; color: #fff;
+}
+
+#view-albums:checked ~ .dashboard .main-content .view-bar label[for="view-albums"],
+#view-artist:checked ~ .dashboard .main-content .view-bar label[for="view-artist"] {
+  background: rgba(255,255,255,0.15); color: #fff;
+}
+
+/* Albums View */
+.albums-view { display: flex; height: 100%; }
+.album-grid-wrap { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
+.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; align-content: start; }
+.album-card { display: flex; flex-direction: column; gap: 10px; cursor: default; }
+.album-cover { aspect-ratio: 1; border-radius: 8px; position: relative; overflow: hidden; transition: transform 0.2s; }
+.album-card:hover .album-cover { transform: scale(1.03); }
+.album-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+.album-card:hover .album-overlay { opacity: 1; }
+.album-play-btn { width: 44px; height: 44px; border-radius: 50%; background: #1db954; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transform: translateY(8px); transition: transform 0.2s; }
+.album-card:hover .album-play-btn { transform: translateY(0); }
+.album-play-btn svg { width: 18px; height: 18px; fill: #fff; margin-left: 2px; }
+.album-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.album-artist { font-size: 11px; color: #888; }
+
+.album-card:nth-child(1) .album-cover { background: linear-gradient(135deg, #e74c3c, #8e44ad); }
+.album-card:nth-child(2) .album-cover { background: linear-gradient(135deg, #3498db, #2ecc71); }
+.album-card:nth-child(3) .album-cover { background: linear-gradient(135deg, #f39c12, #e74c3c); }
+.album-card:nth-child(4) .album-cover { background: linear-gradient(135deg, #9b59b6, #3498db); }
+.album-card:nth-child(5) .album-cover { background: linear-gradient(135deg, #1abc9c, #2c3e50); }
+.album-card:nth-child(6) .album-cover { background: linear-gradient(135deg, #e67e22, #f1c40f); }
+.album-card:nth-child(7) .album-cover { background: linear-gradient(135deg, #2c3e50, #4ca1af); }
+.album-card:nth-child(8) .album-cover { background: linear-gradient(135deg, #c0392b, #f39c12); }
+.album-card:nth-child(9) .album-cover { background: linear-gradient(135deg, #8e44ad, #c0392b); }
+.album-card:nth-child(10) .album-cover { background: linear-gradient(135deg, #16a085, #f39c12); }
+.album-card:nth-child(11) .album-cover { background: linear-gradient(135deg, #2980b9, #6dd5fa); }
+.album-card:nth-child(12) .album-cover { background: linear-gradient(135deg, #fc4a1a, #f7b733); }
+
+/* Queue / Up Next Panel */
+.queue-panel { width: 260px; min-width: 260px; background: rgba(255,255,255,0.03); border-left: 1px solid rgba(255,255,255,0.06); padding: 20px 16px; overflow-y: auto; }
+.queue-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+.queue-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 8px; }
+.queue-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; transition: background 0.15s; }
+.queue-item:hover { background: rgba(255,255,255,0.06); }
+.queue-item.active { background: rgba(29, 185, 84, 0.1); }
+.queue-num { font-size: 11px; color: #666; width: 16px; text-align: center; flex-shrink: 0; }
+.queue-item.active .queue-num { color: #1db954; }
+.queue-thumb { width: 36px; height: 36px; border-radius: 4px; flex-shrink: 0; }
+.queue-item:nth-child(2) .queue-thumb { background: linear-gradient(135deg, #e74c3c, #8e44ad); }
+.queue-item:nth-child(3) .queue-thumb { background: linear-gradient(135deg, #3498db, #2ecc71); }
+.queue-item:nth-child(4) .queue-thumb { background: linear-gradient(135deg, #f39c12, #e74c3c); }
+.queue-item:nth-child(5) .queue-thumb { background: linear-gradient(135deg, #9b59b6, #3498db); }
+.queue-item:nth-child(6) .queue-thumb { background: linear-gradient(135deg, #1abc9c, #2c3e50); }
+.queue-item:nth-child(7) .queue-thumb { background: linear-gradient(135deg, #e67e22, #f1c40f); }
+.queue-item:nth-child(8) .queue-thumb { background: linear-gradient(135deg, #2c3e50, #4ca1af); }
+.queue-info { overflow: hidden; flex: 1; }
+.queue-song { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue-artist { font-size: 10px; color: #888; }
+.queue-dur { font-size: 10px; color: #666; flex-shrink: 0; }
+
+/* Artist Detail View */
+.artist-view { display: none; flex-direction: column; height: 100%; overflow-y: auto; }
+#view-artist:checked ~ .dashboard .main-content .view-area .albums-view { display: none; }
+#view-artist:checked ~ .dashboard .main-content .view-area .artist-view { display: flex; }
+#view-albums:checked ~ .dashboard .main-content .view-area .albums-view { display: flex; }
+
+.artist-hero { padding: 40px 32px; background: linear-gradient(180deg, rgba(142, 68, 173, 0.4) 0%, transparent 100%); display: flex; align-items: flex-end; gap: 24px; }
+.artist-avatar { width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, #8e44ad, #e74c3c); box-shadow: 0 8px 32px rgba(0,0,0,0.4); flex-shrink: 0; }
+.artist-meta h2 { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.artist-meta p { font-size: 13px; color: #b3b3b3; }
+.artist-stats { display: flex; gap: 24px; margin-top: 12px; }
+.artist-stat { font-size: 12px; color: #888; }
+.artist-stat strong { color: #fff; font-weight: 600; }
+
+.artist-tracks { padding: 24px 32px; }
+.artist-tracks h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.track-row { display: flex; align-items: center; gap: 16px; padding: 10px 12px; border-radius: 6px; transition: background 0.15s; }
+.track-row:hover { background: rgba(255,255,255,0.06); }
+.track-num { font-size: 13px; color: #666; width: 24px; text-align: center; }
+.track-row:hover .track-num { color: #fff; }
+.track-cover { width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+.track-row:nth-child(1) .track-cover { background: linear-gradient(135deg, #e74c3c, #8e44ad); }
+.track-row:nth-child(2) .track-cover { background: linear-gradient(135deg, #3498db, #2ecc71); }
+.track-row:nth-child(3) .track-cover { background: linear-gradient(135deg, #f39c12, #e74c3c); }
+.track-row:nth-child(4) .track-cover { background: linear-gradient(135deg, #9b59b6, #3498db); }
+.track-row:nth-child(5) .track-cover { background: linear-gradient(135deg, #1abc9c, #2c3e50); }
+.track-row:nth-child(6) .track-cover { background: linear-gradient(135deg, #e67e22, #f1c40f); }
+.track-info { flex: 1; overflow: hidden; }
+.track-name { font-size: 13px; font-weight: 500; }
+.track-album { font-size: 11px; color: #888; }
+.track-duration { font-size: 12px; color: #888; }
+
+/* Now Playing Bar */
+.now-playing { height: 80px; background: linear-gradient(180deg, #1a1a1a, #121212); border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0; }
+.np-track { display: flex; align-items: center; gap: 12px; width: 260px; min-width: 180px; }
+.np-cover { width: 48px; height: 48px; border-radius: 6px; background: linear-gradient(135deg, #e74c3c, #8e44ad); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.np-info { overflow: hidden; }
+.np-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-artist { font-size: 11px; color: #888; }
+.np-eq { display: flex; align-items: flex-end; gap: 2px; height: 16px; margin-left: 8px; }
+.np-eq-bar { width: 3px; background: #1db954; border-radius: 1px; animation: eq-bounce 1s ease-in-out infinite; }
+.np-eq-bar:nth-child(1) { height: 60%; animation-delay: 0s; }
+.np-eq-bar:nth-child(2) { height: 100%; animation-delay: 0.15s; }
+.np-eq-bar:nth-child(3) { height: 40%; animation-delay: 0.3s; }
+.np-eq-bar:nth-child(4) { height: 80%; animation-delay: 0.45s; }
+.np-eq-bar:nth-child(5) { height: 50%; animation-delay: 0.6s; }
+@keyframes eq-bounce { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+.np-controls { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.np-buttons { display: flex; align-items: center; gap: 20px; }
+.np-btn { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #b3b3b3; cursor: default; transition: color 0.15s; }
+.np-btn:hover { color: #fff; }
+.np-btn.play { width: 34px; height: 34px; background: #fff; color: #000; transition: transform 0.15s; }
+.np-btn.play:hover { transform: scale(1.06); }
+.np-btn svg { width: 14px; height: 14px; }
+.np-progress { width: 100%; max-width: 500px; display: flex; align-items: center; gap: 8px; }
+.np-time { font-size: 10px; color: #888; min-width: 32px; text-align: center; }
+.np-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; overflow: hidden; }
+.np-bar-fill { position: absolute; left: 0; top: 0; height: 100%; width: 35%; background: #1db954; border-radius: 2px; }
+.np-bar:hover .np-bar-fill { background: #1ed760; }
+.np-volume { width: 140px; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.np-vol-bar { width: 80px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; }
+.np-vol-fill { position: absolute; left: 0; top: 0; height: 100%; width: 65%; background: #fff; border-radius: 2px; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .music-sidebar { display: none; }
+#preview-mobile:checked ~ .window .queue-panel { display: none; }
+#preview-mobile:checked ~ .window .album-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+#preview-mobile:checked ~ .window .album-grid-wrap { padding: 0 16px 16px; }
+#preview-mobile:checked ~ .window .genre-bar { padding: 12px 16px; gap: 6px; flex-wrap: wrap; }
+#preview-mobile:checked ~ .window .genre-pill { padding: 5px 12px; font-size: 11px; }
+#preview-mobile:checked ~ .window .view-bar { padding: 0 16px 8px; }
+#preview-mobile:checked ~ .window .now-playing { height: 60px; padding: 0 12px; gap: 10px; }
+#preview-mobile:checked ~ .window .np-volume { display: none; }
+#preview-mobile:checked ~ .window .np-eq { display: none; }
+#preview-mobile:checked ~ .window .np-track { width: auto; min-width: 120px; }
+#preview-mobile:checked ~ .window .np-progress { max-width: 160px; }
+#preview-mobile:checked ~ .window .artist-hero { padding: 24px 16px; flex-direction: column; align-items: center; text-align: center; }
+#preview-mobile:checked ~ .window .artist-avatar { width: 120px; height: 120px; }
+#preview-mobile:checked ~ .window .artist-meta h2 { font-size: 24px; }
+#preview-mobile:checked ~ .window .artist-stats { justify-content: center; }
+#preview-mobile:checked ~ .window .artist-tracks { padding: 16px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Music Dashboard</h1>
+      <span class="exp-version">v3</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds an artist detail view toggled via radio buttons and a queue/up-next panel alongside the album grid. Explores multi-view navigation patterns within a music dashboard context.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        v3: Artist detail view (radio toggle), queue/up-next section.<br><br>Add a view toggle (Albums / Artist) using radio buttons. The Artist view shows a hero section with a circular avatar, artist name, stats, and a popular tracks list. Add a queue/up-next panel on the right side of the album grid showing the current track and upcoming songs with thumbnails and durations.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="music-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Vinyl spin & equalizer</span>
+        </a>
+        <a href="music-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mood color themes</span>
+        </a>
+        <a href="music-dashboard-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Artist detail view</span>
+        </a>
+        <a href="music-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">CSS equalizer</span>
+        </a>
+        <a href="music-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial music dashboard</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <input type="radio" name="genre" id="genre-all" checked>
+      <input type="radio" name="genre" id="genre-pop">
+      <input type="radio" name="genre" id="genre-rock">
+      <input type="radio" name="genre" id="genre-electronic">
+      <input type="radio" name="genre" id="genre-jazz">
+      <input type="radio" name="view" id="view-albums" checked>
+      <input type="radio" name="view" id="view-artist">
+
+      <div class="dashboard">
+        <div class="music-sidebar">
+          <div class="music-logo">Musicboard</div>
+          <div class="nav-section">
+            <h3>Browse</h3>
+            <div class="nav-item"><div class="nav-icon"></div>Home</div>
+            <div class="nav-item"><div class="nav-icon"></div>Search</div>
+            <div class="nav-item"><div class="nav-icon"></div>Radio</div>
+          </div>
+          <div class="nav-section">
+            <h3>Library</h3>
+            <div class="nav-item"><div class="nav-icon"></div>Liked Songs</div>
+            <div class="nav-item"><div class="nav-icon"></div>Albums</div>
+            <div class="nav-item"><div class="nav-icon"></div>Artists</div>
+          </div>
+          <div class="nav-section">
+            <h3>Playlists</h3>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#e74c3c"></div>Daily Mix 1</div>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#3498db"></div>Chill Vibes</div>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#2ecc71"></div>Workout Energy</div>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#f39c12"></div>Late Night Jazz</div>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#9b59b6"></div>Indie Discoveries</div>
+            <div class="playlist-item"><div class="playlist-dot" style="background:#1abc9c"></div>Focus Flow</div>
+          </div>
+        </div>
+
+        <div class="main-content">
+          <div class="genre-bar">
+            <label for="genre-all" class="genre-pill">All</label>
+            <label for="genre-pop" class="genre-pill">Pop</label>
+            <label for="genre-rock" class="genre-pill">Rock</label>
+            <label for="genre-electronic" class="genre-pill">Electronic</label>
+            <label for="genre-jazz" class="genre-pill">Jazz</label>
+          </div>
+          <div class="view-bar">
+            <label for="view-albums" class="view-pill">Albums</label>
+            <label for="view-artist" class="view-pill">Artist</label>
+          </div>
+
+          <div class="view-area">
+            <!-- Albums View -->
+            <div class="albums-view">
+              <div class="album-grid-wrap">
+                <div class="album-grid">
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Midnight Bloom</div><div class="album-artist">Luna Wave</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Neon Dreams</div><div class="album-artist">Synthex</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Firewall</div><div class="album-artist">The Voltage</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Blue Hour</div><div class="album-artist">Miles Apart</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Pulse</div><div class="album-artist">Deep Circuit</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Golden</div><div class="album-artist">Aria Sun</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Undertow</div><div class="album-artist">Granite</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Crimson Notes</div><div class="album-artist">Sax &amp; The City</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Velvet Sky</div><div class="album-artist">Dreamcatcher</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Horizon</div><div class="album-artist">Zero Kelvin</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Aftershock</div><div class="album-artist">Iron Bloom</div></div>
+                  <div class="album-card"><div class="album-cover"><div class="album-overlay"><div class="album-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div></div><div class="album-title">Amber Light</div><div class="album-artist">The Quartet</div></div>
+                </div>
+              </div>
+
+              <!-- Queue Panel -->
+              <div class="queue-panel">
+                <div class="queue-title">Up Next</div>
+                <div class="queue-label">Now Playing</div>
+                <div class="queue-item active">
+                  <div class="queue-num">&#9654;</div>
+                  <div class="queue-thumb" style="background: linear-gradient(135deg, #e74c3c, #8e44ad)"></div>
+                  <div class="queue-info"><div class="queue-song">Midnight Bloom</div><div class="queue-artist">Luna Wave</div></div>
+                  <div class="queue-dur">3:45</div>
+                </div>
+                <div class="queue-label" style="margin-top: 16px;">Queue</div>
+                <div class="queue-item">
+                  <div class="queue-num">1</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Neon Dreams</div><div class="queue-artist">Synthex</div></div>
+                  <div class="queue-dur">4:12</div>
+                </div>
+                <div class="queue-item">
+                  <div class="queue-num">2</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Firewall</div><div class="queue-artist">The Voltage</div></div>
+                  <div class="queue-dur">3:28</div>
+                </div>
+                <div class="queue-item">
+                  <div class="queue-num">3</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Blue Hour</div><div class="queue-artist">Miles Apart</div></div>
+                  <div class="queue-dur">5:01</div>
+                </div>
+                <div class="queue-item">
+                  <div class="queue-num">4</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Pulse</div><div class="queue-artist">Deep Circuit</div></div>
+                  <div class="queue-dur">3:56</div>
+                </div>
+                <div class="queue-item">
+                  <div class="queue-num">5</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Golden</div><div class="queue-artist">Aria Sun</div></div>
+                  <div class="queue-dur">3:33</div>
+                </div>
+                <div class="queue-item">
+                  <div class="queue-num">6</div>
+                  <div class="queue-thumb"></div>
+                  <div class="queue-info"><div class="queue-song">Undertow</div><div class="queue-artist">Granite</div></div>
+                  <div class="queue-dur">4:44</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Artist View -->
+            <div class="artist-view">
+              <div class="artist-hero">
+                <div class="artist-avatar"></div>
+                <div class="artist-meta">
+                  <h2>Luna Wave</h2>
+                  <p>Dreampop / Synthwave / Indie Electronic</p>
+                  <div class="artist-stats">
+                    <div class="artist-stat"><strong>2.4M</strong> monthly listeners</div>
+                    <div class="artist-stat"><strong>847K</strong> followers</div>
+                  </div>
+                </div>
+              </div>
+              <div class="artist-tracks">
+                <h3>Popular</h3>
+                <div class="track-row"><div class="track-num">1</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Midnight Bloom</div><div class="track-album">Midnight Bloom</div></div><div class="track-duration">3:45</div></div>
+                <div class="track-row"><div class="track-num">2</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Starfall</div><div class="track-album">Neon Tides</div></div><div class="track-duration">4:12</div></div>
+                <div class="track-row"><div class="track-num">3</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Crystal Waves</div><div class="track-album">Neon Tides</div></div><div class="track-duration">3:58</div></div>
+                <div class="track-row"><div class="track-num">4</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Echoes</div><div class="track-album">Midnight Bloom</div></div><div class="track-duration">5:01</div></div>
+                <div class="track-row"><div class="track-num">5</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Velvet Dreams</div><div class="track-album">Velvet Dreams EP</div></div><div class="track-duration">3:33</div></div>
+                <div class="track-row"><div class="track-num">6</div><div class="track-cover"></div><div class="track-info"><div class="track-name">Aurora</div><div class="track-album">Midnight Bloom</div></div><div class="track-duration">4:27</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="now-playing">
+            <div class="np-track">
+              <div class="np-cover"></div>
+              <div class="np-info"><div class="np-title">Midnight Bloom</div><div class="np-artist">Luna Wave</div></div>
+              <div class="np-eq"><div class="np-eq-bar"></div><div class="np-eq-bar"></div><div class="np-eq-bar"></div><div class="np-eq-bar"></div><div class="np-eq-bar"></div></div>
+            </div>
+            <div class="np-controls">
+              <div class="np-buttons">
+                <div class="np-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></div>
+                <div class="np-btn play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+                <div class="np-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></div>
+              </div>
+              <div class="np-progress">
+                <span class="np-time">1:23</span>
+                <div class="np-bar"><div class="np-bar-fill"></div></div>
+                <span class="np-time">3:45</span>
+              </div>
+            </div>
+            <div class="np-volume">
+              <div class="np-vol-bar"><div class="np-vol-fill"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v10: Triage</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: var(--bg, #1a1035); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── CRM Triage Layout ─── */
+.triage { display: flex; flex-direction: column; height: 100%; font-family: 'Inter', sans-serif; background: linear-gradient(160deg, #1a1035 0%, #0d1b3e 50%, #0a1628 100%); color: #fff; align-items: center; overflow: hidden; position: relative; }
+
+/* Role toggle */
+.role-bar { display: flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 3px; margin-top: 20px; flex-shrink: 0; }
+.role-label { padding: 7px 16px; border-radius: 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.role-label:hover { color: rgba(255,255,255,0.7); }
+#role-solo:checked ~ .triage .role-bar label[for="role-solo"],
+#role-team:checked ~ .triage .role-bar label[for="role-team"],
+#role-admin:checked ~ .triage .role-bar label[for="role-admin"] { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Category tabs */
+.cat-bar { display: flex; gap: 2px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 3px; margin-top: 16px; flex-shrink: 0; }
+.cat-label { padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.2s; }
+.cat-label:hover { color: rgba(255,255,255,0.7); }
+#cat-leads:checked ~ .triage .cat-bar label[for="cat-leads"],
+#cat-followups:checked ~ .triage .cat-bar label[for="cat-followups"],
+#cat-deadlines:checked ~ .triage .cat-bar label[for="cat-deadlines"],
+#cat-all:checked ~ .triage .cat-bar label[for="cat-all"] { background: rgba(139, 156, 247, 0.2); color: #8b9cf7; }
+
+/* Queue progress */
+.queue-progress { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+.queue-text { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); }
+.queue-text span { color: #fff; }
+.queue-bar { display: flex; gap: 3px; width: 320px; }
+.queue-seg { height: 6px; border-radius: 3px; flex: 1; }
+.queue-seg.done { background: #2ecc71; }
+.queue-seg.snoozed { background: #f39c12; }
+.queue-seg.remaining { background: rgba(255,255,255,0.1); }
+.queue-seg.current { background: #8b9cf7; animation: pulse-seg 1.5s ease-in-out infinite; }
+@keyframes pulse-seg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Card deck area */
+.deck-area { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; min-height: 0; }
+
+/* Card stack */
+.card-stack { position: relative; width: 420px; height: 520px; }
+.card-stack .card { position: absolute; width: 420px; border-radius: 20px; background: #fff; color: #1a1a2e; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); left: 50%; transform: translateX(-50%); }
+
+.card-stack .card.card-3 { height: 500px; bottom: 16px; z-index: 1; transform: translateX(-50%) scale(0.92); opacity: 0.5; }
+.card-stack .card.card-2 { height: 505px; bottom: 8px; z-index: 2; transform: translateX(-50%) scale(0.96); opacity: 0.7; }
+.card-stack .card.card-1 { height: 510px; bottom: 0; z-index: 3; animation: swipe-hint 4s ease-in-out infinite; }
+
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  20% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-47%) rotate(1.5deg); }
+  30% { transform: translateX(-50%) rotate(0deg); }
+  35% { transform: translateX(-53%) rotate(-1.5deg); }
+  40% { transform: translateX(-50%) rotate(0deg); }
+}
+
+/* Card content */
+.card-header { padding: 28px 28px 0; display: flex; align-items: flex-start; gap: 16px; }
+.card-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; }
+.card-name-block { flex: 1; min-width: 0; }
+.card-name { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: #1a1a2e; }
+.card-subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+
+/* Quick stat badges */
+.card-badges { display: flex; gap: 10px; padding: 16px 28px 0; }
+.stat-badge { display: flex; flex-direction: column; align-items: center; width: 72px; }
+.stat-badge-circle { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+.stat-badge-circle.score { background: rgba(46, 204, 113, 0.12); color: #27ae60; }
+.stat-badge-circle.days { background: rgba(231, 76, 60, 0.12); color: #e74c3c; }
+.stat-badge-circle.value { background: rgba(52, 152, 219, 0.12); color: #2980b9; }
+.stat-badge-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #999; margin-top: 4px; }
+
+/* Card body */
+.card-body { padding: 20px 28px 0; }
+.card-context { font-size: 13px; color: #666; line-height: 1.5; }
+.card-context strong { color: #444; }
+
+/* Recommended action */
+.card-action { margin: 16px 28px 0; padding: 16px; background: linear-gradient(135deg, rgba(139,156,247,0.08), rgba(118,75,162,0.08)); border-radius: 12px; border-left: 4px solid #8b9cf7; }
+.card-action-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8b9cf7; margin-bottom: 4px; }
+.card-action-text { font-size: 18px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.01em; }
+.card-action-detail { font-size: 12px; color: #888; margin-top: 4px; }
+
+/* Property tag */
+.card-property { display: flex; align-items: center; gap: 8px; margin: 14px 28px 0; padding: 10px 14px; background: #f8f8fa; border-radius: 10px; }
+.card-property-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f39c12, #e67e22); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
+.card-property-text { font-size: 12px; color: #666; }
+.card-property-text strong { color: #333; font-weight: 600; display: block; }
+
+/* Action buttons */
+.action-buttons { display: flex; gap: 16px; padding: 20px 0 24px; flex-shrink: 0; z-index: 10; }
+.action-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: default; }
+.action-btn-circle { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.action-btn-circle:hover { transform: scale(1.1); }
+.action-btn-circle.snooze { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+.action-btn-circle.details { background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; }
+.action-btn-circle.act { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; }
+.action-btn-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
+
+/* SVG icons in buttons */
+.action-btn-circle svg { width: 28px; height: 28px; }
+
+/* ─── Role-based visibility ─── */
+/* Team lead extras */
+.team-strip { display: none; width: 420px; margin-top: 0; }
+.team-strip-inner { display: flex; gap: 8px; justify-content: center; padding: 8px 0; }
+.team-avatar { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.team-avatar-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.team-avatar-name { font-size: 9px; color: rgba(255,255,255,0.4); }
+.team-avatar-count { font-size: 9px; color: rgba(255,255,255,0.6); font-weight: 700; }
+
+#role-team:checked ~ .triage .team-strip { display: block; }
+
+/* Admin label on card */
+.card-agent-tag { display: none; margin: 0 28px; padding: 6px 12px; background: rgba(243, 156, 18, 0.1); border-radius: 6px; font-size: 11px; color: #f39c12; font-weight: 600; margin-top: 10px; }
+#role-admin:checked ~ .triage .card-agent-tag { display: block; }
+
+/* Admin action labels */
+.action-label-solo, .action-label-team, .action-label-admin { display: none; }
+#role-solo:checked ~ .triage .action-label-solo { display: block; }
+#role-team:checked ~ .triage .action-label-team { display: block; }
+#role-admin:checked ~ .triage .action-label-admin { display: block; }
+
+/* Queue text role variants */
+.queue-solo, .queue-team, .queue-admin { display: none; }
+#role-solo:checked ~ .triage .queue-solo { display: inline; }
+#role-team:checked ~ .triage .queue-team { display: inline; }
+#role-admin:checked ~ .triage .queue-admin { display: inline; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .card-stack { width: 320px; height: 440px; }
+#preview-mobile:checked ~ .window .card-stack .card { width: 320px; }
+#preview-mobile:checked ~ .window .card-stack .card.card-1 { height: 420px; }
+#preview-mobile:checked ~ .window .card-stack .card.card-2 { height: 415px; }
+#preview-mobile:checked ~ .window .card-stack .card.card-3 { height: 410px; }
+#preview-mobile:checked ~ .window .card-header { padding: 20px 20px 0; }
+#preview-mobile:checked ~ .window .card-avatar { width: 48px; height: 48px; font-size: 18px; }
+#preview-mobile:checked ~ .window .card-name { font-size: 20px; }
+#preview-mobile:checked ~ .window .card-badges { padding: 12px 20px 0; }
+#preview-mobile:checked ~ .window .stat-badge-circle { width: 40px; height: 40px; font-size: 14px; }
+#preview-mobile:checked ~ .window .card-body { padding: 14px 20px 0; }
+#preview-mobile:checked ~ .window .card-action { margin: 12px 20px 0; padding: 12px; }
+#preview-mobile:checked ~ .window .card-action-text { font-size: 15px; }
+#preview-mobile:checked ~ .window .card-property { margin: 10px 20px 0; }
+#preview-mobile:checked ~ .window .action-buttons { gap: 24px; padding: 16px 0 20px; }
+#preview-mobile:checked ~ .window .role-bar { margin-top: 12px; }
+#preview-mobile:checked ~ .window .role-label { padding: 5px 10px; font-size: 10px; }
+#preview-mobile:checked ~ .window .cat-bar { margin-top: 10px; }
+#preview-mobile:checked ~ .window .cat-label { padding: 5px 12px; font-size: 10px; }
+#preview-mobile:checked ~ .window .queue-progress { margin-top: 12px; }
+#preview-mobile:checked ~ .window .queue-bar { width: 260px; }
+#preview-mobile:checked ~ .window .team-strip { width: 320px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v10</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A mobile-first, card-triage CRM dashboard for real estate agents. Uses a stacked deck metaphor where leads are presented one at a time for rapid decisioning &mdash; snooze, inspect, or act immediately. Designed to feel like swiping through a pipeline.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Triage" &mdash; Card Stack/Mobile-First.</strong> Swipe through your pipeline. Core metaphor is a deck of cards presented one at a time with three large action buttons. Extreme information hierarchy with contact info, lead score badges, and recommended actions.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v10: "Triage" — Card Stack/Mobile-First</strong><br><br>
+        Tagline: "Swipe through your pipeline."<br>
+        Core metaphor: A deck of cards or Tinder — leads presented one at a time, agent makes rapid decisions.<br><br>
+        Layout: Centered large card (~420px wide, ~550px tall) with rounded corners and shadow. Behind it, 2-3 cards visible in fanned stack (offset, scaled via CSS transform). Below: three large action buttons (Snooze amber, Details blue, Act Now green). Above: progress bar ("7 of 23"). Card shows contact photo placeholder, name, key context, recommended action in large text.<br><br>
+        Key UI elements: Stacked card deck with depth (3 cards, progressive offset, scale, z-index). Action triptych buttons. Extreme information hierarchy (name 24px, action 18px). Segmented progress bar. Category tabs. Quick-stat circular badges. Swipe hint CSS animations. Deep gradient background.<br><br>
+        Color/mood: Bold, high-contrast, mobile-optimized. Background: deep purple-to-blue gradient. Cards: clean white, generous padding, large typography. Saturated chunky action buttons. Playful but productive.<br><br>
+        Role toggle: Solo Agent has personal task deck. Team Lead gains "My Queue / Assign Queue" toggle. Brokerage Admin gets review/approval queue with Approve, Flag, Reassign actions.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; Origin Prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Role radios -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <!-- Category radios -->
+    <input type="radio" name="cat" id="cat-all" checked>
+    <input type="radio" name="cat" id="cat-leads">
+    <input type="radio" name="cat" id="cat-followups">
+    <input type="radio" name="cat" id="cat-deadlines">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="triage">
+        <!-- Role toggle -->
+        <div class="role-bar">
+          <label for="role-solo" class="role-label">Solo Agent</label>
+          <label for="role-team" class="role-label">Team Lead</label>
+          <label for="role-admin" class="role-label">Brokerage Admin</label>
+        </div>
+
+        <!-- Category tabs -->
+        <div class="cat-bar">
+          <label for="cat-all" class="cat-label">All</label>
+          <label for="cat-leads" class="cat-label">Leads</label>
+          <label for="cat-followups" class="cat-label">Follow-ups</label>
+          <label for="cat-deadlines" class="cat-label">Deadlines</label>
+        </div>
+
+        <!-- Queue progress -->
+        <div class="queue-progress">
+          <div class="queue-text">
+            <span class="queue-solo"><span>7</span> of 23 &mdash; Daily Queue</span>
+            <span class="queue-team"><span>4</span> of 18 &mdash; My Queue</span>
+            <span class="queue-admin"><span>3</span> of 12 &mdash; Review Queue</span>
+          </div>
+          <div class="queue-bar">
+            <div class="queue-seg done"></div>
+            <div class="queue-seg done"></div>
+            <div class="queue-seg done"></div>
+            <div class="queue-seg snoozed"></div>
+            <div class="queue-seg done"></div>
+            <div class="queue-seg done"></div>
+            <div class="queue-seg current"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+            <div class="queue-seg remaining"></div>
+          </div>
+        </div>
+
+        <!-- Card deck -->
+        <div class="deck-area">
+          <div class="card-stack">
+            <!-- Card 3 (back) -->
+            <div class="card card-3">
+              <div class="card-header">
+                <div class="card-avatar" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">DK</div>
+                <div class="card-name-block">
+                  <div class="card-name">David Kim</div>
+                  <div class="card-subtitle">Buyer &middot; Pre-approved</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2 (middle) -->
+            <div class="card card-2">
+              <div class="card-header">
+                <div class="card-avatar" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">RM</div>
+                <div class="card-name-block">
+                  <div class="card-name">Rachel Martinez</div>
+                  <div class="card-subtitle">Seller &middot; Listed 14 days</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 1 (top / active) -->
+            <div class="card card-1">
+              <div class="card-header">
+                <div class="card-avatar">JT</div>
+                <div class="card-name-block">
+                  <div class="card-name">James Thompson</div>
+                  <div class="card-subtitle">Buyer &middot; Hot Lead &middot; Zillow</div>
+                </div>
+              </div>
+
+              <div class="card-badges">
+                <div class="stat-badge">
+                  <div class="stat-badge-circle score">92</div>
+                  <div class="stat-badge-label">Lead Score</div>
+                </div>
+                <div class="stat-badge">
+                  <div class="stat-badge-circle days">3d</div>
+                  <div class="stat-badge-label">Last Contact</div>
+                </div>
+                <div class="stat-badge">
+                  <div class="stat-badge-circle value">$1.2M</div>
+                  <div class="stat-badge-label">Deal Value</div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="card-context">Viewed <strong>4 listings</strong> in Westlake. Opened last email 2hrs ago. Pre-approved with Chase for <strong>$1.4M</strong>. Looking for 4bd/3ba with pool.</div>
+              </div>
+
+              <div class="card-action">
+                <div class="card-action-label">Recommended Action</div>
+                <div class="card-action-text">Schedule Showing</div>
+                <div class="card-action-detail">3 matching properties available this weekend</div>
+              </div>
+
+              <div class="card-property">
+                <div class="card-property-icon">&#9679;</div>
+                <div class="card-property-text">
+                  <strong>742 Westlake Dr &mdash; $1.18M</strong>
+                  4bd/3ba &middot; 3,200 sqft &middot; Pool &middot; Listed 5 days
+                </div>
+              </div>
+
+              <!-- Admin-only: agent tag -->
+              <div class="card-agent-tag">Assigned to: Sarah Chen</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team lead leaderboard strip -->
+        <div class="team-strip">
+          <div class="team-strip-inner">
+            <div class="team-avatar">
+              <div class="team-avatar-circle" style="background: linear-gradient(135deg, #8b9cf7, #667eea);">SC</div>
+              <div class="team-avatar-name">Sarah</div>
+              <div class="team-avatar-count">12 done</div>
+            </div>
+            <div class="team-avatar">
+              <div class="team-avatar-circle" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">MJ</div>
+              <div class="team-avatar-name">Mike</div>
+              <div class="team-avatar-count">9 done</div>
+            </div>
+            <div class="team-avatar">
+              <div class="team-avatar-circle" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">AL</div>
+              <div class="team-avatar-name">Ana</div>
+              <div class="team-avatar-count">7 done</div>
+            </div>
+            <div class="team-avatar">
+              <div class="team-avatar-circle" style="background: linear-gradient(135deg, #f39c12, #e67e22);">TW</div>
+              <div class="team-avatar-name">Tom</div>
+              <div class="team-avatar-count">5 done</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action triptych -->
+        <div class="action-buttons">
+          <div class="action-btn">
+            <div class="action-btn-circle snooze">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="action-btn-label">
+              <span class="action-label-solo">Snooze</span>
+              <span class="action-label-team">Snooze</span>
+              <span class="action-label-admin">Flag</span>
+            </div>
+          </div>
+          <div class="action-btn">
+            <div class="action-btn-circle details">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div class="action-btn-label">
+              <span class="action-label-solo">Details</span>
+              <span class="action-label-team">Assign</span>
+              <span class="action-label-admin">Reassign</span>
+            </div>
+          </div>
+          <div class="action-btn">
+            <div class="action-btn-circle act">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="action-btn-label">
+              <span class="action-label-solo">Act Now</span>
+              <span class="action-label-team">Act Now</span>
+              <span class="action-label-admin">Approve</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v12: Geological Strata Enhanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  background: rgba(139, 156, 247, 0.15);
+  color: #8b9cf7;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-prev {
+  font-size: 12px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Origination Variant Badge ─── */
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  padding: 8px 10px 2px;
+  margin-top: 4px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.preview-radio { display: none; }
+
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #f5f4f1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Layer Scrubber (radio buttons) ─── */
+.layer-scrubber { display: none; }
+
+.scrubber-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  background: rgba(30, 25, 20, 0.92);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.scrubber-label {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.scrubber-label:hover {
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.04);
+}
+
+#scrub-sky:checked ~ .window .scrubber-bar label[for="scrub-sky"],
+#scrub-surface:checked ~ .window .scrubber-bar label[for="scrub-surface"],
+#scrub-sedimentary:checked ~ .window .scrubber-bar label[for="scrub-sedimentary"],
+#scrub-metamorphic:checked ~ .window .scrubber-bar label[for="scrub-metamorphic"],
+#scrub-igneous:checked ~ .window .scrubber-bar label[for="scrub-igneous"] {
+  color: #fff;
+  border-bottom-color: #f39c12;
+  background: rgba(243, 156, 18, 0.1);
+}
+
+/* ─── Geyser Checkboxes ─── */
+.geyser-toggle { display: none; }
+
+/* ─── Geological Cross-Section ─── */
+.geo-cross-section {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+  padding-top: 34px;
+}
+
+.layer-label {
+  position: absolute;
+  left: 24px;
+  top: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  z-index: 2;
+}
+
+/* ─── Layer highlight states ─── */
+.geo-layer {
+  position: relative;
+  transition: flex 0.4s ease, opacity 0.3s ease;
+  flex-shrink: 0;
+}
+
+/* Default: all layers share space */
+.sky-layer { flex: 1.6; min-height: 0; }
+.surface-layer { flex: 0.5; min-height: 0; }
+.sedimentary-layer { flex: 1.5; min-height: 0; }
+.metamorphic-layer { flex: 1.5; min-height: 0; }
+.igneous-layer { flex: 1.2; min-height: 0; }
+
+/* When a scrubber is selected, highlight that layer */
+#scrub-sky:checked ~ .window .geo-cross-section .sky-layer {
+  flex: 3;
+  box-shadow: inset 0 0 30px rgba(135, 206, 235, 0.3);
+}
+#scrub-sky:checked ~ .window .geo-cross-section .geo-layer:not(.sky-layer) { opacity: 0.5; }
+
+#scrub-surface:checked ~ .window .geo-cross-section .surface-layer {
+  flex: 2;
+  box-shadow: inset 0 0 30px rgba(139, 115, 85, 0.4);
+}
+#scrub-surface:checked ~ .window .geo-cross-section .geo-layer:not(.surface-layer) { opacity: 0.5; }
+
+#scrub-sedimentary:checked ~ .window .geo-cross-section .sedimentary-layer {
+  flex: 3;
+  box-shadow: inset 0 0 30px rgba(196, 169, 106, 0.3);
+}
+#scrub-sedimentary:checked ~ .window .geo-cross-section .geo-layer:not(.sedimentary-layer) { opacity: 0.5; }
+
+#scrub-metamorphic:checked ~ .window .geo-cross-section .metamorphic-layer {
+  flex: 3;
+  box-shadow: inset 0 0 30px rgba(139, 156, 247, 0.2);
+}
+#scrub-metamorphic:checked ~ .window .geo-cross-section .geo-layer:not(.metamorphic-layer) { opacity: 0.5; }
+
+#scrub-igneous:checked ~ .window .geo-cross-section .igneous-layer {
+  flex: 3;
+  box-shadow: inset 0 0 30px rgba(255, 80, 40, 0.2);
+}
+#scrub-igneous:checked ~ .window .geo-cross-section .geo-layer:not(.igneous-layer) { opacity: 0.5; }
+
+/* ─── Hover annotations ─── */
+.layer-annotation {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 12px 16px;
+  max-width: 260px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 20;
+}
+
+.geo-layer:hover .layer-annotation {
+  opacity: 1;
+}
+
+.layer-annotation-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f39c12;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.layer-annotation-text {
+  font-size: 11px;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.layer-annotation-flow {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #8b9cf7;
+  font-weight: 600;
+}
+
+/* ─── 1. Sky / Atmosphere ─── */
+.sky-layer {
+  background: linear-gradient(180deg, #87ceeb 0%, #b4d8e7 40%, #d4e8f0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  overflow: hidden;
+}
+
+.sky-layer .layer-label { color: #3a6d8c; }
+
+.cloud-prompt {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 40px;
+  padding: 16px 30px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow:
+    0 4px 20px rgba(135, 206, 235, 0.3),
+    inset 0 -2px 6px rgba(255,255,255,0.5);
+  position: relative;
+}
+
+.cloud-prompt::before,
+.cloud-prompt::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+.cloud-prompt::before {
+  width: 40px;
+  height: 28px;
+  bottom: -6px;
+  left: 50px;
+}
+
+.cloud-prompt::after {
+  width: 24px;
+  height: 18px;
+  bottom: -14px;
+  left: 66px;
+}
+
+.cloud-prompt-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5a9ab5;
+  margin-bottom: 6px;
+}
+
+.cloud-prompt-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c5f7a;
+  line-height: 1.5;
+}
+
+/* ─── 2. Surface / Soil ─── */
+.surface-layer {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.03) 3px,
+      rgba(0,0,0,0.03) 4px
+    ),
+    linear-gradient(180deg, #8B7355 0%, #6d5a42 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  border-top: 2px solid #5a4a35;
+}
+
+.surface-layer .layer-label { color: #c4b193; }
+
+.surface-input {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.surface-input-text {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+}
+
+.surface-input-cursor {
+  width: 1px;
+  height: 12px;
+  background: rgba(255,255,255,0.4);
+}
+
+/* ─── 3. Sedimentary Layer ─── */
+.sedimentary-layer {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 8px,
+      rgba(0,0,0,0.04) 8px,
+      rgba(0,0,0,0.04) 9px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 24px,
+      rgba(0,0,0,0.06) 24px,
+      rgba(0,0,0,0.06) 26px
+    ),
+    linear-gradient(180deg, #c4a96a 0%, #b89b5e 30%, #a88d52 100%);
+  padding: 20px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-top: 3px solid #8B7355;
+  overflow: hidden;
+}
+
+.sedimentary-layer .layer-label { color: #7a6840; }
+
+.orch-card {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 14px 20px;
+  max-width: 540px;
+  width: 100%;
+}
+
+.orch-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.orch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5a8a3c;
+  box-shadow: 0 0 6px rgba(90, 138, 60, 0.5);
+}
+
+.orch-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3d2e1a;
+}
+
+.orch-status {
+  font-size: 12px;
+  color: #4a3820;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.orch-plan {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.orch-plan-item {
+  font-size: 11px;
+  color: #5a4530;
+  padding: 3px 10px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+}
+
+/* ─── 4. Metamorphic Layer ─── */
+.metamorphic-layer {
+  background:
+    repeating-linear-gradient(
+      2deg,
+      transparent,
+      transparent 5px,
+      rgba(0,0,0,0.05) 5px,
+      rgba(0,0,0,0.05) 6px
+    ),
+    repeating-linear-gradient(
+      -1deg,
+      transparent,
+      transparent 12px,
+      rgba(255,255,255,0.03) 12px,
+      rgba(255,255,255,0.03) 13px
+    ),
+    linear-gradient(180deg, #6b7b8d 0%, #556270 50%, #4a5568 100%);
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 3px solid #4a5a6a;
+  overflow: hidden;
+}
+
+.metamorphic-layer .layer-label { color: #9aa8b5; }
+
+.meta-agent {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  width: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.meta-agent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(139,156,247,0.4), rgba(139,156,247,0.1));
+}
+
+.meta-agent-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c0cad4;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.meta-agent-status {
+  font-size: 9px;
+  color: #8a9aaa;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.meta-pressure {
+  margin-top: 6px;
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.meta-pressure-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b9cf7, #6b7cf7);
+}
+
+/* ─── 5. Igneous Layer ─── */
+.igneous-layer {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,80,40,0.03) 20px,
+      rgba(255,80,40,0.03) 21px
+    ),
+    linear-gradient(180deg, #4a2020 0%, #3a1515 40%, #2d1010 100%);
+  padding: 18px 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-top: 3px solid rgba(200, 80, 40, 0.4);
+  overflow: hidden;
+}
+
+.igneous-layer .layer-label { color: #a06050; }
+
+.igneous-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.igneous-group-label {
+  font-size: 8px;
+  color: #8a5a4a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.igneous-gems {
+  display: flex;
+  gap: 8px;
+}
+
+.gem {
+  width: 100px;
+  padding: 10px 8px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.gem-crystal {
+  background:
+    linear-gradient(135deg, rgba(255,120,60,0.2) 0%, rgba(200,60,30,0.3) 100%);
+  border: 1px solid rgba(255,120,60,0.25);
+  box-shadow:
+    inset 0 0 12px rgba(255,80,40,0.1),
+    0 0 8px rgba(255,80,40,0.1);
+}
+
+.gem-name {
+  font-size: 8px;
+  font-weight: 700;
+  color: #e8a090;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gem-detail {
+  font-size: 7px;
+  color: #a07060;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ─── Geyser (checkbox controlled) ─── */
+.geyser-zone {
+  position: absolute;
+  right: 100px;
+  top: 34px;
+  bottom: 0;
+  width: 4px;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+#geyser-1:checked ~ .window .geyser-zone.gz-1 {
+  opacity: 1;
+}
+
+#geyser-2:checked ~ .window .geyser-zone.gz-2 {
+  opacity: 1;
+}
+
+.geyser-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 220, 100, 0.9) 0%,
+    rgba(255, 180, 60, 0.7) 30%,
+    rgba(255, 140, 40, 0.5) 60%,
+    rgba(255, 100, 30, 0.8) 100%
+  );
+  box-shadow:
+    0 0 8px rgba(255, 180, 60, 0.6),
+    0 0 20px rgba(255, 140, 40, 0.3);
+}
+
+.geyser-panel {
+  position: absolute;
+  top: 30%;
+  left: 16px;
+  width: 220px;
+  background: rgba(20, 15, 5, 0.92);
+  border: 1px solid rgba(255, 180, 60, 0.35);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow:
+    0 0 20px rgba(255, 160, 40, 0.15),
+    0 4px 16px rgba(0,0,0,0.5);
+  pointer-events: auto;
+}
+
+.geyser-badge {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f39c12;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.geyser-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f39c12;
+  box-shadow: 0 0 6px rgba(243, 156, 18, 0.6);
+}
+
+.geyser-question {
+  font-size: 10px;
+  color: #e8d8c0;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.geyser-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.geyser-option {
+  font-size: 9px;
+  color: #b0a090;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+}
+
+.geyser-eruption-top {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,220,100,0.8), rgba(255,180,60,0) 70%);
+}
+
+/* ─── Geyser Toggle Controls ─── */
+.geyser-controls {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.geyser-ctrl-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(20, 15, 5, 0.85);
+  border: 1px solid rgba(255, 180, 60, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.geyser-ctrl-label:hover {
+  background: rgba(40, 30, 10, 0.9);
+  border-color: rgba(255, 180, 60, 0.4);
+}
+
+.geyser-ctrl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(243, 156, 18, 0.5);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+#geyser-1:checked ~ .window .geyser-controls label[for="geyser-1"] .geyser-ctrl-dot,
+#geyser-2:checked ~ .window .geyser-controls label[for="geyser-2"] .geyser-ctrl-dot {
+  background: #f39c12;
+  box-shadow: 0 0 6px rgba(243, 156, 18, 0.6);
+}
+
+.geyser-ctrl-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 180, 60, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Mobile adjustments ─── */
+#preview-mobile:checked ~ .window .scrubber-bar {
+  overflow-x: auto;
+}
+
+#preview-mobile:checked ~ .window .scrubber-label {
+  font-size: 7px;
+  padding: 6px 2px;
+  white-space: nowrap;
+}
+
+#preview-mobile:checked ~ .window .geo-cross-section {
+  overflow-x: auto;
+}
+
+#preview-mobile:checked ~ .window .cloud-prompt {
+  max-width: 280px;
+  padding: 12px 18px;
+}
+
+#preview-mobile:checked ~ .window .cloud-prompt-text {
+  font-size: 11px;
+}
+
+#preview-mobile:checked ~ .window .orch-card {
+  max-width: 320px;
+  padding: 10px 14px;
+}
+
+#preview-mobile:checked ~ .window .orch-plan-item {
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .meta-agent {
+  width: 140px;
+  padding: 8px 10px;
+}
+
+#preview-mobile:checked ~ .window .meta-agent-name {
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .meta-agent-status {
+  font-size: 8px;
+}
+
+#preview-mobile:checked ~ .window .metamorphic-layer {
+  gap: 6px;
+  padding: 14px 10px;
+}
+
+#preview-mobile:checked ~ .window .igneous-layer {
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+#preview-mobile:checked ~ .window .gem {
+  width: 80px;
+  padding: 8px 6px;
+}
+
+#preview-mobile:checked ~ .window .gem-name {
+  font-size: 7px;
+}
+
+#preview-mobile:checked ~ .window .geyser-zone {
+  right: 40px;
+}
+
+#preview-mobile:checked ~ .window .geyser-panel {
+  width: 160px;
+  padding: 10px;
+}
+
+#preview-mobile:checked ~ .window .geyser-question {
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .geyser-option {
+  font-size: 8px;
+}
+
+#preview-mobile:checked ~ .window .geyser-controls {
+  bottom: 6px;
+  right: 6px;
+}
+
+#preview-mobile:checked ~ .window .layer-annotation {
+  right: 8px;
+  max-width: 180px;
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v12</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Geological Strata (v2) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + radio scrubber for layers, hover annotations, checkbox geysers. Wraps the geological cross-section in a desktop/mobile/fullscreen preview window with interactive strata highlighting and togglable fault line eruptions.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v12.html as an enhanced iteration of v2 (Geological Strata). Take the existing Geological Strata cross-section and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: radio button scrubber to highlight individual strata layers, :hover on layers reveals agent details and flow annotations, checkbox toggles for fault line geyser eruptions (question visualization). Mobile: horizontal scroll through strata, simplified layer count. Preserve earthy geological palette.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt (Wave 2) &rarr;</a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt (Wave 1) &rarr;</a>
+        <div class="exp-vc-group-label">Wave 2 &mdash; Enhanced</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Enhanced Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Enhanced Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Enhanced Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Enhanced Cartographic</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Enhanced Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Enhanced Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Enhanced Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Enhanced Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Enhanced Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Enhanced Mycelium Network</span>
+        </a>
+        <div class="exp-vc-group-label">Wave 1 &mdash; Original</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" class="preview-radio" checked>
+    <input type="radio" name="preview" id="preview-mobile" class="preview-radio">
+    <input type="radio" name="preview" id="preview-full" class="preview-radio">
+
+    <!-- Layer scrubber state -->
+    <input type="radio" name="scrub" id="scrub-none" class="layer-scrubber" checked>
+    <input type="radio" name="scrub" id="scrub-sky" class="layer-scrubber">
+    <input type="radio" name="scrub" id="scrub-surface" class="layer-scrubber">
+    <input type="radio" name="scrub" id="scrub-sedimentary" class="layer-scrubber">
+    <input type="radio" name="scrub" id="scrub-metamorphic" class="layer-scrubber">
+    <input type="radio" name="scrub" id="scrub-igneous" class="layer-scrubber">
+
+    <!-- Geyser toggles -->
+    <input type="checkbox" id="geyser-1" class="geyser-toggle">
+    <input type="checkbox" id="geyser-2" class="geyser-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Scrubber bar -->
+      <div class="scrubber-bar">
+        <label for="scrub-none" class="scrubber-label">All</label>
+        <label for="scrub-sky" class="scrubber-label">Sky</label>
+        <label for="scrub-surface" class="scrubber-label">Surface</label>
+        <label for="scrub-sedimentary" class="scrubber-label">Sedimentary</label>
+        <label for="scrub-metamorphic" class="scrubber-label">Metamorphic</label>
+        <label for="scrub-igneous" class="scrubber-label">Igneous</label>
+      </div>
+
+      <div class="geo-cross-section">
+
+        <!-- Geyser zones (checkbox controlled) -->
+        <div class="geyser-zone gz-1" style="right: 120px;">
+          <div class="geyser-line"></div>
+          <div class="geyser-eruption-top"></div>
+          <div class="geyser-panel" style="top: 25%;">
+            <div class="geyser-badge">AskUserQuestion</div>
+            <div class="geyser-question">The quantum computing field has 3 major branches. Should I focus on:</div>
+            <div class="geyser-options">
+              <div class="geyser-option">(a) Superconducting qubits</div>
+              <div class="geyser-option">(b) Topological quantum</div>
+              <div class="geyser-option">(c) Photonic systems</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="geyser-zone gz-2" style="right: 240px;">
+          <div class="geyser-line"></div>
+          <div class="geyser-eruption-top"></div>
+          <div class="geyser-panel" style="top: 45%;">
+            <div class="geyser-badge">AskUserQuestion</div>
+            <div class="geyser-question">Found 847 papers. Which timeframe matters most?</div>
+            <div class="geyser-options">
+              <div class="geyser-option">(a) Last 6 months</div>
+              <div class="geyser-option">(b) Last 2 years</div>
+              <div class="geyser-option">(c) All time</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Sky / Atmosphere -->
+        <div class="sky-layer geo-layer">
+          <span class="layer-label">Human Layer</span>
+          <div class="cloud-prompt">
+            <div class="cloud-prompt-label">Human Prompt</div>
+            <div class="cloud-prompt-text">"Research and summarize the latest advances in quantum computing"</div>
+          </div>
+          <div class="layer-annotation">
+            <div class="layer-annotation-title">Human Layer</div>
+            <div class="layer-annotation-text">The atmosphere where human intent originates. Prompts drift down like weather patterns, shaping everything below.</div>
+            <div class="layer-annotation-flow">Flow: Intent &rarr; Surface Interface</div>
+          </div>
+        </div>
+
+        <!-- 2. Surface / Soil -->
+        <div class="surface-layer geo-layer">
+          <span class="layer-label">Surface Interface</span>
+          <div class="surface-input">
+            <div class="surface-input-cursor"></div>
+            <div class="surface-input-text">Enter your research question...</div>
+          </div>
+          <div class="layer-annotation">
+            <div class="layer-annotation-title">Surface Interface</div>
+            <div class="layer-annotation-text">The thin boundary between human and agent. Raw input is received and passed to the orchestration layer below.</div>
+            <div class="layer-annotation-flow">Flow: Input &rarr; Orchestrator</div>
+          </div>
+        </div>
+
+        <!-- 3. Sedimentary Layer -->
+        <div class="sedimentary-layer geo-layer">
+          <span class="layer-label">Orchestrator &mdash; Sedimentary</span>
+          <div class="orch-card">
+            <div class="orch-card-header">
+              <div class="orch-dot"></div>
+              <div class="orch-title">Orchestrator Agent</div>
+            </div>
+            <div class="orch-status">Breaking down research task into 4 parallel streams...</div>
+            <div class="orch-plan">
+              <div class="orch-plan-item">1. Academic literature review (arxiv, journals)</div>
+              <div class="orch-plan-item">2. Industry news synthesis (tech journalism)</div>
+              <div class="orch-plan-item">3. Expert perspectives (interviews, podcasts)</div>
+              <div class="orch-plan-item">4. Patent and IP landscape analysis</div>
+            </div>
+          </div>
+          <div class="layer-annotation">
+            <div class="layer-annotation-title">Sedimentary &mdash; Orchestrator</div>
+            <div class="layer-annotation-text">Loosely packed reasoning. The orchestrator decomposes the task into parallel research streams, like sediment layers forming over time.</div>
+            <div class="layer-annotation-flow">Flow: Plan &rarr; 4 Sub-Agents</div>
+          </div>
+        </div>
+
+        <!-- 4. Metamorphic Layer -->
+        <div class="metamorphic-layer geo-layer">
+          <span class="layer-label">Sub-Agents &mdash; Metamorphic</span>
+          <div class="meta-agent">
+            <div class="meta-agent-name">Academic Paper Agent</div>
+            <div class="meta-agent-status">Scanning arxiv for 2024-2025 papers on quantum error correction...</div>
+            <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 72%"></div></div>
+          </div>
+          <div class="meta-agent">
+            <div class="meta-agent-name">News Synthesis Agent</div>
+            <div class="meta-agent-status">Aggregating tech journalism from 14 sources...</div>
+            <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 58%"></div></div>
+          </div>
+          <div class="meta-agent">
+            <div class="meta-agent-name">Expert Interview Agent</div>
+            <div class="meta-agent-status">Finding podcast transcripts from leading QC researchers...</div>
+            <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 45%"></div></div>
+          </div>
+          <div class="meta-agent">
+            <div class="meta-agent-name">Patent Analysis Agent</div>
+            <div class="meta-agent-status">Reviewing filings from IBM, Google, IonQ...</div>
+            <div class="meta-pressure"><div class="meta-pressure-fill" style="width: 63%"></div></div>
+          </div>
+          <div class="layer-annotation">
+            <div class="layer-annotation-title">Metamorphic &mdash; Sub-Agents</div>
+            <div class="layer-annotation-text">Compressed, denser reasoning under pressure. Each sub-agent handles a specialized research stream with increasing focus.</div>
+            <div class="layer-annotation-flow">Flow: Execute &rarr; Sub-Sub-Agents</div>
+          </div>
+        </div>
+
+        <!-- 5. Igneous Layer -->
+        <div class="igneous-layer geo-layer">
+          <span class="layer-label">Sub-Sub-Agents &mdash; Igneous</span>
+          <div class="igneous-group">
+            <div class="igneous-group-label">Under: Academic Paper Agent</div>
+            <div class="igneous-gems">
+              <div class="gem gem-crystal">
+                <div class="gem-name">Citation Walker</div>
+                <div class="gem-detail">Traversing references, depth 4</div>
+              </div>
+              <div class="gem gem-crystal">
+                <div class="gem-name">Abstract Classifier</div>
+                <div class="gem-detail">Categorizing 847 abstracts</div>
+              </div>
+            </div>
+          </div>
+          <div class="igneous-group">
+            <div class="igneous-group-label">Under: Patent Analysis Agent</div>
+            <div class="igneous-gems">
+              <div class="gem gem-crystal">
+                <div class="gem-name">Claims Extractor</div>
+                <div class="gem-detail">Parsing patent claim trees</div>
+              </div>
+              <div class="gem gem-crystal">
+                <div class="gem-name">Prior Art Linker</div>
+                <div class="gem-detail">Matching claims to papers</div>
+              </div>
+            </div>
+          </div>
+          <div class="layer-annotation">
+            <div class="layer-annotation-title">Igneous &mdash; Sub-Sub-Agents</div>
+            <div class="layer-annotation-text">Intense, crystallized logic at maximum depth. These agents perform atomic operations with extreme specialization.</div>
+            <div class="layer-annotation-flow">Flow: Results &rarr; Bubble Up</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Geyser toggle controls -->
+      <div class="geyser-controls">
+        <label for="geyser-1" class="geyser-ctrl-label">
+          <span class="geyser-ctrl-dot"></span>
+          <span class="geyser-ctrl-text">Fault Line 1</span>
+        </label>
+        <label for="geyser-2" class="geyser-ctrl-label">
+          <span class="geyser-ctrl-dot"></span>
+          <span class="geyser-ctrl-text">Fault Line 2</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

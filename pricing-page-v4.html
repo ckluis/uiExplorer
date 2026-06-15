@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Page — v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-autonomous {
+  display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow-y: auto; overflow-x: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Pricing Page Styles ─── */
+.pricing {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 60px 40px; text-align: center; color: #1a1a2e;
+}
+.pricing h2 { font-size: 36px; font-weight: 800; margin-bottom: 12px; }
+.pricing .subtitle { font-size: 18px; color: #666; margin-bottom: 32px; }
+
+/* Toggle */
+.toggle-wrap {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin-bottom: 48px; font-size: 14px; font-weight: 500; color: #555;
+}
+.toggle-track {
+  width: 48px; height: 26px; background: #ddd; border-radius: 13px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.toggle-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s;
+}
+#billing-toggle:checked ~ .window .toggle-track { background: #6c5ce7; }
+#billing-toggle:checked ~ .window .toggle-track::after { transform: translateX(22px); }
+.save-badge {
+  background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px;
+}
+
+/* Cards */
+.cards { display: flex; gap: 24px; justify-content: center; max-width: 1000px; margin: 0 auto 60px; }
+.card {
+  flex: 1; max-width: 320px; background: #fff; border: 1px solid #e8e8e8;
+  border-radius: 16px; padding: 36px 28px; text-align: left;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+.card.popular { border: 2px solid #6c5ce7; box-shadow: 0 8px 30px rgba(108,92,231,0.15); }
+.card.popular:hover { box-shadow: 0 20px 60px rgba(108,92,231,0.25); }
+.popular-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: #6c5ce7; color: #fff; font-size: 11px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px; white-space: nowrap;
+}
+.card-tier {
+  font-size: 14px; font-weight: 600; color: #888; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.card-price { font-size: 48px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+.card-price span { font-size: 16px; font-weight: 500; color: #999; }
+.card-desc { font-size: 14px; color: #777; margin-bottom: 24px; line-height: 1.5; }
+.price-annual { display: none; }
+#billing-toggle:checked ~ .window .price-monthly { display: none; }
+#billing-toggle:checked ~ .window .price-annual { display: block; }
+.card-features { list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+.card-features li { font-size: 14px; color: #555; padding-left: 24px; position: relative; }
+.card-features li::before {
+  content: ''; position: absolute; left: 0; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%; background: #e8f5e9;
+}
+.card-features li::after {
+  content: ''; position: absolute; left: 4px; top: 8px;
+  width: 8px; height: 5px; border-left: 2px solid #2e7d32;
+  border-bottom: 2px solid #2e7d32; transform: rotate(-45deg);
+}
+.card-cta {
+  display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: background 0.2s, transform 0.1s; text-decoration: none;
+}
+.card-cta:hover { transform: translateY(-1px); }
+.cta-primary { background: #6c5ce7; color: #fff; }
+.cta-primary:hover { background: #5a4bd1; }
+.cta-outline { background: #fff; color: #6c5ce7; border: 2px solid #6c5ce7; }
+.cta-outline:hover { background: #f0eeff; }
+.cta-dark { background: #1a1a2e; color: #fff; }
+.cta-dark:hover { background: #2a2a4e; }
+
+/* ─── Testimonials ─── */
+.testimonials {
+  max-width: 1000px; margin: 0 auto 60px;
+}
+.testimonials h3 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 32px; }
+.testimonial-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.testimonial {
+  background: #fafaff; border: 1px solid #eee; border-radius: 12px; padding: 24px;
+  text-align: left;
+}
+.testimonial-stars { color: #f59e0b; font-size: 14px; margin-bottom: 12px; letter-spacing: 2px; }
+.testimonial-text { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 16px; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-avatar {
+  width: 40px; height: 40px; border-radius: 50%; background: #6c5ce7;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.testimonial-name { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.testimonial-role { font-size: 12px; color: #888; }
+
+/* ─── FAQ Accordion ─── */
+.faq { max-width: 700px; margin: 0 auto 60px; }
+.faq h3 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 32px; }
+.faq-item { border-bottom: 1px solid #eee; }
+.faq-trigger {
+  display: block; width: 100%; padding: 18px 0; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 600; color: #1a1a2e;
+  text-align: left; position: relative; padding-right: 32px;
+}
+.faq-trigger::after {
+  content: '+'; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-size: 20px; font-weight: 400; color: #999; transition: transform 0.2s;
+}
+.faq-answer {
+  max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+}
+.faq-answer p {
+  padding: 0 0 18px; font-size: 14px; color: #666; line-height: 1.6;
+}
+
+/* FAQ checkbox states */
+#faq-1:checked ~ .window .faq-item[data-faq="1"] .faq-answer,
+#faq-2:checked ~ .window .faq-item[data-faq="2"] .faq-answer,
+#faq-3:checked ~ .window .faq-item[data-faq="3"] .faq-answer,
+#faq-4:checked ~ .window .faq-item[data-faq="4"] .faq-answer,
+#faq-5:checked ~ .window .faq-item[data-faq="5"] .faq-answer {
+  max-height: 200px;
+}
+#faq-1:checked ~ .window .faq-item[data-faq="1"] .faq-trigger::after,
+#faq-2:checked ~ .window .faq-item[data-faq="2"] .faq-trigger::after,
+#faq-3:checked ~ .window .faq-item[data-faq="3"] .faq-trigger::after,
+#faq-4:checked ~ .window .faq-item[data-faq="4"] .faq-trigger::after,
+#faq-5:checked ~ .window .faq-item[data-faq="5"] .faq-trigger::after {
+  content: '\2212'; color: #6c5ce7;
+}
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .pricing { padding: 32px 16px; }
+#preview-mobile:checked ~ .window .pricing h2 { font-size: 24px; }
+#preview-mobile:checked ~ .window .pricing .subtitle { font-size: 14px; }
+#preview-mobile:checked ~ .window .cards { flex-direction: column; align-items: center; }
+#preview-mobile:checked ~ .window .card { max-width: 100%; }
+#preview-mobile:checked ~ .window .card-price { font-size: 36px; }
+#preview-mobile:checked ~ .window .testimonial-grid { grid-template-columns: 1fr; }
+#preview-mobile:checked ~ .window .faq { margin: 0 0 40px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Pricing Page</h1>
+      <span class="exp-version">v4</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds social proof with testimonials and a CSS-only FAQ accordion section. Mobile layout stacks testimonials to single column.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v4: Add a testimonials section with 3 customer quotes in a grid, and a FAQ accordion using CSS checkbox toggles (5 questions). Testimonials include star ratings, quote text, author avatar initials, name, and role. FAQ items expand/collapse with + / - indicator. Mobile view stacks testimonials to single column.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="pricing-page-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Gradient accents & CTA</span>
+        </a>
+        <a href="pricing-page-v4.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Testimonials & FAQ</span>
+        </a>
+        <a href="pricing-page-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Add-on checkboxes</span>
+        </a>
+        <a href="pricing-page-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Feature matrix</span>
+        </a>
+        <a href="pricing-page-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 3-tier pricing</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="checkbox" id="billing-toggle">
+    <input type="checkbox" id="faq-1">
+    <input type="checkbox" id="faq-2">
+    <input type="checkbox" id="faq-3">
+    <input type="checkbox" id="faq-4">
+    <input type="checkbox" id="faq-5">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="pricing">
+        <h2>Simple, transparent pricing</h2>
+        <p class="subtitle">Choose the plan that fits your team. Upgrade or downgrade anytime.</p>
+
+        <div class="toggle-wrap">
+          <span>Monthly</span>
+          <label for="billing-toggle" class="toggle-track"></label>
+          <span>Annual</span>
+          <span class="save-badge">Save 20%</span>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <div class="card-tier">Starter</div>
+            <div class="price-monthly"><div class="card-price">$19<span>/mo</span></div></div>
+            <div class="price-annual"><div class="card-price">$15<span>/mo</span></div></div>
+            <p class="card-desc">Perfect for individuals and small projects getting started.</p>
+            <ul class="card-features">
+              <li>Up to 3 projects</li>
+              <li>5 GB storage</li>
+              <li>Basic analytics</li>
+              <li>Email support</li>
+              <li>API access</li>
+            </ul>
+            <a href="#" class="card-cta cta-outline">Get Started</a>
+          </div>
+          <div class="card popular">
+            <div class="popular-badge">Most Popular</div>
+            <div class="card-tier">Pro</div>
+            <div class="price-monthly"><div class="card-price">$49<span>/mo</span></div></div>
+            <div class="price-annual"><div class="card-price">$39<span>/mo</span></div></div>
+            <p class="card-desc">For growing teams that need more power and collaboration.</p>
+            <ul class="card-features">
+              <li>Unlimited projects</li>
+              <li>50 GB storage</li>
+              <li>Advanced analytics</li>
+              <li>Priority support</li>
+              <li>API access</li>
+              <li>Team collaboration</li>
+              <li>Custom integrations</li>
+            </ul>
+            <a href="#" class="card-cta cta-primary">Get Started</a>
+          </div>
+          <div class="card">
+            <div class="card-tier">Enterprise</div>
+            <div class="card-price">Custom</div>
+            <p class="card-desc">For large organizations with advanced security and compliance needs.</p>
+            <ul class="card-features">
+              <li>Everything in Pro</li>
+              <li>Unlimited storage</li>
+              <li>SSO &amp; SAML</li>
+              <li>Dedicated account manager</li>
+              <li>Custom SLA</li>
+              <li>Audit logs</li>
+              <li>On-premise option</li>
+            </ul>
+            <a href="#" class="card-cta cta-dark">Contact Sales</a>
+          </div>
+        </div>
+
+        <!-- Testimonials -->
+        <div class="testimonials">
+          <h3>Trusted by 10,000+ teams</h3>
+          <div class="testimonial-grid">
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"We switched to Pro and saw a 40% boost in team productivity within the first month. The collaboration features are incredible."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">SJ</div>
+                <div>
+                  <div class="testimonial-name">Sarah Johnson</div>
+                  <div class="testimonial-role">VP of Engineering, Acme Corp</div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"The Enterprise plan gives us everything we need for compliance. SSO, audit logs, and a dedicated account manager who actually responds."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">MK</div>
+                <div>
+                  <div class="testimonial-name">Michael Kim</div>
+                  <div class="testimonial-role">CTO, FinanceFlow</div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"Started on Starter, now on Pro. The upgrade path is seamless and the pricing is genuinely fair. No hidden fees, no surprises."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">ER</div>
+                <div>
+                  <div class="testimonial-name">Emily Rodriguez</div>
+                  <div class="testimonial-role">Founder, DesignLab</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq">
+          <h3>Frequently asked questions</h3>
+          <div class="faq-item" data-faq="1">
+            <label for="faq-1" class="faq-trigger">Can I switch plans at any time?</label>
+            <div class="faq-answer">
+              <p>Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll be prorated for the remainder of your billing cycle. When downgrading, the change takes effect at your next billing date.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="2">
+            <label for="faq-2" class="faq-trigger">What happens if I exceed my storage limit?</label>
+            <div class="faq-answer">
+              <p>We'll notify you when you reach 80% of your storage limit. If you exceed it, your existing data is safe, but you won't be able to upload new files until you upgrade or free up space.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="3">
+            <label for="faq-3" class="faq-trigger">Is there a free trial available?</label>
+            <div class="faq-answer">
+              <p>Yes! All paid plans come with a 14-day free trial. No credit card required. You can explore every feature before committing to a plan.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="4">
+            <label for="faq-4" class="faq-trigger">Do you offer refunds?</label>
+            <div class="faq-answer">
+              <p>We offer a 30-day money-back guarantee on all plans. If you're not satisfied, contact our support team and we'll process a full refund, no questions asked.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="5">
+            <label for="faq-5" class="faq-trigger">What payment methods do you accept?</label>
+            <div class="faq-answer">
+              <p>We accept all major credit cards (Visa, Mastercard, Amex), PayPal, and wire transfers for Enterprise plans. Annual plans can also be invoiced.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

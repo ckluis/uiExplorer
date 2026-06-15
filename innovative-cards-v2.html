@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Innovative Cards — v2 | UI Explorations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input[type="radio"],
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+
+  .experiment-sidebar {
+    width: 280px; min-width: 280px;
+    background: #1a1a2e; color: #e0e0e0;
+    padding: 24px 20px; overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px; line-height: 1.5;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+    font-size: 12px; color: #bbb; font-style: italic;
+  }
+  .experiment-sidebar .exp-prev { font-size: 12px; }
+
+  /* ─── Sidebar Versions Card ─── */
+  .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+  .experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+  .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+  .experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+  .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+  .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+  /* ─── Device Preview Switcher ─── */
+  .experiment-content {
+    flex: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  .preview-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; padding: 10px 0 8px;
+  }
+  .preview-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+  }
+  .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+  .preview-btn svg { width: 20px; height: 20px; }
+
+  #preview-web:checked ~ .preview-bar label[for="preview-web"],
+  #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+  #preview-full:checked ~ .preview-bar label[for="preview-full"] {
+    background: rgba(255,255,255,0.2); color: white;
+  }
+
+  .window {
+    width: 1360px; height: 820px;
+    background: #f5f4f1; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+    position: relative;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+  #preview-full:checked ~ .preview-bar {
+    position: absolute; top: 8px; z-index: 100;
+    background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+  }
+  #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+  /* ─── CSS Custom Properties (Default Theme) ─── */
+  .cards-page {
+    --page-bg: #f5f4f1;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #f7f7fa;
+    --text-primary: #1a1a2e;
+    --text-secondary: #222;
+    --text-body: #666;
+    --text-muted: #999;
+    --card-bg: #fff;
+    --card-radius: 14px;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+    --accent: #5046e5;
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --border-color: rgba(0,0,0,0.04);
+
+    height: 100%; overflow-y: auto; overflow-x: hidden;
+    scroll-behavior: smooth;
+    background: var(--page-bg);
+    font-family: var(--font-main);
+    color: var(--text-primary);
+  }
+
+  /* ─── Theme Bar ─── */
+  .theme-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--page-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    transition: background 0.3s;
+  }
+  .theme-bar::-webkit-scrollbar { height: 4px; }
+  .theme-bar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  .theme-bar-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+
+  .theme-pill {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(0,0,0,0.05);
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .theme-pill:hover {
+    background: rgba(0,0,0,0.1);
+    color: var(--text-secondary);
+  }
+
+  /* Active theme pill — one rule per theme */
+  #theme-default:checked ~ .window .theme-pill[for="theme-default"],
+  #theme-brutalism:checked ~ .window .theme-pill[for="theme-brutalism"],
+  #theme-maximalism:checked ~ .window .theme-pill[for="theme-maximalism"],
+  #theme-minimalism:checked ~ .window .theme-pill[for="theme-minimalism"],
+  #theme-psychedelic:checked ~ .window .theme-pill[for="theme-psychedelic"],
+  #theme-acid:checked ~ .window .theme-pill[for="theme-acid"],
+  #theme-modern:checked ~ .window .theme-pill[for="theme-modern"],
+  #theme-apple:checked ~ .window .theme-pill[for="theme-apple"],
+  #theme-cybernetic:checked ~ .window .theme-pill[for="theme-cybernetic"],
+  #theme-scifi:checked ~ .window .theme-pill[for="theme-scifi"],
+  #theme-surreal:checked ~ .window .theme-pill[for="theme-surreal"],
+  #theme-vaporwave:checked ~ .window .theme-pill[for="theme-vaporwave"],
+  #theme-newspaper:checked ~ .window .theme-pill[for="theme-newspaper"],
+  #theme-bauhaus:checked ~ .window .theme-pill[for="theme-bauhaus"] {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ─── Page Header ─── */
+  .page-header {
+    padding: 48px 48px 8px;
+    text-align: center;
+  }
+  .page-header h1 {
+    font-size: 28px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;
+    font-family: var(--font-main);
+  }
+  .page-header p { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+
+  .card-section {
+    padding: 40px 48px;
+  }
+  .card-section:nth-child(odd) { background: var(--page-bg-alt); }
+  .card-section:nth-child(even) { background: var(--page-bg-alt2); }
+
+  .section-header { margin-bottom: 28px; }
+  .section-header h2 {
+    font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;
+    font-family: var(--font-main);
+  }
+  .section-header p { font-size: 13px; color: var(--text-muted); }
+
+  .iteration-grid {
+    display: flex; gap: 20px; overflow-x: auto;
+    padding-bottom: 8px; scroll-snap-type: x proximity;
+  }
+
+  .card-iteration {
+    flex: 0 0 260px; scroll-snap-align: start;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .iteration-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted);
+  }
+
+  /* ─── Shared Card Base ─── */
+  .card-base {
+    background: var(--card-bg); border-radius: var(--card-radius); overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
+    border: var(--card-border, none);
+  }
+  .card-base:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .card-base img {
+    width: 100%; display: block; object-fit: cover;
+  }
+
+  /* ═══════════════════════════════════════════
+     1. E-COMMERCE PRODUCT CARDS
+     ═══════════════════════════════════════════ */
+
+  /* v1: Minimal */
+  .product-minimal img { height: 200px; }
+  .product-minimal .card-info { padding: 16px; }
+  .product-minimal .card-info h3 { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+  .product-minimal .card-info .price { font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+
+  /* v2: Image-dominant */
+  .product-image-dom { position: relative; height: 340px; }
+  .product-image-dom img { height: 100%; }
+  .product-image-dom .overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    padding: 40px 16px 16px; color: #fff;
+    transform: translateY(20px); opacity: 0.8;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .product-image-dom:hover .overlay { transform: translateY(0); opacity: 1; }
+  .product-image-dom .overlay h3 { font-size: 15px; font-weight: 700; }
+  .product-image-dom .overlay .price { font-size: 18px; font-weight: 800; margin-top: 4px; }
+  .product-image-dom .overlay .desc { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+
+  /* v3: Quick-add hover */
+  .product-quickadd { position: relative; }
+  .product-quickadd img { height: 200px; }
+  .product-quickadd .card-info { padding: 16px; }
+  .product-quickadd .card-info h3 { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+  .product-quickadd .card-info .price { font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+  .product-quickadd .add-btn {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--accent); color: #fff; text-align: center;
+    padding: 12px; font-size: 13px; font-weight: 700;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+  }
+  .product-quickadd:hover .add-btn { transform: translateY(0); }
+
+  /* v4: Flip card */
+  .flip-wrap { perspective: 800px; height: 320px; }
+  .flip-card {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
+    transform-style: preserve-3d;
+  }
+  #flip-ecom:checked ~ .window .flip-wrap .flip-card { transform: rotateY(180deg); }
+  .flip-front, .flip-back {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    backface-visibility: hidden; border-radius: var(--card-radius); overflow: hidden;
+  }
+  .flip-front { background: var(--card-bg); }
+  .flip-front img { height: 240px; }
+  .flip-front .card-info { padding: 12px 16px; }
+  .flip-front .card-info h3 { font-size: 14px; font-weight: 600; }
+  .flip-front .flip-trigger {
+    font-size: 11px; color: var(--accent); cursor: pointer; font-weight: 600;
+  }
+  .flip-back {
+    background: var(--accent); color: #fff; transform: rotateY(180deg);
+    padding: 24px 20px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .flip-back h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  .flip-back .specs { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .flip-back .specs li {
+    font-size: 12px; padding: 6px 10px; background: rgba(255,255,255,0.15); border-radius: 6px;
+  }
+  .flip-back .stars { font-size: 13px; opacity: 0.9; }
+  .flip-back .flip-trigger {
+    font-size: 11px; cursor: pointer; opacity: 0.8; margin-top: 12px;
+  }
+
+  /* ═══════════════════════════════════════════
+     2. SAAS PRICING CARDS
+     ═══════════════════════════════════════════ */
+
+  .pricing-base { padding: 24px 20px; text-align: center; }
+  .pricing-base .plan-name {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 12px;
+  }
+  .pricing-base .plan-price { font-size: 36px; font-weight: 800; color: var(--text-primary); }
+  .pricing-base .plan-price span { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+  .pricing-base .plan-features { list-style: none; margin: 20px 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+  .pricing-base .plan-features li { font-size: 12px; color: var(--text-body); padding-left: 20px; position: relative; }
+  .pricing-base .plan-features li::before { content: "\2713"; position: absolute; left: 0; color: #2ecc71; font-weight: 700; }
+  .pricing-base .plan-cta {
+    display: block; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    text-align: center; text-decoration: none; margin-top: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .pricing-base .plan-cta:hover { transform: translateY(-1px); }
+
+  /* v1: Flat */
+  .pricing-flat { border: 2px solid var(--border-color); }
+  .pricing-flat .plan-cta { background: #f5f5f5; color: #333; }
+
+  /* v2: Gradient */
+  .pricing-gradient {
+    background: linear-gradient(135deg, #667eea08, #764ba208);
+    border-top: 4px solid; border-image: linear-gradient(90deg, #667eea, #764ba2) 1;
+  }
+  .pricing-gradient .plan-price { color: var(--accent); }
+  .pricing-gradient .plan-cta { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+  /* v3: Hover-expand */
+  .pricing-expand .plan-features { max-height: 72px; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
+  .pricing-expand:hover .plan-features { max-height: 300px; }
+  .pricing-expand .expand-hint {
+    font-size: 10px; color: #bbb; transition: opacity 0.3s;
+  }
+  .pricing-expand:hover .expand-hint { opacity: 0; }
+  .pricing-expand .plan-cta { background: var(--text-primary); color: #fff; }
+
+  /* v4: Toggle annual/monthly */
+  .pricing-toggle-wrap { text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 0; }
+  .pricing-toggle-label {
+    font-size: 11px; font-weight: 600; padding: 6px 14px; cursor: pointer;
+    background: #f0f0f0; color: #999; transition: all 0.2s;
+  }
+  .pricing-toggle-label:first-of-type { border-radius: 6px 0 0 6px; }
+  .pricing-toggle-label:last-of-type { border-radius: 0 6px 6px 0; }
+
+  #price-monthly:checked ~ .window .pricing-toggle-label[for="price-monthly"],
+  #price-annual:checked ~ .window .pricing-toggle-label[for="price-annual"] {
+    background: var(--accent); color: #fff;
+  }
+
+  .price-monthly, .price-annual { transition: opacity 0.3s; }
+  #price-annual:checked ~ .window .price-monthly { display: none; }
+  #price-monthly:checked ~ .window .price-annual { display: none; }
+
+  .pricing-toggle .plan-cta { background: var(--accent); color: #fff; }
+  .pricing-toggle .save-badge {
+    display: inline-block; background: #2ecc71; color: #fff; font-size: 9px;
+    font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+  }
+
+  /* ═══════════════════════════════════════════
+     3. RECIPE CARDS
+     ═══════════════════════════════════════════ */
+
+  /* v1: Photo-forward */
+  .recipe-photo { position: relative; }
+  .recipe-photo img { height: 220px; }
+  .recipe-photo .recipe-badge {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px; backdrop-filter: blur(4px);
+  }
+  .recipe-photo .card-info { padding: 16px; }
+  .recipe-photo .card-info h3 { font-size: 15px; font-weight: 700; color: var(--text-secondary); }
+  .recipe-photo .card-info .meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* v2: Step-reveal */
+  .recipe-steps { position: relative; overflow: hidden; }
+  .recipe-steps img { height: 180px; }
+  .recipe-steps .card-info { padding: 16px; }
+  .recipe-steps .card-info h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .recipe-steps .steps-overlay {
+    position: absolute; top: 0; right: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.97); padding: 20px;
+    transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .recipe-steps:hover .steps-overlay { transform: translateX(0); }
+  .recipe-steps .steps-overlay h4 { font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; }
+  .recipe-steps .steps-overlay ol { font-size: 11px; color: var(--text-body); padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; }
+
+  /* v3: Ingredient checklist */
+  .recipe-checklist { padding: 20px; }
+  .recipe-checklist h3 { font-size: 15px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+  .recipe-checklist .meta { font-size: 11px; color: var(--text-muted); margin-bottom: 16px; }
+  .recipe-checklist .ingredients { display: flex; flex-direction: column; gap: 0; }
+  .recipe-checklist .ingredients label {
+    font-size: 12px; color: var(--text-body); padding: 8px 0; border-bottom: 1px solid var(--border-color);
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    transition: color 0.2s;
+  }
+  .recipe-checklist .ingredients label .box {
+    width: 18px; height: 18px; border-radius: 4px; border: 2px solid #ddd;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .recipe-check:checked + label { color: #bbb; text-decoration: line-through; }
+  .recipe-check:checked + label .box { background: #2ecc71; border-color: #2ecc71; }
+  .recipe-check:checked + label .box::after { content: "\2713"; color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* v4: Magazine */
+  .recipe-magazine {
+    position: relative; height: 340px; overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e, #2d2b55);
+  }
+  .recipe-magazine img {
+    height: 100%; opacity: 0.4; transition: opacity 0.4s;
+  }
+  .recipe-magazine:hover img { opacity: 0.25; }
+  .recipe-magazine .mag-content {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 24px;
+    color: #fff;
+  }
+  .recipe-magazine .mag-tag {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #f5576c; margin-bottom: 8px;
+  }
+  .recipe-magazine .mag-content h3 { font-size: 20px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+  .recipe-magazine .mag-content p { font-size: 12px; opacity: 0.7; line-height: 1.5; }
+
+  /* ═══════════════════════════════════════════
+     4. MAP / DIRECTIONS CARDS
+     ═══════════════════════════════════════════ */
+
+  .map-base { position: relative; }
+  .map-placeholder {
+    height: 140px; background: linear-gradient(135deg, #e8f4f8, #d1ecf1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; opacity: 0.3;
+  }
+  .map-dark .map-placeholder {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+  }
+  .map-dark .map-placeholder::after {
+    content: ""; position: absolute; top: 20px; left: 30%; width: 40%; height: 2px;
+    background: #4facfe; border-radius: 1px; opacity: 0.6;
+  }
+
+  /* v1: Compact */
+  .map-compact .card-info { padding: 14px 16px; }
+  .map-compact .card-info h3 { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+  .map-compact .card-info .distance { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+  .map-compact .card-info .addr { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* v2: Expanded route */
+  .map-expanded .card-info { padding: 16px; }
+  .map-expanded .card-info h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; }
+  .map-expanded .route-steps { display: flex; flex-direction: column; gap: 10px; }
+  .map-expanded .route-step {
+    display: flex; align-items: flex-start; gap: 10px; font-size: 11px; color: var(--text-body);
+    padding-left: 8px; border-left: 2px solid #e0e0e0; line-height: 1.4;
+  }
+  .map-expanded .route-step .step-icon { font-size: 14px; flex-shrink: 0; }
+
+  /* v3: Transit mode selector */
+  .map-transit .card-info { padding: 16px; }
+  .map-transit .card-info h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; }
+  .map-transit .transit-options { display: flex; gap: 6px; margin-bottom: 12px; }
+  .map-transit .transit-label {
+    flex: 1; text-align: center; padding: 8px 4px; border-radius: 8px;
+    background: #f5f5f5; cursor: pointer; font-size: 18px;
+    transition: all 0.2s; border: 2px solid transparent;
+  }
+  .map-transit .transit-label span { display: block; font-size: 9px; margin-top: 2px; color: var(--text-muted); }
+
+  #transit-car:checked ~ .window .transit-label[for="transit-car"],
+  #transit-bike:checked ~ .window .transit-label[for="transit-bike"],
+  #transit-walk:checked ~ .window .transit-label[for="transit-walk"],
+  #transit-bus:checked ~ .window .transit-label[for="transit-bus"] {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  #transit-car:checked ~ .window .transit-label[for="transit-car"] span,
+  #transit-bike:checked ~ .window .transit-label[for="transit-bike"] span,
+  #transit-walk:checked ~ .window .transit-label[for="transit-walk"] span,
+  #transit-bus:checked ~ .window .transit-label[for="transit-bus"] span { color: rgba(255,255,255,0.8); }
+
+  .map-transit .eta { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+  .map-transit .eta-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Time displays per mode */
+  .time-car, .time-bike, .time-walk, .time-bus { display: none; }
+  #transit-car:checked ~ .window .time-car { display: block; }
+  #transit-bike:checked ~ .window .time-bike { display: block; }
+  #transit-walk:checked ~ .window .time-walk { display: block; }
+  #transit-bus:checked ~ .window .time-bus { display: block; }
+
+  /* v4: Dark map */
+  .map-dark { background: #1a1a2e; color: #fff; }
+  .map-dark .card-info { padding: 16px; }
+  .map-dark .card-info h3 { font-size: 14px; font-weight: 700; color: #fff; }
+  .map-dark .card-info .distance { font-size: 11px; color: #4facfe; font-weight: 600; margin-top: 4px; }
+  .map-dark .card-info .addr { font-size: 11px; color: #666; margin-top: 2px; }
+  .map-dark .route-bar {
+    display: flex; gap: 2px; margin-top: 12px;
+  }
+  .map-dark .route-bar div {
+    height: 4px; border-radius: 2px; flex: 1;
+  }
+  .map-dark .route-bar div:nth-child(1) { background: #4facfe; flex: 3; }
+  .map-dark .route-bar div:nth-child(2) { background: #f5576c; flex: 1; }
+  .map-dark .route-bar div:nth-child(3) { background: #2ecc71; flex: 2; }
+
+  /* ═══════════════════════════════════════════
+     5. PROFILE / TEAM CARDS
+     ═══════════════════════════════════════════ */
+
+  .avatar-circle {
+    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  /* v1: Minimal */
+  .profile-minimal { padding: 24px; text-align: center; }
+  .profile-minimal .avatar-circle { width: 56px; height: 56px; margin: 0 auto 12px; display: block; }
+  .profile-minimal h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .profile-minimal .role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* v2: Bio reveal */
+  .profile-bio { padding: 24px; text-align: center; }
+  .profile-bio .avatar-circle { width: 56px; height: 56px; margin: 0 auto 12px; display: block; }
+  .profile-bio h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .profile-bio .role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .profile-bio .bio {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    font-size: 12px; color: var(--text-body); line-height: 1.5; opacity: 0;
+  }
+  .profile-bio:hover .bio { max-height: 120px; opacity: 1; margin-top: 12px; }
+
+  /* v3: Social expand */
+  .profile-social { padding: 24px; text-align: center; }
+  .profile-social .avatar-circle { width: 56px; height: 56px; margin: 0 auto 12px; display: block; }
+  .profile-social h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .profile-social .role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .profile-social .socials {
+    display: flex; justify-content: center; gap: 8px; margin-top: 16px;
+    overflow: hidden; max-height: 0; transition: max-height 0.4s;
+  }
+  .profile-social:hover .socials { max-height: 60px; }
+  .profile-social .social-icon {
+    width: 32px; height: 32px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 14px;
+    transform: translateY(20px); opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .profile-social:hover .social-icon { transform: translateY(0); opacity: 1; }
+  .profile-social:hover .social-icon:nth-child(1) { transition-delay: 0s; }
+  .profile-social:hover .social-icon:nth-child(2) { transition-delay: 0.05s; }
+  .profile-social:hover .social-icon:nth-child(3) { transition-delay: 0.1s; }
+  .profile-social:hover .social-icon:nth-child(4) { transition-delay: 0.15s; }
+  .social-icon.tw { background: #1da1f2; color: #fff; }
+  .social-icon.gh { background: #333; color: #fff; }
+  .social-icon.li { background: #0077b5; color: #fff; }
+  .social-icon.dr { background: #ea4c89; color: #fff; }
+
+  /* v4: Glassmorphism */
+  .profile-glass-wrap {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: var(--card-radius); padding: 3px; height: 260px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .profile-glass {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px; padding: 28px; text-align: center;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .profile-glass .avatar-circle {
+    width: 64px; height: 64px; margin-bottom: 12px;
+    box-shadow: 0 0 20px rgba(139,156,247,0.4);
+  }
+  .profile-glass h3 { font-size: 15px; font-weight: 700; color: #fff; }
+  .profile-glass .role { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .profile-glass .stats {
+    display: flex; gap: 20px; margin-top: 16px;
+  }
+  .profile-glass .stat { text-align: center; }
+  .profile-glass .stat-num { font-size: 16px; font-weight: 800; color: #fff; }
+  .profile-glass .stat-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ═══════════════════════════════════════════
+     6. MUSIC / MEDIA CARDS
+     ═══════════════════════════════════════════ */
+
+  /* v1: Album art */
+  .music-album { position: relative; }
+  .music-album img { height: 260px; }
+  .music-album .play-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 60px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .music-album:hover .play-overlay { opacity: 1; }
+  .music-album .play-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px;
+    transform: scale(0.8); transition: transform 0.3s;
+  }
+  .music-album:hover .play-btn { transform: scale(1); }
+  .music-album .card-info { padding: 12px 16px; }
+  .music-album .card-info h3 { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+  .music-album .card-info .artist { font-size: 11px; color: var(--text-muted); }
+
+  /* v2: Waveform */
+  .music-waveform {
+    background: linear-gradient(135deg, #1a1a2e, #2d2b55);
+    padding: 24px 20px; color: #fff; height: 260px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .music-waveform h3 { font-size: 14px; font-weight: 700; }
+  .music-waveform .artist { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .waveform-bars {
+    display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 20px 0;
+  }
+  .waveform-bars div {
+    flex: 1; background: linear-gradient(to top, #667eea, #764ba2);
+    border-radius: 2px; animation: waveform 1.2s ease-in-out infinite;
+  }
+  .waveform-bars div:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .waveform-bars div:nth-child(2) { height: 70%; animation-delay: 0.1s; }
+  .waveform-bars div:nth-child(3) { height: 50%; animation-delay: 0.2s; }
+  .waveform-bars div:nth-child(4) { height: 90%; animation-delay: 0.3s; }
+  .waveform-bars div:nth-child(5) { height: 60%; animation-delay: 0.15s; }
+  .waveform-bars div:nth-child(6) { height: 80%; animation-delay: 0.25s; }
+  .waveform-bars div:nth-child(7) { height: 45%; animation-delay: 0.05s; }
+  .waveform-bars div:nth-child(8) { height: 70%; animation-delay: 0.35s; }
+  .waveform-bars div:nth-child(9) { height: 55%; animation-delay: 0.2s; }
+  .waveform-bars div:nth-child(10) { height: 65%; animation-delay: 0.1s; }
+  .waveform-bars div:nth-child(11) { height: 85%; animation-delay: 0.3s; }
+  .waveform-bars div:nth-child(12) { height: 40%; animation-delay: 0.15s; }
+
+  @keyframes waveform {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.4); }
+  }
+
+  .music-waveform .time-bar {
+    display: flex; align-items: center; gap: 8px; font-size: 10px; opacity: 0.5;
+  }
+  .music-waveform .time-bar .bar { flex: 1; height: 2px; background: rgba(255,255,255,0.2); border-radius: 1px; position: relative; }
+  .music-waveform .time-bar .bar::after { content: ""; position: absolute; left: 0; top: 0; width: 35%; height: 100%; background: #8b9cf7; border-radius: 1px; }
+
+  /* v3: Now-playing pulse */
+  .music-playing {
+    background: #1a1a2e; padding: 24px 20px; color: #fff; text-align: center;
+    height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .music-playing .pulse-ring {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 3px solid #8b9cf7;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin-bottom: 16px;
+  }
+  .music-playing .pulse-ring::before, .music-playing .pulse-ring::after {
+    content: ""; position: absolute; border-radius: 50%; border: 2px solid #8b9cf7;
+    animation: pulse-ring 2s ease-out infinite;
+  }
+  .music-playing .pulse-ring::before { width: 100px; height: 100px; animation-delay: 0s; }
+  .music-playing .pulse-ring::after { width: 120px; height: 120px; animation-delay: 0.5s; }
+
+  @keyframes pulse-ring {
+    0% { opacity: 0.6; transform: scale(0.8); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+
+  .music-playing .pulse-ring .play-icon { font-size: 24px; z-index: 1; }
+  .music-playing h3 { font-size: 14px; font-weight: 700; }
+  .music-playing .artist { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .music-playing .eq-bars { display: flex; gap: 3px; align-items: flex-end; height: 20px; margin-top: 12px; }
+  .music-playing .eq-bars div {
+    width: 4px; background: #8b9cf7; border-radius: 2px;
+    animation: eq 0.8s ease-in-out infinite alternate;
+  }
+  .music-playing .eq-bars div:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .music-playing .eq-bars div:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+  .music-playing .eq-bars div:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+  .music-playing .eq-bars div:nth-child(4) { height: 20px; animation-delay: 0.15s; }
+  .music-playing .eq-bars div:nth-child(5) { height: 12px; animation-delay: 0.05s; }
+
+  @keyframes eq {
+    0% { transform: scaleY(0.3); }
+    100% { transform: scaleY(1); }
+  }
+
+  /* v4: Vinyl spin */
+  .music-vinyl {
+    background: #f9f6f1; padding: 24px; text-align: center;
+    height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .vinyl-disc {
+    width: 160px; height: 160px; border-radius: 50%;
+    background: conic-gradient(#111, #333, #111, #222, #111, #333, #111);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: spin 3s linear infinite;
+    animation-play-state: paused;
+    margin-bottom: 16px;
+  }
+  .music-vinyl:hover .vinyl-disc { animation-play-state: running; }
+  .vinyl-disc .vinyl-label {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #f5576c, #ff9a9e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 800; color: #fff;
+  }
+  .vinyl-disc .vinyl-label::after {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; background: #111;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .music-vinyl h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .music-vinyl .artist { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .music-vinyl .hover-hint { font-size: 10px; color: #ccc; margin-top: 8px; }
+
+  /* ═══════════════════════════════════════════
+     7. NEWS / ARTICLE CARDS
+     ═══════════════════════════════════════════ */
+
+  /* v1: Headline-only */
+  .news-headline { padding: 20px; }
+  .news-headline .cat-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .news-headline h3 { font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1.3; }
+  .news-headline .time { font-size: 10px; color: #bbb; margin-top: 8px; }
+
+  /* v2: Image + excerpt */
+  .news-image img { height: 160px; transition: transform 0.4s; }
+  .news-image:hover img { transform: scale(1.05); }
+  .news-image .card-info { padding: 16px; }
+  .news-image .card-info .cat-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); margin-bottom: 4px;
+  }
+  .news-image .card-info h3 { font-size: 14px; font-weight: 700; color: var(--text-secondary); line-height: 1.3; }
+  .news-image .card-info .excerpt { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 6px; }
+  .news-image .card-info .read-more { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 8px; display: inline-block; }
+
+  /* v3: Timeline */
+  .news-timeline {
+    display: flex; gap: 16px; padding: 20px; background: var(--card-bg);
+    border-radius: var(--card-radius); box-shadow: var(--card-shadow);
+  }
+  .news-timeline .timeline-line {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding-top: 4px;
+  }
+  .news-timeline .timeline-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+  }
+  .news-timeline .timeline-bar { width: 2px; flex: 1; background: #e0e0e0; }
+  .news-timeline .timeline-content { flex: 1; }
+  .news-timeline .timeline-date { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+  .news-timeline .timeline-content h3 { font-size: 13px; font-weight: 700; color: var(--text-secondary); line-height: 1.3; }
+  .news-timeline .timeline-content p { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
+  /* v4: Breaking news */
+  .news-breaking {
+    border: 2px solid #e74c3c; padding: 20px; position: relative;
+    animation: breaking-glow 2s ease-in-out infinite;
+  }
+  @keyframes breaking-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0); }
+    50% { box-shadow: 0 0 20px rgba(231,76,60,0.2); }
+  }
+  .news-breaking .breaking-badge {
+    display: inline-block; background: #e74c3c; color: #fff;
+    font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    animation: pulse-badge 1.5s ease-in-out infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  .news-breaking h3 { font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1.3; }
+  .news-breaking .time { font-size: 10px; color: #e74c3c; font-weight: 600; margin-top: 8px; }
+  .news-breaking .update { font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+
+  /* ─── Mobile Overrides ─── */
+  #preview-mobile:checked ~ .window .page-header { padding: 24px 20px 4px; }
+  #preview-mobile:checked ~ .window .page-header h1 { font-size: 20px; }
+  #preview-mobile:checked ~ .window .card-section { padding: 24px 20px; }
+  #preview-mobile:checked ~ .window .section-header h2 { font-size: 16px; }
+  #preview-mobile:checked ~ .window .iteration-grid { flex-direction: column; }
+  #preview-mobile:checked ~ .window .card-iteration { flex: 0 0 auto; }
+
+  /* ─── Scrollbar ─── */
+  .cards-page::-webkit-scrollbar { width: 6px; }
+  .cards-page::-webkit-scrollbar-track { background: transparent; }
+  .cards-page::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+  /* ═══════════════════════════════════════════
+     THEME OVERRIDES
+     ═══════════════════════════════════════════ */
+
+  /* ─── Brutalism ─── */
+  #theme-brutalism:checked ~ .window .cards-page {
+    --page-bg: #fff;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #f0f0f0;
+    --card-bg: #fff;
+    --card-radius: 0px;
+    --accent: #000;
+    --font-main: 'Courier New', monospace;
+    --card-shadow: 4px 4px 0 #000;
+    --card-shadow-hover: 6px 6px 0 #000;
+    --text-primary: #000;
+    --text-secondary: #000;
+    --text-body: #333;
+    --text-muted: #666;
+    --border-color: #000;
+    --card-border: 3px solid #000;
+  }
+  #theme-brutalism:checked ~ .window .section-header h2 {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  #theme-brutalism:checked ~ .window .card-base {
+    border: 3px solid #000;
+  }
+  #theme-brutalism:checked ~ .window .theme-bar {
+    border-bottom: 3px solid #000;
+  }
+
+  /* ─── Maximalism ─── */
+  #theme-maximalism:checked ~ .window .cards-page {
+    --page-bg: #1a0533;
+    --page-bg-alt: #240745;
+    --page-bg-alt2: #1a0533;
+    --card-bg: #240745;
+    --card-radius: 20px;
+    --accent: #ff006e;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #ffdf00;
+    --text-secondary: #ffdf00;
+    --text-body: #d4a0ff;
+    --text-muted: #9966cc;
+    --border-color: rgba(255,223,0,0.2);
+    --card-shadow: 0 4px 20px rgba(255,0,110,0.2), 0 0 0 2px rgba(255,223,0,0.3);
+    --card-shadow-hover: 0 12px 40px rgba(255,0,110,0.4), 0 0 0 2px rgba(255,223,0,0.5);
+  }
+  #theme-maximalism:checked ~ .window .card-base {
+    border: 2px solid rgba(255,223,0,0.3);
+  }
+
+  /* ─── Minimalism ─── */
+  #theme-minimalism:checked ~ .window .cards-page {
+    --page-bg: #fafafa;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #fafafa;
+    --card-bg: #fff;
+    --card-radius: 8px;
+    --accent: #999;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #333;
+    --text-secondary: #444;
+    --text-body: #888;
+    --text-muted: #bbb;
+    --border-color: #eee;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  #theme-minimalism:checked ~ .window .card-base {
+    border: 1px solid #eee;
+  }
+  #theme-minimalism:checked ~ .window .section-header h2 {
+    font-weight: 400;
+  }
+
+  /* ─── Psychedelic ─── */
+  #theme-psychedelic:checked ~ .window .cards-page {
+    --page-bg: #0a001a;
+    --page-bg-alt: #0d0020;
+    --page-bg-alt2: #0a001a;
+    --card-bg: rgba(255,255,255,0.05);
+    --card-radius: 24px;
+    --accent: #00ffff;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #ff00ff;
+    --text-secondary: #ff66ff;
+    --text-body: #cc99ff;
+    --text-muted: #9966cc;
+    --border-color: rgba(255,0,255,0.15);
+    --card-shadow: 0 0 20px rgba(255,0,255,0.1), 0 0 40px rgba(0,255,255,0.05);
+    --card-shadow-hover: 0 0 30px rgba(255,0,255,0.3), 0 0 60px rgba(0,255,255,0.15);
+  }
+  #theme-psychedelic:checked ~ .window .card-base {
+    border: 1px solid rgba(255,0,255,0.2);
+    transition: transform 0.3s, box-shadow 0.3s, filter 0.3s;
+  }
+  #theme-psychedelic:checked ~ .window .card-base:hover {
+    filter: hue-rotate(30deg);
+  }
+
+  /* ─── Acid Trip ─── */
+  #theme-acid:checked ~ .window .cards-page {
+    --page-bg: #000;
+    --page-bg-alt: #0a0a0a;
+    --page-bg-alt2: #000;
+    --card-bg: #111;
+    --card-radius: 2px;
+    --accent: #ff00ff;
+    --font-main: monospace;
+    --text-primary: #0f0;
+    --text-secondary: #0f0;
+    --text-body: #0c0;
+    --text-muted: #090;
+    --border-color: #0f0;
+    --card-shadow: 2px 2px 0 #ff00ff, -2px -2px 0 #0ff;
+    --card-shadow-hover: 4px 4px 0 #ff00ff, -4px -4px 0 #0ff, 0 0 20px rgba(0,255,0,0.3);
+  }
+  #theme-acid:checked ~ .window .card-base {
+    border: 1px solid #0f0;
+  }
+
+  /* ─── Modern ─── */
+  #theme-modern:checked ~ .window .cards-page {
+    --page-bg: #f8f9fa;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #f8f9fa;
+    --card-bg: #fff;
+    --card-radius: 12px;
+    --accent: #0d6efd;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #212529;
+    --text-secondary: #343a40;
+    --text-body: #6c757d;
+    --text-muted: #adb5bd;
+    --border-color: #dee2e6;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+  }
+
+  /* ─── Apple ─── */
+  #theme-apple:checked ~ .window .cards-page {
+    --page-bg: #f5f5f7;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #f5f5f7;
+    --card-bg: #fff;
+    --card-radius: 18px;
+    --accent: #0071e3;
+    --font-main: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    --text-primary: #1d1d1f;
+    --text-secondary: #1d1d1f;
+    --text-body: #6e6e73;
+    --text-muted: #86868b;
+    --border-color: rgba(0,0,0,0.04);
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --card-shadow-hover: 0 12px 40px rgba(0,0,0,0.12);
+  }
+  #theme-apple:checked ~ .window .card-base {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  #theme-apple:checked ~ .window .page-header h1 {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  #theme-apple:checked ~ .window .card-section {
+    padding: 48px 56px;
+  }
+
+  /* ─── Cybernetic ─── */
+  #theme-cybernetic:checked ~ .window .cards-page {
+    --page-bg: #0a0a0f;
+    --page-bg-alt: #0d0d14;
+    --page-bg-alt2: #0a0a0f;
+    --card-bg: rgba(0,255,255,0.03);
+    --card-radius: 2px;
+    --accent: #ff00de;
+    --font-main: monospace;
+    --text-primary: #00ffff;
+    --text-secondary: #00dddd;
+    --text-body: #00aaaa;
+    --text-muted: #007777;
+    --border-color: rgba(0,255,255,0.2);
+    --card-shadow: 0 0 10px rgba(0,255,255,0.1), inset 0 0 10px rgba(0,255,255,0.02);
+    --card-shadow-hover: 0 0 25px rgba(0,255,255,0.3), 0 0 50px rgba(255,0,222,0.1);
+  }
+  #theme-cybernetic:checked ~ .window .card-base {
+    border: 1px solid rgba(0,255,255,0.2);
+  }
+
+  /* ─── Sci-Fi ─── */
+  #theme-scifi:checked ~ .window .cards-page {
+    --page-bg: #050510;
+    --page-bg-alt: #080818;
+    --page-bg-alt2: #050510;
+    --card-bg: rgba(100,126,234,0.05);
+    --card-radius: 4px 16px 4px 16px;
+    --accent: #667eea;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #a8b8ff;
+    --text-secondary: #8898dd;
+    --text-body: #6678bb;
+    --text-muted: #445599;
+    --border-color: rgba(100,126,234,0.15);
+    --card-shadow: 0 0 15px rgba(100,126,234,0.1), 0 0 30px rgba(100,126,234,0.05);
+    --card-shadow-hover: 0 0 25px rgba(100,126,234,0.25), 0 0 50px rgba(100,126,234,0.1);
+  }
+  #theme-scifi:checked ~ .window .card-base {
+    border: 1px solid rgba(100,126,234,0.2);
+  }
+
+  /* ─── Surreal ─── */
+  #theme-surreal:checked ~ .window .cards-page {
+    --page-bg: #fef0f5;
+    --page-bg-alt: #fff5f8;
+    --page-bg-alt2: #fef0f5;
+    --card-bg: #fff;
+    --card-radius: 24px 8px 24px 8px;
+    --accent: #9b59b6;
+    --font-main: 'Inter', sans-serif;
+    --text-primary: #4a3060;
+    --text-secondary: #5a3a70;
+    --text-body: #8a6a9a;
+    --text-muted: #b09ab8;
+    --border-color: rgba(155,89,182,0.1);
+    --card-shadow: 8px 12px 24px rgba(155,89,182,0.1), -4px -4px 16px rgba(255,255,255,0.8);
+    --card-shadow-hover: 12px 16px 32px rgba(155,89,182,0.2), -6px -6px 20px rgba(255,255,255,0.9);
+  }
+  #theme-surreal:checked ~ .window .section-header h2 {
+    font-style: italic;
+  }
+
+  /* ─── Vaporwave ─── */
+  #theme-vaporwave:checked ~ .window .cards-page {
+    --page-bg: #1a0030;
+    --page-bg-alt: #220040;
+    --page-bg-alt2: #1a0030;
+    --card-bg: rgba(255,113,206,0.08);
+    --card-radius: 0px;
+    --accent: #01cdfe;
+    --font-main: Georgia, serif;
+    --text-primary: #ff71ce;
+    --text-secondary: #ff9de0;
+    --text-body: #b967ff;
+    --text-muted: #8844aa;
+    --border-color: rgba(255,113,206,0.2);
+    --card-shadow: 4px 4px 0 #01cdfe, -2px -2px 0 #ff71ce;
+    --card-shadow-hover: 6px 6px 0 #01cdfe, -3px -3px 0 #ff71ce;
+  }
+  #theme-vaporwave:checked ~ .window .card-base {
+    border: 1px solid rgba(255,113,206,0.3);
+  }
+  #theme-vaporwave:checked ~ .window .section-header h2 {
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── Newspaper ─── */
+  #theme-newspaper:checked ~ .window .cards-page {
+    --page-bg: #f4f0e8;
+    --page-bg-alt: #faf8f3;
+    --page-bg-alt2: #f4f0e8;
+    --card-bg: #faf8f3;
+    --card-radius: 2px;
+    --accent: #8b0000;
+    --font-main: Georgia, serif;
+    --text-primary: #222;
+    --text-secondary: #333;
+    --text-body: #555;
+    --text-muted: #888;
+    --border-color: #d5cec0;
+    --card-shadow: none;
+    --card-shadow-hover: none;
+  }
+  #theme-newspaper:checked ~ .window .card-base {
+    border: 1px solid #d5cec0;
+  }
+  #theme-newspaper:checked ~ .window .card-base:hover {
+    transform: none;
+  }
+  #theme-newspaper:checked ~ .window .section-header h2 {
+    border-bottom: 2px solid #222;
+    padding-bottom: 4px;
+  }
+
+  /* ─── Bauhaus ─── */
+  #theme-bauhaus:checked ~ .window .cards-page {
+    --page-bg: #f5f0e1;
+    --page-bg-alt: #fff;
+    --page-bg-alt2: #f5f0e1;
+    --card-bg: #fff;
+    --card-radius: 0px;
+    --accent: #e3000b;
+    --font-main: 'Helvetica Neue', Arial, sans-serif;
+    --text-primary: #000;
+    --text-secondary: #111;
+    --text-body: #444;
+    --text-muted: #777;
+    --border-color: #000;
+    --card-shadow: 4px 4px 0 #e3000b;
+    --card-shadow-hover: 6px 6px 0 #e3000b;
+  }
+  #theme-bauhaus:checked ~ .window .card-base {
+    border: 2px solid #000;
+  }
+  #theme-bauhaus:checked ~ .window .section-header h2 {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 800;
+  }
+
+  /* ─── Theme bar background per theme ─── */
+  #theme-brutalism:checked ~ .window .theme-bar { background: #fff; border-bottom: 3px solid #000; }
+  #theme-maximalism:checked ~ .window .theme-bar { background: #1a0533; border-bottom-color: rgba(255,223,0,0.2); }
+  #theme-minimalism:checked ~ .window .theme-bar { background: #fafafa; }
+  #theme-psychedelic:checked ~ .window .theme-bar { background: #0a001a; border-bottom-color: rgba(255,0,255,0.15); }
+  #theme-acid:checked ~ .window .theme-bar { background: #000; border-bottom-color: #0f0; }
+  #theme-modern:checked ~ .window .theme-bar { background: #f8f9fa; }
+  #theme-apple:checked ~ .window .theme-bar { background: #f5f5f7; }
+  #theme-cybernetic:checked ~ .window .theme-bar { background: #0a0a0f; border-bottom-color: rgba(0,255,255,0.2); }
+  #theme-scifi:checked ~ .window .theme-bar { background: #050510; border-bottom-color: rgba(100,126,234,0.15); }
+  #theme-surreal:checked ~ .window .theme-bar { background: #fef0f5; }
+  #theme-vaporwave:checked ~ .window .theme-bar { background: #1a0030; border-bottom-color: rgba(255,113,206,0.2); }
+  #theme-newspaper:checked ~ .window .theme-bar { background: #f4f0e8; border-bottom-color: #d5cec0; }
+  #theme-bauhaus:checked ~ .window .theme-bar { background: #f5f0e1; border-bottom-color: #000; }
+
+  /* Theme pill text color for dark themes */
+  #theme-maximalism:checked ~ .window .theme-pill,
+  #theme-psychedelic:checked ~ .window .theme-pill,
+  #theme-acid:checked ~ .window .theme-pill,
+  #theme-cybernetic:checked ~ .window .theme-pill,
+  #theme-scifi:checked ~ .window .theme-pill,
+  #theme-vaporwave:checked ~ .window .theme-pill {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+  }
+  #theme-maximalism:checked ~ .window .theme-pill:hover,
+  #theme-psychedelic:checked ~ .window .theme-pill:hover,
+  #theme-acid:checked ~ .window .theme-pill:hover,
+  #theme-cybernetic:checked ~ .window .theme-pill:hover,
+  #theme-scifi:checked ~ .window .theme-pill:hover,
+  #theme-vaporwave:checked ~ .window .theme-pill:hover {
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* Theme bar label for dark themes */
+  #theme-maximalism:checked ~ .window .theme-bar-label,
+  #theme-psychedelic:checked ~ .window .theme-bar-label,
+  #theme-acid:checked ~ .window .theme-bar-label,
+  #theme-cybernetic:checked ~ .window .theme-bar-label,
+  #theme-scifi:checked ~ .window .theme-bar-label,
+  #theme-vaporwave:checked ~ .window .theme-bar-label {
+    color: rgba(255,255,255,0.4);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Innovative Cards</h1>
+      <span class="exp-version">v2</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds an in-page theme switcher with 14 distinct visual themes -- from brutalism to vaporwave -- applied to all 7 card archetypes using CSS custom properties and :checked selectors. No JavaScript.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        1. let's add a "toggle" inside page that lets users switch between themes for each of these cards<br><br>2. for the styles lets add brutalism, maximalism, minimalism, psychedlic, acid trip, modern, apple-esque, cybernetic, sci-fi, surreal, and 3-more styles you can pick.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="innovative-cards-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">14-theme switcher</span>
+        </a>
+        <a href="innovative-cards-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">7 card types x 4 iterations</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Global state radios (must be siblings of .window) -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Flip card state -->
+    <input type="checkbox" id="flip-ecom" class="flip-toggle">
+
+    <!-- Pricing toggle state -->
+    <input type="radio" name="pricing" id="price-monthly" checked>
+    <input type="radio" name="pricing" id="price-annual">
+
+    <!-- Transit mode state -->
+    <input type="radio" name="transit" id="transit-car" checked>
+    <input type="radio" name="transit" id="transit-bike">
+    <input type="radio" name="transit" id="transit-walk">
+    <input type="radio" name="transit" id="transit-bus">
+
+    <!-- Theme state radios -->
+    <input type="radio" name="theme" id="theme-default" checked>
+    <input type="radio" name="theme" id="theme-brutalism">
+    <input type="radio" name="theme" id="theme-maximalism">
+    <input type="radio" name="theme" id="theme-minimalism">
+    <input type="radio" name="theme" id="theme-psychedelic">
+    <input type="radio" name="theme" id="theme-acid">
+    <input type="radio" name="theme" id="theme-modern">
+    <input type="radio" name="theme" id="theme-apple">
+    <input type="radio" name="theme" id="theme-cybernetic">
+    <input type="radio" name="theme" id="theme-scifi">
+    <input type="radio" name="theme" id="theme-surreal">
+    <input type="radio" name="theme" id="theme-vaporwave">
+    <input type="radio" name="theme" id="theme-newspaper">
+    <input type="radio" name="theme" id="theme-bauhaus">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="cards-page">
+
+        <!-- Theme Bar -->
+        <div class="theme-bar">
+          <span class="theme-bar-label">Theme</span>
+          <label for="theme-default" class="theme-pill">Default</label>
+          <label for="theme-brutalism" class="theme-pill">Brutalism</label>
+          <label for="theme-maximalism" class="theme-pill">Maximalism</label>
+          <label for="theme-minimalism" class="theme-pill">Minimalism</label>
+          <label for="theme-psychedelic" class="theme-pill">Psychedelic</label>
+          <label for="theme-acid" class="theme-pill">Acid Trip</label>
+          <label for="theme-modern" class="theme-pill">Modern</label>
+          <label for="theme-apple" class="theme-pill">Apple</label>
+          <label for="theme-cybernetic" class="theme-pill">Cybernetic</label>
+          <label for="theme-scifi" class="theme-pill">Sci-Fi</label>
+          <label for="theme-surreal" class="theme-pill">Surreal</label>
+          <label for="theme-vaporwave" class="theme-pill">Vaporwave</label>
+          <label for="theme-newspaper" class="theme-pill">Newspaper</label>
+          <label for="theme-bauhaus" class="theme-pill">Bauhaus</label>
+        </div>
+
+        <div class="page-header">
+          <h1>Card Explorations</h1>
+          <p>7 card types &times; 3-4 iterations each. Hover, click, and interact.</p>
+        </div>
+
+        <!-- ═══ 1. E-COMMERCE ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>E-commerce Product Cards</h2>
+            <p>From minimal to interactive &mdash; exploring product presentation</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Minimal</span>
+              <div class="card-base product-minimal">
+                <img src="https://picsum.photos/260/200?random=10" alt="Watch">
+                <div class="card-info">
+                  <h3>Minimalist Watch</h3>
+                  <p class="price">$249</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Image Dominant</span>
+              <div class="card-base product-image-dom">
+                <img src="https://picsum.photos/260/340?random=11" alt="Backpack">
+                <div class="overlay">
+                  <h3>Designer Backpack</h3>
+                  <p class="price">$189</p>
+                  <p class="desc">Premium leather, modern aesthetics</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Quick-add Hover</span>
+              <div class="card-base product-quickadd">
+                <img src="https://picsum.photos/260/200?random=12" alt="Headphones">
+                <div class="card-info">
+                  <h3>Wireless Headphones</h3>
+                  <p class="price">$299</p>
+                </div>
+                <div class="add-btn">Add to Cart</div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Flip to Details</span>
+              <div class="card-base flip-wrap">
+                <div class="flip-card">
+                  <div class="flip-front">
+                    <img src="https://picsum.photos/260/240?random=13" alt="Speaker">
+                    <div class="card-info">
+                      <h3>Smart Speaker</h3>
+                      <label for="flip-ecom" class="flip-trigger">View Details &rarr;</label>
+                    </div>
+                  </div>
+                  <div class="flip-back">
+                    <h3>Smart Speaker</h3>
+                    <ul class="specs">
+                      <li>360&deg; immersive sound</li>
+                      <li>Voice assistant built-in</li>
+                      <li>12hr battery life</li>
+                      <li>WiFi + Bluetooth 5.0</li>
+                    </ul>
+                    <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9734; 128 reviews</div>
+                    <label for="flip-ecom" class="flip-trigger">&larr; Back to image</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 2. SAAS PRICING ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>SaaS Pricing Cards</h2>
+            <p>From flat to interactive toggle &mdash; pricing table variations</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Flat</span>
+              <div class="card-base pricing-base pricing-flat">
+                <div class="plan-name">Starter</div>
+                <div class="plan-price">$9<span>/mo</span></div>
+                <ul class="plan-features">
+                  <li>5 projects</li>
+                  <li>10GB storage</li>
+                  <li>Basic analytics</li>
+                  <li>Email support</li>
+                </ul>
+                <a class="plan-cta" href="#">Get Started</a>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Gradient Accent</span>
+              <div class="card-base pricing-base pricing-gradient">
+                <div class="plan-name">Pro</div>
+                <div class="plan-price">$29<span>/mo</span></div>
+                <ul class="plan-features">
+                  <li>Unlimited projects</li>
+                  <li>100GB storage</li>
+                  <li>Advanced analytics</li>
+                  <li>Priority support</li>
+                </ul>
+                <a class="plan-cta" href="#">Upgrade to Pro</a>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Hover Expand</span>
+              <div class="card-base pricing-base pricing-expand">
+                <div class="plan-name">Business</div>
+                <div class="plan-price">$79<span>/mo</span></div>
+                <ul class="plan-features">
+                  <li>Everything in Pro</li>
+                  <li>SSO authentication</li>
+                  <li>Custom domains</li>
+                  <li>API access</li>
+                  <li>Audit logs</li>
+                  <li>Dedicated account manager</li>
+                  <li>99.99% SLA guarantee</li>
+                  <li>Custom integrations</li>
+                </ul>
+                <div class="expand-hint">Hover to see all features &darr;</div>
+                <a class="plan-cta" href="#">Contact Sales</a>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Annual Toggle</span>
+              <div class="card-base pricing-base pricing-toggle">
+                <div class="plan-name">Enterprise</div>
+                <div class="pricing-toggle-wrap">
+                  <label for="price-monthly" class="pricing-toggle-label">Monthly</label>
+                  <label for="price-annual" class="pricing-toggle-label">Annual</label>
+                </div>
+                <div class="plan-price price-monthly">$149<span>/mo</span></div>
+                <div class="plan-price price-annual">$119<span>/mo</span> <span class="save-badge">Save 20%</span></div>
+                <ul class="plan-features">
+                  <li>Everything in Business</li>
+                  <li>Unlimited seats</li>
+                  <li>White-label option</li>
+                  <li>24/7 phone support</li>
+                </ul>
+                <a class="plan-cta" href="#">Start Free Trial</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 3. RECIPE ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>Recipe Cards</h2>
+            <p>Photo-forward to interactive checklists &mdash; food content patterns</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Photo Forward</span>
+              <div class="card-base recipe-photo">
+                <img src="https://picsum.photos/260/220?random=20" alt="Pasta">
+                <div class="recipe-badge">25 min</div>
+                <div class="card-info">
+                  <h3>Truffle Mushroom Pasta</h3>
+                  <p class="meta">Italian &middot; 4 servings &middot; Medium</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Step Reveal</span>
+              <div class="card-base recipe-steps">
+                <img src="https://picsum.photos/260/180?random=21" alt="Salad">
+                <div class="card-info">
+                  <h3>Mediterranean Bowl</h3>
+                  <p class="meta">Hover for steps &rarr;</p>
+                </div>
+                <div class="steps-overlay">
+                  <h4>Steps</h4>
+                  <ol>
+                    <li>Cook quinoa according to package</li>
+                    <li>Dice cucumber, tomato, red onion</li>
+                    <li>Crumble feta and slice olives</li>
+                    <li>Toss with lemon-herb dressing</li>
+                    <li>Top with fresh herbs and serve</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Ingredient Checklist</span>
+              <div class="card-base recipe-checklist">
+                <h3>Classic Margherita Pizza</h3>
+                <p class="meta">30 min &middot; 2 servings</p>
+                <div class="ingredients">
+                  <input type="checkbox" id="ing-1" class="recipe-check"><label for="ing-1"><span class="box"></span>Pizza dough (1 ball)</label>
+                  <input type="checkbox" id="ing-2" class="recipe-check"><label for="ing-2"><span class="box"></span>San Marzano tomatoes</label>
+                  <input type="checkbox" id="ing-3" class="recipe-check"><label for="ing-3"><span class="box"></span>Fresh mozzarella (8oz)</label>
+                  <input type="checkbox" id="ing-4" class="recipe-check"><label for="ing-4"><span class="box"></span>Fresh basil leaves</label>
+                  <input type="checkbox" id="ing-5" class="recipe-check"><label for="ing-5"><span class="box"></span>Extra virgin olive oil</label>
+                  <input type="checkbox" id="ing-6" class="recipe-check"><label for="ing-6"><span class="box"></span>Sea salt &amp; black pepper</label>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Magazine Style</span>
+              <div class="card-base recipe-magazine">
+                <img src="https://picsum.photos/260/340?random=22" alt="Steak">
+                <div class="mag-content">
+                  <div class="mag-tag">Chef's Special</div>
+                  <h3>Pan-Seared Wagyu with Truffle Butter</h3>
+                  <p>A luxurious weeknight dinner that takes only 15 minutes but tastes like a Michelin star experience.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 4. MAP / DIRECTIONS ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>Map &amp; Directions Cards</h2>
+            <p>Compact to dark-mode &mdash; location and navigation patterns</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Compact</span>
+              <div class="card-base map-base map-compact">
+                <div class="map-placeholder">&#x1F4CD;</div>
+                <div class="card-info">
+                  <h3>Blue Bottle Coffee</h3>
+                  <p class="distance">0.4 mi &middot; 6 min walk</p>
+                  <p class="addr">548 Market St, San Francisco</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Expanded Route</span>
+              <div class="card-base map-base map-expanded">
+                <div class="map-placeholder">&#x1F5FA;</div>
+                <div class="card-info">
+                  <h3>Route to SFO Airport</h3>
+                  <div class="route-steps">
+                    <div class="route-step"><span class="step-icon">&rarr;</span> Head south on US-101 S</div>
+                    <div class="route-step"><span class="step-icon">&nearr;</span> Take exit 424 toward SFO</div>
+                    <div class="route-step"><span class="step-icon">&rarr;</span> Follow signs to Terminal 2</div>
+                    <div class="route-step"><span class="step-icon">&#x1F4CD;</span> Arrive at SFO International</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Transit Selector</span>
+              <div class="card-base map-base map-transit">
+                <div class="map-placeholder">&#x1F697;</div>
+                <div class="card-info">
+                  <h3>Golden Gate Park</h3>
+                  <div class="transit-options">
+                    <label for="transit-car" class="transit-label">&#x1F697;<span>12 min</span></label>
+                    <label for="transit-bike" class="transit-label">&#x1F6B2;<span>22 min</span></label>
+                    <label for="transit-walk" class="transit-label">&#x1F6B6;<span>45 min</span></label>
+                    <label for="transit-bus" class="transit-label">&#x1F68C;<span>18 min</span></label>
+                  </div>
+                  <div class="time-car"><p class="eta">12 min</p><p class="eta-sub">Via Geary Blvd &middot; 3.2 mi</p></div>
+                  <div class="time-bike"><p class="eta">22 min</p><p class="eta-sub">Via The Panhandle &middot; 2.8 mi</p></div>
+                  <div class="time-walk"><p class="eta">45 min</p><p class="eta-sub">Via Fulton St &middot; 2.1 mi</p></div>
+                  <div class="time-bus"><p class="eta">18 min</p><p class="eta-sub">Line 5 Fulton &middot; 4 stops</p></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Dark Mode</span>
+              <div class="card-base map-base map-dark">
+                <div class="map-placeholder">&#x1F319;</div>
+                <div class="card-info">
+                  <h3>Ferry Building</h3>
+                  <p class="distance">1.2 mi &middot; 4 min drive</p>
+                  <p class="addr">1 Ferry Building, San Francisco</p>
+                  <div class="route-bar">
+                    <div></div><div></div><div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 5. PROFILE / TEAM ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>Profile &amp; Team Cards</h2>
+            <p>Minimal to glassmorphism &mdash; people presentation patterns</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Minimal</span>
+              <div class="card-base profile-minimal">
+                <img src="https://picsum.photos/56/56?random=30" alt="Avatar" class="avatar-circle">
+                <h3>Sarah Chen</h3>
+                <p class="role">Product Designer</p>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Bio Reveal</span>
+              <div class="card-base profile-bio">
+                <img src="https://picsum.photos/56/56?random=31" alt="Avatar" class="avatar-circle">
+                <h3>Marcus Rivera</h3>
+                <p class="role">Staff Engineer</p>
+                <p class="bio">Building distributed systems at scale. Previously at Stripe and Google. Open source maintainer of 3 major projects. Based in Oakland, CA.</p>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Social Expand</span>
+              <div class="card-base profile-social">
+                <img src="https://picsum.photos/56/56?random=32" alt="Avatar" class="avatar-circle">
+                <h3>Aisha Patel</h3>
+                <p class="role">Creative Director</p>
+                <div class="socials">
+                  <div class="social-icon tw">&#x1D54F;</div>
+                  <div class="social-icon gh">&#x25C9;</div>
+                  <div class="social-icon li">in</div>
+                  <div class="social-icon dr">&#x25B8;</div>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Glassmorphism</span>
+              <div class="profile-glass-wrap">
+                <div class="profile-glass">
+                  <img src="https://picsum.photos/64/64?random=33" alt="Avatar" class="avatar-circle">
+                  <h3>James Wu</h3>
+                  <p class="role">Founding Engineer</p>
+                  <div class="stats">
+                    <div class="stat"><div class="stat-num">847</div><div class="stat-label">Commits</div></div>
+                    <div class="stat"><div class="stat-num">12</div><div class="stat-label">Projects</div></div>
+                    <div class="stat"><div class="stat-num">3.2k</div><div class="stat-label">Stars</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 6. MUSIC / MEDIA ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>Music &amp; Media Cards</h2>
+            <p>Album art to vinyl spin &mdash; audio content patterns with animation</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Album Art</span>
+              <div class="card-base music-album">
+                <img src="https://picsum.photos/260/260?random=40" alt="Album">
+                <div class="play-overlay">
+                  <div class="play-btn">&#x25B6;</div>
+                </div>
+                <div class="card-info">
+                  <h3>Midnight Reverie</h3>
+                  <p class="artist">Luna Eclipse</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Waveform</span>
+              <div class="card-base music-waveform">
+                <h3>Electric Dreams</h3>
+                <p class="artist">Neon Pulse</p>
+                <div class="waveform-bars">
+                  <div></div><div></div><div></div><div></div><div></div>
+                  <div></div><div></div><div></div><div></div><div></div>
+                  <div></div><div></div>
+                </div>
+                <div class="time-bar">
+                  <span>1:24</span>
+                  <div class="bar"></div>
+                  <span>3:58</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Now Playing</span>
+              <div class="card-base music-playing">
+                <div class="pulse-ring">
+                  <span class="play-icon">&#x25B6;</span>
+                </div>
+                <h3>Cosmic Drift</h3>
+                <p class="artist">Stellar Waves</p>
+                <div class="eq-bars">
+                  <div></div><div></div><div></div><div></div><div></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Vinyl Spin</span>
+              <div class="card-base music-vinyl">
+                <div class="vinyl-disc">
+                  <div class="vinyl-label"></div>
+                </div>
+                <h3>Analog Warmth</h3>
+                <p class="artist">The Groove Collective</p>
+                <p class="hover-hint">Hover to spin</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ 7. NEWS / ARTICLE ═══ -->
+        <section class="card-section">
+          <div class="section-header">
+            <h2>News &amp; Article Cards</h2>
+            <p>Headline to breaking &mdash; editorial content patterns</p>
+          </div>
+          <div class="iteration-grid">
+            <div class="card-iteration">
+              <span class="iteration-label">v1 &mdash; Headline Only</span>
+              <div class="card-base news-headline">
+                <div class="cat-badge">Technology</div>
+                <h3>Apple Announces Revolutionary Spatial Computing Platform for Enterprise</h3>
+                <p class="time">2 hours ago</p>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v2 &mdash; Image + Excerpt</span>
+              <div class="card-base news-image">
+                <img src="https://picsum.photos/260/160?random=50" alt="News">
+                <div class="card-info">
+                  <div class="cat-badge">Science</div>
+                  <h3>NASA Confirms Water Ice Deposits on Mars Surface</h3>
+                  <p class="excerpt">Researchers using data from the Mars Reconnaissance Orbiter have identified substantial water ice deposits just meters below the surface.</p>
+                  <span class="read-more">Read more &rarr;</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v3 &mdash; Timeline</span>
+              <div class="news-timeline">
+                <div class="timeline-line">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-bar"></div>
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-date">Jan 31, 2026 &middot; 4:30 PM</div>
+                  <h3>Global Climate Summit Reaches Historic Agreement</h3>
+                  <p>195 nations agree to unprecedented carbon reduction targets, marking the most ambitious climate pact in history.</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-iteration">
+              <span class="iteration-label">v4 &mdash; Breaking News</span>
+              <div class="card-base news-breaking">
+                <div class="breaking-badge">Breaking</div>
+                <h3>Major Earthquake Detected in Pacific Ring of Fire</h3>
+                <p class="time">Just now &middot; Updating</p>
+                <p class="update">Magnitude 7.2 earthquake detected 120km offshore. Tsunami warning issued for coastal regions. Emergency services mobilizing.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

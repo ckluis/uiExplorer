@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v2: Gentle Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 50%, #667eea 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8f7ff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── App Layout ─── */
+.app { display: flex; flex-direction: column; height: 100%; font-family: 'Inter', sans-serif; color: #2d2d44; font-size: 14px; background: #f8f7ff; position: relative; }
+
+/* ─── Top Nav ─── */
+.top-nav { height: 56px; background: #fff; border-bottom: 1px solid #e8e6f2; display: flex; align-items: center; padding: 0 24px; gap: 16px; flex-shrink: 0; }
+.nav-logo { font-size: 16px; font-weight: 700; color: #6c5ce7; display: flex; align-items: center; gap: 8px; }
+.nav-logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #a29bfe, #6c5ce7); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.nav-logo-icon svg { width: 16px; height: 16px; stroke: #fff; }
+.nav-links { display: flex; gap: 4px; margin-left: auto; }
+.nav-link { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #666; cursor: default; transition: all 0.2s; }
+.nav-link:hover { background: #f0eeff; color: #6c5ce7; }
+.nav-link.active { background: #f0eeff; color: #6c5ce7; }
+.nav-user { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #74b9ff, #0984e3); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; margin-left: 12px; }
+
+/* ─── Main Content Area ─── */
+.main-content { flex: 1; display: flex; overflow: hidden; }
+.page-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
+.page-content h1 { font-size: 24px; font-weight: 700; color: #2d2d44; margin: 0 0 8px 0; }
+.page-content .subtitle { font-size: 14px; color: #888; margin-bottom: 24px; }
+
+/* Fake dashboard cards */
+.dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+.dash-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e8e6f2; }
+.dash-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 8px; }
+.dash-card-value { font-size: 28px; font-weight: 700; color: #2d2d44; }
+.dash-card-change { font-size: 12px; color: #00b894; margin-top: 4px; }
+.dash-card-change.negative { color: #e17055; }
+
+/* Activity list */
+.activity-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.activity-list { background: #fff; border-radius: 12px; border: 1px solid #e8e6f2; overflow: hidden; }
+.activity-item { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #f0eeff; }
+.activity-item:last-child { border-bottom: none; }
+.activity-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.activity-icon.blue { background: #dfe6ff; color: #6c5ce7; }
+.activity-icon.green { background: #d5f5e3; color: #00b894; }
+.activity-icon.orange { background: #ffeaa7; color: #f39c12; }
+.activity-content { flex: 1; }
+.activity-title { font-size: 13px; font-weight: 600; color: #2d2d44; }
+.activity-desc { font-size: 12px; color: #888; margin-top: 2px; }
+.activity-time { font-size: 11px; color: #bbb; }
+
+/* ─── Beacon Widget (pulsing) ─── */
+.beacon-container { position: fixed; bottom: 100px; right: 40px; z-index: 50; }
+.beacon { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #a29bfe, #6c5ce7); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4); position: relative; animation: beacon-pulse 2s ease-in-out infinite; }
+.beacon svg { width: 24px; height: 24px; stroke: #fff; }
+.beacon-badge { position: absolute; top: -4px; right: -4px; width: 22px; height: 22px; border-radius: 50%; background: #e17055; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #f8f7ff; }
+@keyframes beacon-pulse { 0%, 100% { box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4), 0 0 0 0 rgba(162, 155, 254, 0.5); } 50% { box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4), 0 0 0 12px rgba(162, 155, 254, 0); } }
+
+/* ─── Setup Assistant Modal ─── */
+.modal-overlay { position: absolute; inset: 0; background: rgba(45, 45, 68, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+#modal-open:checked ~ .window .modal-overlay { opacity: 1; pointer-events: auto; }
+
+.modal { width: 520px; max-width: 90%; background: #fff; border-radius: 20px; box-shadow: 0 25px 80px rgba(0,0,0,0.25); overflow: hidden; transform: translateY(20px) scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+#modal-open:checked ~ .window .modal { transform: translateY(0) scale(1); }
+
+.modal-header { padding: 24px 28px 20px; border-bottom: 1px solid #f0eeff; }
+.modal-title { font-size: 20px; font-weight: 700; color: #2d2d44; margin-bottom: 4px; }
+.modal-subtitle { font-size: 13px; color: #888; }
+
+/* ─── Progress Stepper ─── */
+.progress-stepper { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 28px; background: #fafafe; border-bottom: 1px solid #f0eeff; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #e0dff4; transition: all 0.3s; }
+.step-dot.completed { background: #00b894; }
+.step-dot.current { background: #6c5ce7; width: 24px; border-radius: 5px; }
+.step-connector { width: 24px; height: 2px; background: #e0dff4; }
+.step-connector.completed { background: #00b894; }
+.step-label { font-size: 11px; font-weight: 600; color: #888; margin-left: 8px; }
+
+/* ─── Step Content ─── */
+.step-content { padding: 28px; }
+
+/* Illustration panel */
+.step-illustration { height: 140px; border-radius: 14px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.step-illustration.profile { background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); }
+.step-illustration.calendar { background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); }
+.step-illustration.notifications { background: linear-gradient(135deg, #fdcb6e 0%, #f39c12 100%); }
+.step-illustration.team { background: linear-gradient(135deg, #55efc4 0%, #00b894 100%); }
+.step-illustration.security { background: linear-gradient(135deg, #fab1a0 0%, #e17055 100%); }
+.step-illustration.celebration { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 50%, #00b894 100%); }
+.step-illustration svg { width: 56px; height: 56px; stroke: #fff; stroke-width: 1.5; }
+
+.step-title { font-size: 18px; font-weight: 700; color: #2d2d44; margin-bottom: 8px; }
+.step-description { font-size: 14px; line-height: 1.6; color: #666; margin-bottom: 16px; }
+
+/* Why This Matters expandable */
+.why-matters { margin-bottom: 20px; }
+.why-matters-toggle { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #f8f7ff; border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.why-matters-toggle:hover { background: #f0eeff; }
+.why-matters-icon { width: 20px; height: 20px; border-radius: 50%; background: #6c5ce7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.why-matters-icon svg { width: 12px; height: 12px; stroke: #fff; }
+.why-matters-label { font-size: 13px; font-weight: 600; color: #6c5ce7; }
+.why-matters-arrow { margin-left: auto; color: #6c5ce7; transition: transform 0.2s; }
+.why-matters-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+.why-matters-inner { padding: 14px; font-size: 13px; line-height: 1.6; color: #666; background: #fafafe; border-radius: 0 0 10px 10px; margin-top: -10px; }
+#why-toggle:checked ~ .step-content .why-matters-content { max-height: 200px; }
+#why-toggle:checked ~ .step-content .why-matters-arrow { transform: rotate(180deg); }
+
+/* Encouragement message */
+.encouragement { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: linear-gradient(135deg, #d5f5e3, #a8e6cf); border-radius: 10px; margin-bottom: 20px; }
+.encouragement-icon { font-size: 20px; }
+.encouragement-text { font-size: 13px; font-weight: 600; color: #00b894; }
+
+/* ─── Modal Actions ─── */
+.modal-actions { display: flex; gap: 10px; padding: 20px 28px; background: #fafafe; border-top: 1px solid #f0eeff; }
+.btn { flex: 1; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+.btn-secondary { background: #f0eeff; color: #6c5ce7; }
+.btn-secondary:hover { background: #e0dff4; }
+.btn-primary { background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: #fff; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); }
+.btn-skip { background: transparent; color: #999; flex: 0.5; }
+.btn-skip:hover { color: #666; }
+
+/* ─── Step Navigation via Radio Buttons ─── */
+.step-panel { display: none; }
+#step-1:checked ~ .window .modal .step-panel.panel-1,
+#step-2:checked ~ .window .modal .step-panel.panel-2,
+#step-3:checked ~ .window .modal .step-panel.panel-3,
+#step-4:checked ~ .window .modal .step-panel.panel-4,
+#step-5:checked ~ .window .modal .step-panel.panel-5,
+#step-complete:checked ~ .window .modal .step-panel.panel-complete { display: block; }
+
+/* Progress stepper state */
+#step-2:checked ~ .window .modal .step-dot:nth-child(1) { background: #00b894; }
+#step-2:checked ~ .window .modal .step-connector:nth-child(2) { background: #00b894; }
+#step-2:checked ~ .window .modal .step-dot:nth-child(3) { background: #6c5ce7; width: 24px; border-radius: 5px; }
+#step-2:checked ~ .window .modal .step-dot:nth-child(3).current { background: #6c5ce7; }
+
+#step-3:checked ~ .window .modal .step-dot:nth-child(1),
+#step-3:checked ~ .window .modal .step-dot:nth-child(3) { background: #00b894; width: 10px; border-radius: 50%; }
+#step-3:checked ~ .window .modal .step-connector:nth-child(2),
+#step-3:checked ~ .window .modal .step-connector:nth-child(4) { background: #00b894; }
+#step-3:checked ~ .window .modal .step-dot:nth-child(5) { background: #6c5ce7; width: 24px; border-radius: 5px; }
+
+#step-4:checked ~ .window .modal .step-dot:nth-child(1),
+#step-4:checked ~ .window .modal .step-dot:nth-child(3),
+#step-4:checked ~ .window .modal .step-dot:nth-child(5) { background: #00b894; width: 10px; border-radius: 50%; }
+#step-4:checked ~ .window .modal .step-connector:nth-child(2),
+#step-4:checked ~ .window .modal .step-connector:nth-child(4),
+#step-4:checked ~ .window .modal .step-connector:nth-child(6) { background: #00b894; }
+#step-4:checked ~ .window .modal .step-dot:nth-child(7) { background: #6c5ce7; width: 24px; border-radius: 5px; }
+
+#step-5:checked ~ .window .modal .step-dot:nth-child(1),
+#step-5:checked ~ .window .modal .step-dot:nth-child(3),
+#step-5:checked ~ .window .modal .step-dot:nth-child(5),
+#step-5:checked ~ .window .modal .step-dot:nth-child(7) { background: #00b894; width: 10px; border-radius: 50%; }
+#step-5:checked ~ .window .modal .step-connector:nth-child(2),
+#step-5:checked ~ .window .modal .step-connector:nth-child(4),
+#step-5:checked ~ .window .modal .step-connector:nth-child(6),
+#step-5:checked ~ .window .modal .step-connector:nth-child(8) { background: #00b894; }
+#step-5:checked ~ .window .modal .step-dot:nth-child(9) { background: #6c5ce7; width: 24px; border-radius: 5px; }
+
+#step-complete:checked ~ .window .modal .step-dot { background: #00b894 !important; width: 10px !important; border-radius: 50% !important; }
+#step-complete:checked ~ .window .modal .step-connector { background: #00b894 !important; }
+#step-complete:checked ~ .window .modal .progress-stepper { display: none; }
+
+/* ─── Completion Celebration ─── */
+.celebration-content { text-align: center; padding: 40px 28px; }
+.celebration-icon { width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #55efc4, #00b894); border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: celebration-bounce 0.6s ease-out; }
+.celebration-icon svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 2.5; }
+@keyframes celebration-bounce { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.celebration-title { font-size: 24px; font-weight: 700; color: #2d2d44; margin-bottom: 8px; }
+.celebration-subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+/* Confetti animation */
+.confetti-container { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti { position: absolute; width: 10px; height: 10px; border-radius: 2px; }
+#step-complete:checked ~ .window .modal .confetti { animation: confetti-fall 3s ease-out forwards; }
+.confetti:nth-child(1) { left: 10%; top: -10px; background: #a29bfe; animation-delay: 0s; }
+.confetti:nth-child(2) { left: 20%; top: -10px; background: #00b894; animation-delay: 0.1s; transform: rotate(45deg); }
+.confetti:nth-child(3) { left: 30%; top: -10px; background: #fdcb6e; animation-delay: 0.2s; }
+.confetti:nth-child(4) { left: 40%; top: -10px; background: #74b9ff; animation-delay: 0.15s; transform: rotate(30deg); }
+.confetti:nth-child(5) { left: 50%; top: -10px; background: #fab1a0; animation-delay: 0.25s; }
+.confetti:nth-child(6) { left: 60%; top: -10px; background: #6c5ce7; animation-delay: 0.05s; transform: rotate(60deg); }
+.confetti:nth-child(7) { left: 70%; top: -10px; background: #55efc4; animation-delay: 0.3s; }
+.confetti:nth-child(8) { left: 80%; top: -10px; background: #f39c12; animation-delay: 0.1s; transform: rotate(15deg); }
+.confetti:nth-child(9) { left: 90%; top: -10px; background: #e17055; animation-delay: 0.2s; }
+.confetti:nth-child(10) { left: 15%; top: -10px; background: #00cec9; animation-delay: 0.35s; transform: rotate(75deg); }
+.confetti:nth-child(11) { left: 45%; top: -10px; background: #fd79a8; animation-delay: 0.4s; }
+.confetti:nth-child(12) { left: 75%; top: -10px; background: #81ecec; animation-delay: 0.15s; transform: rotate(90deg); }
+@keyframes confetti-fall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(400px) rotate(720deg); } }
+
+/* ─── Mobile Overrides ─── */
+#preview-mobile:checked ~ .window .dashboard-grid { grid-template-columns: 1fr; }
+#preview-mobile:checked ~ .window .beacon-container { bottom: 80px; right: 20px; }
+#preview-mobile:checked ~ .window .beacon { width: 48px; height: 48px; }
+#preview-mobile:checked ~ .window .modal { width: 100%; max-width: 100%; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; max-height: 85%; overflow-y: auto; }
+#preview-mobile:checked ~ .window .modal-actions { flex-direction: column; }
+#preview-mobile:checked ~ .window .btn-skip { order: 3; }
+#preview-mobile:checked ~ .window .page-content { padding: 20px; }
+#preview-mobile:checked ~ .window .page-content h1 { font-size: 20px; }
+#preview-mobile:checked ~ .window .top-nav { padding: 0 16px; }
+#preview-mobile:checked ~ .window .nav-links { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v2</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores an educational wizard-style modal for new users in their first 30 days. Each issue is presented as a learning opportunity with context about WHY it matters, not just how to fix it. Celebratory states when issues are resolved. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Gentle Guide"</strong> &mdash; An approachable, hand-holding experience for new users who don't know the system yet. Uses pulsing beacon widgets to expose the checklist, a stepped modal wizard for guidance, and celebration animations on completion.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v2: "Gentle Guide" &mdash; Educational Wizard Modal</strong><br><br>
+        Tagline: "Let me show you why this matters."<br><br>
+        Core Concept: An educational wizard-style modal for new users in their first 30 days. Each issue is presented as a learning opportunity with context about WHY it matters, not just how to fix it. Celebratory states when issues are resolved.<br><br>
+        Exposure Method: Pulsing beacon widgets appear on the page near problematic areas. A "Setup Assistant" modal that walks through issues one at a time with a progress stepper.<br><br>
+        Presentation Style: Centered modal (max 520px) with progress stepper at top. Each step shows one issue with illustration, explanation, and action. Confetti/celebration on completion.<br><br>
+        Target Persona: New user, first 30 days. Needs hand-holding, educational context. Doesn't know the system yet.<br><br>
+        Platform: Web, with mobile-friendly modal sizing.<br><br>
+        Key UI Elements: Progress stepper (Step 2 of 5), friendly illustration panels (CSS gradients representing concepts), "Why This Matters" expandable section, clear action button ("Fix This" / "Learn More" / "Skip for Now"), encouraging tone throughout, completion celebration with confetti animation (CSS keyframes), "You're doing great!" motivational messages, beacon pulse animation on trigger buttons.<br><br>
+        Sample Checklist Items: 1. "Complete Your Profile" &mdash; Your team needs to know who you are. 2. "Connect Your Calendar" &mdash; So we can help you schedule better. 3. "Set Your Notification Preferences" &mdash; Control how we reach you. 4. "Invite Your First Team Member" &mdash; Collaboration starts here. 5. "Review Security Settings" &mdash; Keep your account safe.<br><br>
+        Color/Mood: Warm, friendly, encouraging. Soft purples and greens. Rounded corners. Approachable typography.<br><br>
+        Interaction Patterns: Radio buttons for step navigation, checkbox for "Why This Matters" expand, CSS confetti animation on last step, pulse animation on beacons.<br><br>
+        Device Preview: Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Modal open state -->
+    <input type="radio" name="modal" id="modal-closed">
+    <input type="radio" name="modal" id="modal-open" checked>
+
+    <!-- Step navigation -->
+    <input type="radio" name="step" id="step-1" checked>
+    <input type="radio" name="step" id="step-2">
+    <input type="radio" name="step" id="step-3">
+    <input type="radio" name="step" id="step-4">
+    <input type="radio" name="step" id="step-5">
+    <input type="radio" name="step" id="step-complete">
+
+    <!-- Why matters toggle -->
+    <input type="checkbox" id="why-toggle">
+
+    <!-- Preview radios -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="app">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+          <div class="nav-logo">
+            <div class="nav-logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            Acme Platform
+          </div>
+          <div class="nav-links">
+            <div class="nav-link active">Dashboard</div>
+            <div class="nav-link">Projects</div>
+            <div class="nav-link">Team</div>
+            <div class="nav-link">Settings</div>
+          </div>
+          <div class="nav-user">JD</div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+          <div class="page-content">
+            <h1>Welcome back, Jamie!</h1>
+            <p class="subtitle">Here's what's happening with your projects today.</p>
+
+            <div class="dashboard-grid">
+              <div class="dash-card">
+                <div class="dash-card-label">Active Projects</div>
+                <div class="dash-card-value">12</div>
+                <div class="dash-card-change">+2 this week</div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">Tasks Completed</div>
+                <div class="dash-card-value">47</div>
+                <div class="dash-card-change">+15 this week</div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">Team Members</div>
+                <div class="dash-card-value">1</div>
+                <div class="dash-card-change negative">Invite your team</div>
+              </div>
+            </div>
+
+            <div class="activity-section">
+              <h2>Recent Activity</h2>
+              <div class="activity-list">
+                <div class="activity-item">
+                  <div class="activity-icon blue">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-title">Project proposal drafted</div>
+                    <div class="activity-desc">Q2 Marketing Campaign</div>
+                  </div>
+                  <div class="activity-time">2 hours ago</div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon green">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-title">Task completed</div>
+                    <div class="activity-desc">Review design mockups</div>
+                  </div>
+                  <div class="activity-time">5 hours ago</div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon orange">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-title">Setup incomplete</div>
+                    <div class="activity-desc">5 items need your attention</div>
+                  </div>
+                  <div class="activity-time">Today</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pulsing Beacon Widget -->
+        <label for="modal-open" class="beacon-container">
+          <div class="beacon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span class="beacon-badge">5</span>
+          </div>
+        </label>
+
+        <!-- Modal Overlay -->
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="confetti-container">
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+              <div class="confetti"></div>
+            </div>
+
+            <div class="modal-header">
+              <div class="modal-title">Setup Assistant</div>
+              <div class="modal-subtitle">Let's get you up and running</div>
+            </div>
+
+            <div class="progress-stepper">
+              <div class="step-dot current"></div>
+              <div class="step-connector"></div>
+              <div class="step-dot"></div>
+              <div class="step-connector"></div>
+              <div class="step-dot"></div>
+              <div class="step-connector"></div>
+              <div class="step-dot"></div>
+              <div class="step-connector"></div>
+              <div class="step-dot"></div>
+              <span class="step-label">Step 1 of 5</span>
+            </div>
+
+            <!-- Step 1: Complete Your Profile -->
+            <div class="step-panel panel-1">
+              <div class="step-content">
+                <div class="step-illustration profile">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="step-title">Complete Your Profile</div>
+                <div class="step-description">Help your team recognize you by adding a photo and a short bio. This makes collaboration feel more personal and builds trust.</div>
+
+                <div class="why-matters">
+                  <label for="why-toggle" class="why-matters-toggle">
+                    <div class="why-matters-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <span class="why-matters-label">Why This Matters</span>
+                    <span class="why-matters-arrow">&#9660;</span>
+                  </label>
+                  <div class="why-matters-content">
+                    <div class="why-matters-inner">
+                      Teams with complete profiles collaborate 40% more effectively. When people can put a face to a name, they're more likely to reach out, share ideas, and work together openly. It's a small step that makes a big difference!
+                    </div>
+                  </div>
+                </div>
+
+                <div class="encouragement">
+                  <span class="encouragement-icon">&#127881;</span>
+                  <span class="encouragement-text">You're doing great! Just 5 quick steps to go.</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <label for="modal-closed" class="btn btn-skip">Skip for Now</label>
+                <label for="step-2" class="btn btn-primary">Complete Profile</label>
+              </div>
+            </div>
+
+            <!-- Step 2: Connect Your Calendar -->
+            <div class="step-panel panel-2">
+              <div class="step-content">
+                <div class="step-illustration calendar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div class="step-title">Connect Your Calendar</div>
+                <div class="step-description">Link your calendar so we can help you schedule meetings, avoid conflicts, and send smart reminders at the right times.</div>
+
+                <div class="why-matters">
+                  <label for="why-toggle" class="why-matters-toggle">
+                    <div class="why-matters-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <span class="why-matters-label">Why This Matters</span>
+                    <span class="why-matters-arrow">&#9660;</span>
+                  </label>
+                  <div class="why-matters-content">
+                    <div class="why-matters-inner">
+                      Calendar integration eliminates double-booking and helps your team find the best times to meet. Smart scheduling saves an average of 4 hours per week on coordination alone!
+                    </div>
+                  </div>
+                </div>
+
+                <div class="encouragement">
+                  <span class="encouragement-icon">&#9889;</span>
+                  <span class="encouragement-text">Nice progress! 4 more steps to unlock your full potential.</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <label for="step-1" class="btn btn-secondary">Back</label>
+                <label for="modal-closed" class="btn btn-skip">Skip</label>
+                <label for="step-3" class="btn btn-primary">Connect Calendar</label>
+              </div>
+            </div>
+
+            <!-- Step 3: Set Notification Preferences -->
+            <div class="step-panel panel-3">
+              <div class="step-content">
+                <div class="step-illustration notifications">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </div>
+                <div class="step-title">Set Notification Preferences</div>
+                <div class="step-description">Choose how and when you want to be notified. We'll respect your focus time and only alert you about what truly matters.</div>
+
+                <div class="why-matters">
+                  <label for="why-toggle" class="why-matters-toggle">
+                    <div class="why-matters-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <span class="why-matters-label">Why This Matters</span>
+                    <span class="why-matters-arrow">&#9660;</span>
+                  </label>
+                  <div class="why-matters-content">
+                    <div class="why-matters-inner">
+                      The right notification settings prevent burnout and help you stay focused. Studies show that customized alerts improve response times by 60% while reducing notification fatigue.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="encouragement">
+                  <span class="encouragement-icon">&#128170;</span>
+                  <span class="encouragement-text">Halfway there! You're setting yourself up for success.</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <label for="step-2" class="btn btn-secondary">Back</label>
+                <label for="modal-closed" class="btn btn-skip">Skip</label>
+                <label for="step-4" class="btn btn-primary">Set Preferences</label>
+              </div>
+            </div>
+
+            <!-- Step 4: Invite Your First Team Member -->
+            <div class="step-panel panel-4">
+              <div class="step-content">
+                <div class="step-illustration team">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="step-title">Invite Your First Team Member</div>
+                <div class="step-description">Collaboration starts here! Invite a colleague to join your workspace and experience the power of working together.</div>
+
+                <div class="why-matters">
+                  <label for="why-toggle" class="why-matters-toggle">
+                    <div class="why-matters-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <span class="why-matters-label">Why This Matters</span>
+                    <span class="why-matters-arrow">&#9660;</span>
+                  </label>
+                  <div class="why-matters-content">
+                    <div class="why-matters-inner">
+                      Teams that onboard together stay together. When colleagues start using the platform simultaneously, adoption rates increase by 3x and projects get completed 50% faster.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="encouragement">
+                  <span class="encouragement-icon">&#127942;</span>
+                  <span class="encouragement-text">Almost there! Just 2 more steps to complete your setup.</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <label for="step-3" class="btn btn-secondary">Back</label>
+                <label for="modal-closed" class="btn btn-skip">Skip</label>
+                <label for="step-5" class="btn btn-primary">Invite Team Member</label>
+              </div>
+            </div>
+
+            <!-- Step 5: Review Security Settings -->
+            <div class="step-panel panel-5">
+              <div class="step-content">
+                <div class="step-illustration security">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <div class="step-title">Review Security Settings</div>
+                <div class="step-description">Keep your account safe by enabling two-factor authentication and reviewing your login preferences. Security is everyone's responsibility.</div>
+
+                <div class="why-matters">
+                  <label for="why-toggle" class="why-matters-toggle">
+                    <div class="why-matters-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <span class="why-matters-label">Why This Matters</span>
+                    <span class="why-matters-arrow">&#9660;</span>
+                  </label>
+                  <div class="why-matters-content">
+                    <div class="why-matters-inner">
+                      Accounts with 2FA enabled are 99.9% less likely to be compromised. Taking 2 minutes now to review your security settings protects your work, your team, and your peace of mind.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="encouragement">
+                  <span class="encouragement-icon">&#128274;</span>
+                  <span class="encouragement-text">Last step! You're about to complete your setup.</span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <label for="step-4" class="btn btn-secondary">Back</label>
+                <label for="modal-closed" class="btn btn-skip">Skip</label>
+                <label for="step-complete" class="btn btn-primary">Review Security</label>
+              </div>
+            </div>
+
+            <!-- Completion Celebration -->
+            <div class="step-panel panel-complete">
+              <div class="celebration-content">
+                <div class="celebration-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="celebration-title">You're All Set!</div>
+                <div class="celebration-subtitle">Congratulations! You've completed your setup and unlocked the full power of Acme Platform. Your team is going to love working with you.</div>
+              </div>
+              <div class="modal-actions" style="justify-content: center;">
+                <label for="modal-closed" class="btn btn-primary" style="flex: none; padding: 14px 40px;">Start Exploring</label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

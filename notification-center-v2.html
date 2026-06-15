@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Center — v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: var(--bg, #f5f4f1); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Notification Center v2 ─── */
+.nc-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%; height: 100%;
+  background: #f8f9fa;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+
+.nc-topbar {
+  height: 56px; background: #fff; border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; flex-shrink: 0; z-index: 10;
+}
+.nc-topbar-title { font-size: 15px; font-weight: 600; color: #111; }
+.nc-bell-label {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px; cursor: pointer; transition: background 0.15s;
+}
+.nc-bell-label:hover { background: #f3f4f6; }
+.nc-bell-label svg { width: 22px; height: 22px; color: #374151; }
+.nc-badge {
+  position: absolute; top: 4px; right: 4px; width: 18px; height: 18px;
+  background: #ef4444; color: #fff; font-size: 10px; font-weight: 700;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+
+.nc-body { flex: 1; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 14px; }
+
+.nc-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.2);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 20;
+}
+.nc-panel {
+  position: absolute; top: 0; right: -420px; width: 420px; height: 100%;
+  background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+  z-index: 30; display: flex; flex-direction: column;
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#nc-toggle:checked ~ .nc-overlay { opacity: 1; pointer-events: auto; }
+#nc-toggle:checked ~ .nc-panel { right: 0; }
+
+.nc-panel-header {
+  padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between;
+}
+.nc-panel-header h2 { font-size: 16px; font-weight: 700; color: #111; }
+.nc-close-label {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; color: #6b7280;
+}
+.nc-close-label:hover { background: #f3f4f6; }
+.nc-close-label svg { width: 18px; height: 18px; }
+
+/* Category filter tabs */
+.nc-tabs {
+  display: flex; gap: 4px; padding: 16px 20px 0;
+}
+.nc-tab-label {
+  font-size: 12px; font-weight: 500; color: #6b7280;
+  padding: 6px 14px; border-radius: 20px; cursor: pointer;
+  transition: all 0.15s; border: 1px solid transparent;
+}
+.nc-tab-label:hover { background: #f3f4f6; }
+
+/* Tab radio logic */
+#nc-tab-all:checked ~ .nc-panel .nc-tab-label[for="nc-tab-all"],
+#nc-tab-mentions:checked ~ .nc-panel .nc-tab-label[for="nc-tab-mentions"],
+#nc-tab-updates:checked ~ .nc-panel .nc-tab-label[for="nc-tab-updates"],
+#nc-tab-system:checked ~ .nc-panel .nc-tab-label[for="nc-tab-system"] {
+  background: #111; color: #fff;
+}
+
+/* Show/hide by category */
+#nc-tab-mentions:checked ~ .nc-panel .nc-item:not([data-cat="mention"]),
+#nc-tab-updates:checked ~ .nc-panel .nc-item:not([data-cat="update"]),
+#nc-tab-system:checked ~ .nc-panel .nc-item:not([data-cat="system"]) {
+  display: none;
+}
+
+/* Hide group labels when filtering (they'd be orphaned) */
+#nc-tab-mentions:checked ~ .nc-panel .nc-group-label,
+#nc-tab-updates:checked ~ .nc-panel .nc-group-label,
+#nc-tab-system:checked ~ .nc-panel .nc-group-label {
+  display: none;
+}
+
+.nc-panel-divider { height: 1px; background: #f0f0f0; margin-top: 12px; }
+
+.nc-panel-body { flex: 1; overflow-y: auto; }
+
+.nc-group-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #9ca3af; padding: 16px 20px 8px;
+}
+
+/* Notification card */
+.nc-item {
+  display: flex; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid #f5f5f5; position: relative;
+  transition: background 0.15s;
+}
+.nc-item:hover { background: #fafafa; }
+.nc-item.unread { background: #f0f4ff; }
+.nc-item.unread:hover { background: #e8edff; }
+.nc-item.unread::before {
+  content: ''; position: absolute; left: 8px; top: 50%;
+  transform: translateY(-50%); width: 6px; height: 6px;
+  background: #3b82f6; border-radius: 50%;
+}
+
+/* Avatar */
+.nc-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: #fff;
+  position: relative;
+}
+.nc-avatar.blue { background: #3b82f6; }
+.nc-avatar.green { background: #10b981; }
+.nc-avatar.orange { background: #f59e0b; }
+.nc-avatar.purple { background: #8b5cf6; }
+.nc-avatar.red { background: #ef4444; }
+.nc-avatar.pink { background: #ec4899; }
+
+/* Category icon on avatar */
+.nc-avatar .nc-cat-icon {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff; font-size: 8px;
+}
+.nc-cat-icon.mention { background: #3b82f6; }
+.nc-cat-icon.update { background: #10b981; }
+.nc-cat-icon.system { background: #f59e0b; }
+
+.nc-item-body { flex: 1; min-width: 0; }
+.nc-item-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.nc-item-sender { font-size: 13px; font-weight: 600; color: #111; }
+.nc-item-time { font-size: 11px; color: #9ca3af; flex-shrink: 0; }
+.nc-item-text { font-size: 13px; color: #4b5563; line-height: 1.45; margin-top: 2px; }
+.nc-item-text strong { font-weight: 500; color: #111; }
+.nc-item-context {
+  margin-top: 8px; padding: 8px 10px; background: #f9fafb;
+  border-radius: 6px; border-left: 3px solid #e5e7eb;
+  font-size: 12px; color: #6b7280; line-height: 1.4;
+}
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .nc-panel { width: 100%; right: -100%; }
+#preview-mobile:checked ~ .window #nc-toggle:checked ~ .nc-panel { right: 0; }
+#preview-mobile:checked ~ .window .nc-topbar { padding: 0 16px; }
+#preview-mobile:checked ~ .window .nc-item { padding: 12px 16px; }
+#preview-mobile:checked ~ .window .nc-group-label { padding: 14px 16px 6px; }
+#preview-mobile:checked ~ .window .nc-tabs { padding: 12px 16px 0; }
+#preview-mobile:checked ~ .window .nc-tab-label { font-size: 11px; padding: 5px 10px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Notification Center</h1>
+      <span class="exp-version">v2</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Adds category filter tabs (All, Mentions, Updates, System) using CSS radio buttons, improved card design with sender/time layout, avatars with category sub-icons, and contextual preview blocks.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v2: Category filter tabs, avatars, timestamps, improved card design. Add radio-button-driven filter tabs for All, Mentions, Updates, and System categories. Improve notification cards with sender name on top line, timestamp aligned right, avatar circles with category sub-icons, and optional context preview blocks. Hide time-group labels when a category filter is active.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="notification-center-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Toast notifications</span>
+        </a>
+        <a href="notification-center-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Density toggle</span>
+        </a>
+        <a href="notification-center-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Hover actions</span>
+        </a>
+        <a href="notification-center-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Category filters</span>
+        </a>
+        <a href="notification-center-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial slide-out panel</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="nc-app">
+        <input type="checkbox" id="nc-toggle">
+        <input type="radio" name="nc-tab" id="nc-tab-all" checked>
+        <input type="radio" name="nc-tab" id="nc-tab-mentions">
+        <input type="radio" name="nc-tab" id="nc-tab-updates">
+        <input type="radio" name="nc-tab" id="nc-tab-system">
+
+        <div class="nc-topbar">
+          <span class="nc-topbar-title">Dashboard</span>
+          <label for="nc-toggle" class="nc-bell-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="nc-badge">5</span>
+          </label>
+        </div>
+
+        <div class="nc-body">Click the bell icon to open notifications</div>
+
+        <label for="nc-toggle" class="nc-overlay"></label>
+
+        <div class="nc-panel">
+          <div class="nc-panel-header">
+            <h2>Notifications</h2>
+            <label for="nc-toggle" class="nc-close-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </label>
+          </div>
+
+          <div class="nc-tabs">
+            <label for="nc-tab-all" class="nc-tab-label">All</label>
+            <label for="nc-tab-mentions" class="nc-tab-label">Mentions</label>
+            <label for="nc-tab-updates" class="nc-tab-label">Updates</label>
+            <label for="nc-tab-system" class="nc-tab-label">System</label>
+          </div>
+          <div class="nc-panel-divider"></div>
+
+          <div class="nc-panel-body">
+            <div class="nc-group-label">Today</div>
+
+            <div class="nc-item unread" data-cat="mention">
+              <div class="nc-avatar blue">SC
+                <span class="nc-cat-icon mention">@</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">Sarah Chen</span>
+                  <span class="nc-item-time">12 min ago</span>
+                </div>
+                <div class="nc-item-text">Mentioned you in <strong>Q4 Planning</strong></div>
+                <div class="nc-item-context">"@you Can you review the budget allocations for the platform team? I think we need to adjust..."</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread" data-cat="update">
+              <div class="nc-avatar green">DB
+                <span class="nc-cat-icon update">&#10003;</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">Deploy Bot</span>
+                  <span class="nc-item-time">1 hour ago</span>
+                </div>
+                <div class="nc-item-text">Successfully deployed <strong>v2.4.1</strong> to production</div>
+              </div>
+            </div>
+
+            <div class="nc-item unread" data-cat="mention">
+              <div class="nc-avatar purple">MR
+                <span class="nc-cat-icon mention">@</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">Mike Rivera</span>
+                  <span class="nc-item-time">2 hours ago</span>
+                </div>
+                <div class="nc-item-text">Assigned you to <strong>Bug #1234</strong></div>
+                <div class="nc-item-context">"Login page crashes on Safari when autofill triggers password manager overlay"</div>
+              </div>
+            </div>
+
+            <div class="nc-group-label">Earlier</div>
+
+            <div class="nc-item" data-cat="update">
+              <div class="nc-avatar orange">AK
+                <span class="nc-cat-icon update">&#10003;</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">Anna Kim</span>
+                  <span class="nc-item-time">Yesterday, 4:32 PM</span>
+                </div>
+                <div class="nc-item-text">Approved your pull request <strong>#892</strong></div>
+              </div>
+            </div>
+
+            <div class="nc-item unread" data-cat="system">
+              <div class="nc-avatar red">SY
+                <span class="nc-cat-icon system">!</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">System Alert</span>
+                  <span class="nc-item-time">Yesterday, 2:10 PM</span>
+                </div>
+                <div class="nc-item-text">Elevated error rates on <strong>api-gateway</strong></div>
+                <div class="nc-item-context">Error rate exceeded 5% threshold for 10+ minutes. Auto-scaling initiated.</div>
+              </div>
+            </div>
+
+            <div class="nc-group-label">This Week</div>
+
+            <div class="nc-item" data-cat="update">
+              <div class="nc-avatar blue">JW
+                <span class="nc-cat-icon update">&#10003;</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">James Wu</span>
+                  <span class="nc-item-time">Monday, 10:15 AM</span>
+                </div>
+                <div class="nc-item-text">Shared <strong>Design System v3</strong> with you</div>
+              </div>
+            </div>
+
+            <div class="nc-item" data-cat="update">
+              <div class="nc-avatar green">CI
+                <span class="nc-cat-icon update">&#10003;</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">CI Pipeline</span>
+                  <span class="nc-item-time">Monday, 9:00 AM</span>
+                </div>
+                <div class="nc-item-text">Completed 47 test suites &mdash; <strong>100% pass rate</strong></div>
+              </div>
+            </div>
+
+            <div class="nc-item unread" data-cat="system">
+              <div class="nc-avatar pink">TS
+                <span class="nc-cat-icon system">!</span>
+              </div>
+              <div class="nc-item-body">
+                <div class="nc-item-top">
+                  <span class="nc-item-sender">Team Standup</span>
+                  <span class="nc-item-time">Sunday, 8:45 AM</span>
+                </div>
+                <div class="nc-item-text">Reminder: Daily sync in 15 minutes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

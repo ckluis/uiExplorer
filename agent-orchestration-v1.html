@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v1: Mycelium Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ─── Mycelium Network Canvas ─── */
+.mycelium-canvas {
+  width: 100%;
+  min-height: 100vh;
+  background: #0a0a14;
+  background-image:
+    radial-gradient(ellipse 800px 600px at 50% 30%, rgba(0, 255, 136, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 30% 60%, rgba(80, 40, 120, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 70% 70%, rgba(0, 180, 100, 0.02) 0%, transparent 70%);
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px 60px;
+}
+
+/* ─── Tree Layout Container ─── */
+.tree {
+  position: relative;
+  width: 900px;
+}
+
+/* ─── Shared Node Styles ─── */
+.node {
+  position: absolute;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  z-index: 2;
+}
+
+.node-name {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+
+.node-status {
+  font-size: 10px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.node-dot.active { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+.node-dot.waiting { background: #f39c12; box-shadow: 0 0 6px #f39c12; }
+.node-dot.working { background: #3498db; box-shadow: 0 0 6px #3498db; }
+
+/* ─── Human Task (Tree Trunk) ─── */
+.human-task {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1.5px solid rgba(139, 156, 247, 0.4);
+  box-shadow:
+    0 0 20px rgba(139, 156, 247, 0.15),
+    0 0 60px rgba(139, 156, 247, 0.05),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  color: #d4dcff;
+  width: 340px;
+}
+
+.human-task .node-name { color: #a8b4f0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.human-task .task-text { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; }
+
+/* ─── Orchestrator Node ─── */
+.orchestrator {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 120px;
+  background: linear-gradient(135deg, #0a2e1a 0%, #0f3d1f 100%);
+  border: 1.5px solid rgba(0, 255, 136, 0.4);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.2),
+    0 0 80px rgba(0, 255, 136, 0.08),
+    0 0 120px rgba(0, 255, 136, 0.03),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  color: #b0ffd8;
+  width: 260px;
+}
+
+.orchestrator .node-name { color: #00ff88; font-size: 14px; }
+
+/* ─── Level 2 Agents ─── */
+.agent-l2 {
+  top: 300px;
+  background: linear-gradient(135deg, #0d1f2d 0%, #0a2a2a 100%);
+  border: 1px solid rgba(0, 220, 130, 0.3);
+  box-shadow:
+    0 0 20px rgba(0, 220, 130, 0.12),
+    0 0 50px rgba(0, 220, 130, 0.04),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  color: #a0e8c8;
+  width: 180px;
+}
+
+.agent-frontend { left: 80px; }
+.agent-backend { left: 50%; transform: translateX(-50%); }
+.agent-database { right: 80px; }
+
+/* ─── Level 3 Agents ─── */
+.agent-l3 {
+  top: 480px;
+  background: linear-gradient(135deg, #101020 0%, #0d1a24 100%);
+  border: 1px solid rgba(0, 200, 120, 0.2);
+  box-shadow:
+    0 0 14px rgba(0, 200, 120, 0.08),
+    0 0 30px rgba(0, 200, 120, 0.03),
+    inset 0 1px 0 rgba(255,255,255,0.02);
+  color: #80d0b0;
+  width: 155px;
+  padding: 10px 14px;
+}
+
+.agent-l3 .node-name { font-size: 11px; }
+.agent-l3 .node-status { font-size: 9px; }
+
+.agent-component { left: 18px; }
+.agent-style { left: 195px; }
+.agent-api { left: 390px; }
+.agent-auth { left: 565px; }
+
+/* ─── Hyphae Threads (CSS lines) ─── */
+.thread {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Vertical threads from human to orchestrator */
+.thread-trunk {
+  left: 50%;
+  top: 70px;
+  width: 2px;
+  height: 50px;
+  background: linear-gradient(to bottom, rgba(139, 156, 247, 0.3), rgba(0, 255, 136, 0.4));
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+  transform: translateX(-50%);
+}
+
+/* Orchestrator to L2 vertical stem */
+.thread-orch-stem {
+  left: 50%;
+  top: 185px;
+  width: 2px;
+  height: 40px;
+  background: rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.15);
+  transform: translateX(-50%);
+}
+
+/* Horizontal bar connecting L2 agents */
+.thread-h-bar {
+  top: 225px;
+  left: 170px;
+  right: 170px;
+  height: 2px;
+  background: rgba(0, 220, 130, 0.25);
+  box-shadow: 0 0 6px rgba(0, 220, 130, 0.12);
+}
+
+/* Vertical drops to L2 agents */
+.thread-drop-l { left: 170px; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); }
+.thread-drop-c { left: 50%; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); transform: translateX(-50%); }
+.thread-drop-r { right: 170px; top: 225px; width: 1.5px; height: 75px; background: rgba(0, 220, 130, 0.25); box-shadow: 0 0 5px rgba(0, 220, 130, 0.1); }
+
+/* L2 to L3 threads — Frontend branch */
+.thread-fe-stem { left: 170px; top: 370px; width: 1px; height: 30px; background: rgba(0, 200, 120, 0.18); box-shadow: 0 0 4px rgba(0, 200, 120, 0.08); }
+.thread-fe-bar { left: 95px; top: 400px; width: 180px; height: 1px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 4px rgba(0, 200, 120, 0.06); }
+.thread-fe-drop-l { left: 95px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+.thread-fe-drop-r { left: 273px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+
+/* L2 to L3 threads — Backend branch */
+.thread-be-stem { left: 50%; top: 370px; width: 1px; height: 30px; background: rgba(0, 200, 120, 0.18); box-shadow: 0 0 4px rgba(0, 200, 120, 0.08); transform: translateX(-50%); }
+.thread-be-bar { left: 465px; top: 400px; width: 180px; height: 1px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 4px rgba(0, 200, 120, 0.06); }
+.thread-be-drop-l { left: 467px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+.thread-be-drop-r { left: 643px; top: 400px; width: 1px; height: 80px; background: rgba(0, 200, 120, 0.15); box-shadow: 0 0 3px rgba(0, 200, 120, 0.06); }
+
+/* ─── Bioluminescent Pulse (Question bubble) ─── */
+.pulse-question {
+  position: absolute;
+  z-index: 10;
+  left: 545px;
+  top: 415px;
+  width: 200px;
+}
+
+.pulse-bubble {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.15) 0%, rgba(243, 156, 18, 0.08) 100%);
+  border: 1.5px solid rgba(243, 156, 18, 0.5);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow:
+    0 0 25px rgba(243, 156, 18, 0.2),
+    0 0 60px rgba(243, 156, 18, 0.08),
+    0 0 100px rgba(243, 156, 18, 0.03);
+  color: #f5d89a;
+  font-family: 'Inter', sans-serif;
+}
+
+.pulse-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f39c12;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pulse-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f39c12;
+  box-shadow: 0 0 8px #f39c12;
+  display: inline-block;
+}
+
+.pulse-question-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffe0a0;
+  margin-bottom: 8px;
+}
+
+.pulse-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pulse-option {
+  font-size: 10px;
+  padding: 4px 8px;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 6px;
+  color: #d4b06a;
+}
+
+/* Upward arrow indicator */
+.pulse-arrow {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 8px solid rgba(243, 156, 18, 0.5);
+  filter: drop-shadow(0 0 4px rgba(243, 156, 18, 0.4));
+}
+
+/* ─── Ambient spore dots ─── */
+.spore {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.1);
+  z-index: 0;
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration through the metaphor of mycelial networks &mdash; nature's own orchestration system. Agents appear as glowing fungal nodes connected by pulsing hyphae threads. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Mycelium Network &mdash; organic, asymmetric branching where the human task sits as a &ldquo;tree&rdquo; at the top and agents spread downward as glowing root networks. Questions travel back up as bioluminescent pulses. The deeper the nesting, the thinner the threads.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a mycelium-network-themed visualization of agent orchestration. A human task at the top branches downward through an orchestrator into sub-agents and sub-sub-agents, connected by glowing hyphae threads that thin with depth. One agent sends an AskUserQuestion upward as a bioluminescent pulse. Use dark canvas with green/cyan glow effects for an organic, fungal-network aesthetic.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="mycelium-canvas">
+
+      <!-- Ambient spores -->
+      <div class="spore" style="width:3px;height:3px;top:15%;left:10%;opacity:0.4"></div>
+      <div class="spore" style="width:2px;height:2px;top:25%;left:85%;opacity:0.3"></div>
+      <div class="spore" style="width:4px;height:4px;top:55%;left:5%;opacity:0.2"></div>
+      <div class="spore" style="width:2px;height:2px;top:70%;left:92%;opacity:0.35"></div>
+      <div class="spore" style="width:3px;height:3px;top:40%;left:15%;opacity:0.25"></div>
+      <div class="spore" style="width:2px;height:2px;top:80%;left:50%;opacity:0.2"></div>
+      <div class="spore" style="width:3px;height:3px;top:10%;left:70%;opacity:0.3"></div>
+      <div class="spore" style="width:2px;height:2px;top:65%;left:25%;opacity:0.15"></div>
+
+      <div class="tree">
+
+        <!-- ═══ THREADS (behind nodes) ═══ -->
+        <!-- Human → Orchestrator -->
+        <div class="thread thread-trunk"></div>
+
+        <!-- Orchestrator → L2 horizontal system -->
+        <div class="thread thread-orch-stem"></div>
+        <div class="thread thread-h-bar"></div>
+        <div class="thread thread-drop-l"></div>
+        <div class="thread thread-drop-c"></div>
+        <div class="thread thread-drop-r"></div>
+
+        <!-- Frontend → L3 -->
+        <div class="thread thread-fe-stem"></div>
+        <div class="thread thread-fe-bar"></div>
+        <div class="thread thread-fe-drop-l"></div>
+        <div class="thread thread-fe-drop-r"></div>
+
+        <!-- Backend → L3 -->
+        <div class="thread thread-be-stem"></div>
+        <div class="thread thread-be-bar"></div>
+        <div class="thread thread-be-drop-l"></div>
+        <div class="thread thread-be-drop-r"></div>
+
+        <!-- ═══ NODES ═══ -->
+
+        <!-- Human Task -->
+        <div class="node human-task">
+          <div class="node-name">Human Task</div>
+          <div class="task-text">Build a full-stack e-commerce platform</div>
+        </div>
+
+        <!-- Orchestrator -->
+        <div class="node orchestrator">
+          <div class="node-name"><span class="node-dot active"></span>Orchestrator Agent</div>
+          <div class="node-status">Decomposing task...</div>
+        </div>
+
+        <!-- L2 Agents -->
+        <div class="node agent-l2 agent-frontend">
+          <div class="node-name"><span class="node-dot working"></span>Frontend Agent</div>
+          <div class="node-status">Spawning sub-agents</div>
+        </div>
+
+        <div class="node agent-l2 agent-backend">
+          <div class="node-name"><span class="node-dot waiting"></span>Backend Agent</div>
+          <div class="node-status">Awaiting sub-agent response</div>
+        </div>
+
+        <div class="node agent-l2 agent-database">
+          <div class="node-name"><span class="node-dot working"></span>Database Agent</div>
+          <div class="node-status">Designing schema</div>
+        </div>
+
+        <!-- L3 Agents — Frontend branch -->
+        <div class="node agent-l3 agent-component">
+          <div class="node-name"><span class="node-dot working"></span>Component Designer</div>
+          <div class="node-status">Building product cards</div>
+        </div>
+
+        <div class="node agent-l3 agent-style">
+          <div class="node-name"><span class="node-dot active"></span>Style System Agent</div>
+          <div class="node-status">Generating tokens</div>
+        </div>
+
+        <!-- L3 Agents — Backend branch -->
+        <div class="node agent-l3 agent-api">
+          <div class="node-name"><span class="node-dot working"></span>API Route Agent</div>
+          <div class="node-status">Defining endpoints</div>
+        </div>
+
+        <div class="node agent-l3 agent-auth">
+          <div class="node-name"><span class="node-dot waiting"></span>Auth Agent</div>
+          <div class="node-status">Blocked &mdash; needs input</div>
+        </div>
+
+        <!-- ═══ BIOLUMINESCENT PULSE ═══ -->
+        <div class="pulse-question">
+          <div class="pulse-bubble">
+            <div class="pulse-arrow"></div>
+            <div class="pulse-label">AskUserQuestion</div>
+            <div class="pulse-question-text">OAuth provider preference?</div>
+            <div class="pulse-options">
+              <div class="pulse-option">Google</div>
+              <div class="pulse-option">GitHub</div>
+              <div class="pulse-option">Email / Password</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v18: Particle Chamber (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  padding: 8px 10px 3px;
+  margin-top: 4px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #0a0a20 0%, #0f0f2a 50%, #050515 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #050510;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(60,80,160,0.2);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Controls Bar ─── */
+.controls-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(10, 10, 30, 0.85);
+  border: 1px solid rgba(80, 100, 160, 0.15);
+  border-radius: 8px;
+  padding: 8px 16px;
+  z-index: 10;
+  font-size: 10px;
+  color: rgba(160, 170, 200, 0.7);
+}
+
+.controls-bar .ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controls-bar .ctrl-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 9px;
+  color: rgba(140, 160, 220, 0.5);
+}
+
+.controls-bar .ctrl-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(80, 100, 160, 0.15);
+}
+
+/* Checkbox toggle styling */
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-track {
+  width: 28px;
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(80, 100, 160, 0.2);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(160, 170, 200, 0.5);
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+#decay-toggle:checked ~ .window .toggle-track {
+  background: rgba(160, 100, 240, 0.3);
+}
+
+#decay-toggle:checked ~ .window .toggle-track::after {
+  transform: translateX(14px);
+  background: rgba(160, 100, 240, 0.9);
+}
+
+/* Radio button styling */
+.collision-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(80, 100, 160, 0.1);
+  transition: background 0.2s, border-color 0.2s;
+  user-select: none;
+}
+
+.collision-radio:hover {
+  background: rgba(80, 100, 160, 0.08);
+}
+
+.collision-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(160, 170, 200, 0.3);
+  position: relative;
+}
+
+.collision-dot::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s;
+}
+
+/* Active collision type states */
+#collision-direct:checked ~ .window .collision-radio[data-type="direct"] { background: rgba(255, 240, 150, 0.1); border-color: rgba(255, 240, 150, 0.3); }
+#collision-direct:checked ~ .window .collision-radio[data-type="direct"] .collision-dot { border-color: rgba(255, 240, 150, 0.7); }
+#collision-direct:checked ~ .window .collision-radio[data-type="direct"] .collision-dot::after { transform: translate(-50%, -50%) scale(1); background: rgba(255, 240, 150, 0.9); }
+
+#collision-branching:checked ~ .window .collision-radio[data-type="branching"] { background: rgba(80, 140, 255, 0.1); border-color: rgba(80, 140, 255, 0.3); }
+#collision-branching:checked ~ .window .collision-radio[data-type="branching"] .collision-dot { border-color: rgba(80, 140, 255, 0.7); }
+#collision-branching:checked ~ .window .collision-radio[data-type="branching"] .collision-dot::after { transform: translate(-50%, -50%) scale(1); background: rgba(80, 140, 255, 0.9); }
+
+#collision-cascade:checked ~ .window .collision-radio[data-type="cascade"] { background: rgba(46, 204, 113, 0.1); border-color: rgba(46, 204, 113, 0.3); }
+#collision-cascade:checked ~ .window .collision-radio[data-type="cascade"] .collision-dot { border-color: rgba(46, 204, 113, 0.7); }
+#collision-cascade:checked ~ .window .collision-radio[data-type="cascade"] .collision-dot::after { transform: translate(-50%, -50%) scale(1); background: rgba(46, 204, 113, 0.9); }
+
+/* ─── Chamber Layout ─── */
+.chamber-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── The Bubble Chamber ─── */
+.chamber {
+  position: relative;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #080818 0%, #040410 60%, #020208 100%);
+  border: 2px solid rgba(100, 120, 180, 0.2);
+  box-shadow:
+    0 0 60px rgba(60, 80, 160, 0.08),
+    inset 0 0 80px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.chamber::before,
+.chamber::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(80, 100, 160, 0.06);
+}
+
+.chamber::before {
+  top: 70px; left: 70px; right: 70px; bottom: 70px;
+}
+
+.chamber::after {
+  top: 140px; left: 140px; right: 140px; bottom: 140px;
+}
+
+.ring-inner {
+  position: absolute;
+  top: 210px; left: 210px; right: 210px; bottom: 210px;
+  border-radius: 50%;
+  border: 1px solid rgba(80, 100, 160, 0.04);
+}
+
+.grid-h, .grid-v {
+  position: absolute;
+  background: rgba(80, 100, 160, 0.03);
+}
+
+.grid-h {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+  left: 0;
+}
+
+.grid-v {
+  height: 100%;
+  width: 1px;
+  left: 50%;
+  top: 0;
+}
+
+/* ─── Incoming Particle ─── */
+.incoming-track {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 280px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 240, 150, 0.0) 0%, rgba(255, 240, 150, 0.6) 30%, rgba(255, 255, 200, 0.9) 100%);
+  box-shadow: 0 0 8px rgba(255, 240, 150, 0.4), 0 0 20px rgba(255, 240, 150, 0.15);
+  transform: translateY(-50%);
+}
+
+.incoming-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-28px);
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 240, 180, 0.7);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.incoming-label span {
+  display: block;
+  font-size: 9px;
+  color: rgba(255, 240, 180, 0.4);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Collision type labels for incoming */
+#collision-direct:checked ~ .window .incoming-label span::after { content: ' — Direct injection'; }
+#collision-branching:checked ~ .window .incoming-label span::after { content: ' — Branching prompt'; }
+#collision-cascade:checked ~ .window .incoming-label span::after { content: ' — Cascade trigger'; }
+
+/* ─── Collision Point ─── */
+.collision {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 220, 0.6) 30%, rgba(200, 200, 255, 0.2) 60%, transparent 100%);
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 0 40px rgba(200, 200, 255, 0.3),
+    0 0 80px rgba(150, 150, 255, 0.15);
+}
+
+/* Collision glow changes by type */
+#collision-branching:checked ~ .window .collision {
+  box-shadow:
+    0 0 20px rgba(80, 140, 255, 0.6),
+    0 0 40px rgba(80, 140, 255, 0.3),
+    0 0 80px rgba(80, 140, 255, 0.15);
+}
+
+#collision-cascade:checked ~ .window .collision {
+  box-shadow:
+    0 0 20px rgba(46, 204, 113, 0.6),
+    0 0 40px rgba(46, 204, 113, 0.3),
+    0 0 80px rgba(46, 204, 113, 0.15);
+}
+
+.collision-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 20px);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.collision-sublabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 33px);
+  font-size: 8px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+
+/* ─── Particle Tracks ─── */
+
+/* Track A — Security Audit Agent (blue, upper-right) */
+.track-a {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 170px;
+  height: 170px;
+  border: none;
+  border-top: 3px solid rgba(80, 140, 255, 0.7);
+  border-radius: 170px 0 0 0;
+  transform: translate(-14px, -170px) rotate(45deg);
+  box-shadow: 0 -3px 12px rgba(80, 140, 255, 0.3);
+}
+
+.track-a-end {
+  position: absolute;
+  top: 105px;
+  right: 105px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(80, 140, 255, 0.9);
+  box-shadow: 0 0 8px rgba(80, 140, 255, 0.6), 0 0 20px rgba(80, 140, 255, 0.3);
+}
+
+.track-a-label {
+  position: absolute;
+  top: 92px;
+  right: 68px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(80, 140, 255, 0.8);
+  white-space: nowrap;
+}
+
+/* Track A hover — spawn tree tooltip */
+.track-a-hover {
+  position: absolute;
+  top: 60px;
+  right: 30px;
+  background: rgba(10, 10, 40, 0.95);
+  border: 1px solid rgba(80, 140, 255, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 9px;
+  color: rgba(180, 200, 255, 0.8);
+  line-height: 1.6;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.track-a-hover .tree-line { color: rgba(80, 140, 255, 0.5); }
+.track-a-hover .tree-agent { color: rgba(80, 140, 255, 0.9); font-weight: 600; }
+.track-a-hover .tree-sub { color: rgba(120, 180, 255, 0.7); }
+
+.track-a:hover ~ .track-a-hover,
+.track-a-end:hover ~ .track-a-hover,
+.track-a-label:hover ~ .track-a-hover {
+  opacity: 1;
+}
+
+/* Track A sub-particles */
+.track-a1 {
+  position: absolute;
+  top: 105px;
+  right: 105px;
+  width: 70px;
+  height: 70px;
+  border: none;
+  border-right: 1.5px solid rgba(120, 180, 255, 0.5);
+  border-radius: 0 70px 0 0;
+  transform: rotate(-20deg);
+  box-shadow: 3px 0 8px rgba(120, 180, 255, 0.2);
+}
+
+.track-a1-label {
+  position: absolute;
+  top: 62px;
+  right: 28px;
+  font-size: 8px;
+  font-weight: 500;
+  color: rgba(120, 180, 255, 0.6);
+  white-space: nowrap;
+}
+
+.track-a2 {
+  position: absolute;
+  top: 105px;
+  right: 105px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-top: 1.5px solid rgba(120, 180, 255, 0.5);
+  border-radius: 60px 0 0 0;
+  transform: rotate(10deg) translate(0, -10px);
+  box-shadow: 0 -2px 8px rgba(120, 180, 255, 0.2);
+}
+
+.track-a2-label {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  font-size: 8px;
+  font-weight: 500;
+  color: rgba(120, 180, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Track B — Code Migration Agent (green, lower-right) */
+.track-b {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 190px;
+  height: 155px;
+  border: none;
+  border-bottom: 3px solid rgba(46, 204, 113, 0.7);
+  border-radius: 0 0 0 155px;
+  transform: translate(-14px, 0) rotate(-30deg);
+  box-shadow: 0 3px 12px rgba(46, 204, 113, 0.3);
+}
+
+.track-b-label {
+  position: absolute;
+  bottom: 150px;
+  right: 85px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(46, 204, 113, 0.8);
+  white-space: nowrap;
+}
+
+/* Track B hover — spawn tree */
+.track-b-hover {
+  position: absolute;
+  bottom: 180px;
+  right: 50px;
+  background: rgba(10, 10, 40, 0.95);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 9px;
+  color: rgba(150, 230, 180, 0.8);
+  line-height: 1.6;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.track-b:hover ~ .track-b-hover,
+.track-b-label:hover ~ .track-b-hover {
+  opacity: 1;
+}
+
+/* Track B reflection (amber) */
+.track-b-reflect {
+  position: absolute;
+  bottom: 108px;
+  right: 52px;
+  width: 85px;
+  height: 85px;
+  border: none;
+  border-left: 2px solid rgba(243, 156, 18, 0.7);
+  border-radius: 0 0 0 85px;
+  transform: rotate(40deg);
+  box-shadow: -2px 0 10px rgba(243, 156, 18, 0.3);
+}
+
+.reflect-flash {
+  position: absolute;
+  bottom: 118px;
+  right: 58px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(243, 156, 18, 0.8) 0%, rgba(243, 156, 18, 0.2) 60%, transparent 100%);
+  box-shadow: 0 0 12px rgba(243, 156, 18, 0.5);
+}
+
+.reflect-label {
+  position: absolute;
+  bottom: 135px;
+  right: 10px;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(243, 156, 18, 0.8);
+  white-space: nowrap;
+}
+
+.reflect-sublabel {
+  position: absolute;
+  bottom: 122px;
+  right: 10px;
+  font-size: 8px;
+  font-weight: 400;
+  color: rgba(243, 156, 18, 0.5);
+  white-space: nowrap;
+}
+
+/* Track C — Test Generation Agent (purple, upward) */
+.track-c {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 155px;
+  border: none;
+  border-right: 2px solid rgba(160, 100, 240, 0.7);
+  border-radius: 0 140px 0 0;
+  transform: translate(-14px, -155px) rotate(15deg);
+  box-shadow: 3px 0 10px rgba(160, 100, 240, 0.3);
+}
+
+.track-c-end {
+  position: absolute;
+  top: 130px;
+  left: 345px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(160, 100, 240, 0.8);
+  box-shadow: 0 0 6px rgba(160, 100, 240, 0.5);
+}
+
+.track-c-label {
+  position: absolute;
+  top: 118px;
+  left: 355px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(160, 100, 240, 0.8);
+  white-space: nowrap;
+}
+
+/* Track C hover — spawn tree */
+.track-c-hover {
+  position: absolute;
+  top: 100px;
+  left: 350px;
+  background: rgba(10, 10, 40, 0.95);
+  border: 1px solid rgba(160, 100, 240, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 9px;
+  color: rgba(200, 170, 255, 0.8);
+  line-height: 1.6;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.track-c:hover ~ .track-c-hover,
+.track-c-end:hover ~ .track-c-hover,
+.track-c-label:hover ~ .track-c-hover {
+  opacity: 1;
+}
+
+/* Track D — Documentation Agent (cyan, downward) */
+.track-d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 140px;
+  border: none;
+  border-left: 1.5px solid rgba(80, 220, 240, 0.5);
+  border-radius: 0 0 0 120px;
+  transform: translate(-14px, 0) rotate(10deg);
+  box-shadow: -2px 0 8px rgba(80, 220, 240, 0.2);
+}
+
+.track-d-end {
+  position: absolute;
+  bottom: 125px;
+  left: 180px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(80, 220, 240, 0.7);
+  box-shadow: 0 0 6px rgba(80, 220, 240, 0.4);
+}
+
+.track-d-label {
+  position: absolute;
+  bottom: 112px;
+  left: 160px;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(80, 220, 240, 0.6);
+  white-space: nowrap;
+}
+
+/* ─── Decay Toggle Animation States ─── */
+@keyframes track-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes track-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.5), 0 0 20px rgba(200, 200, 255, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(200, 200, 255, 0.5), 0 0 80px rgba(150, 150, 255, 0.3); }
+}
+
+#decay-toggle:checked ~ .window .track-a { animation: track-pulse 3s ease-in-out infinite; }
+#decay-toggle:checked ~ .window .track-b { animation: track-pulse 3.5s ease-in-out infinite 0.3s; }
+#decay-toggle:checked ~ .window .track-c { animation: track-fade 4s ease-in-out infinite 0.6s; }
+#decay-toggle:checked ~ .window .track-d { animation: track-fade 5s ease-in-out infinite 0.9s; }
+#decay-toggle:checked ~ .window .track-a1,
+#decay-toggle:checked ~ .window .track-a2 { animation: track-fade 2.5s ease-in-out infinite 1.2s; }
+#decay-toggle:checked ~ .window .collision { animation: glow-pulse 2s ease-in-out infinite; }
+#decay-toggle:checked ~ .window .track-b-reflect { animation: track-pulse 2s ease-in-out infinite 0.5s; }
+#decay-toggle:checked ~ .window .reflect-flash { animation: glow-pulse 1.5s ease-in-out infinite; }
+
+/* ─── Question Panel ─── */
+.question-panel {
+  position: absolute;
+  bottom: 50px;
+  right: 25px;
+  width: 210px;
+  background: rgba(243, 156, 18, 0.06);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: rgba(243, 156, 18, 0.8);
+  line-height: 1.5;
+}
+
+.question-panel-title {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(243, 156, 18, 0.5);
+  margin-bottom: 6px;
+}
+
+.question-panel-text {
+  color: rgba(255, 220, 150, 0.7);
+  font-size: 10px;
+}
+
+/* ─── Detector Readout Panel ─── */
+.detector-readout {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 230px;
+  background: rgba(10, 10, 30, 0.9);
+  border: 1px solid rgba(80, 100, 160, 0.15);
+  border-radius: 10px;
+  padding: 16px 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.detector-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(140, 160, 220, 0.6);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(80, 100, 160, 0.1);
+}
+
+.detector-row {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(80, 100, 160, 0.06);
+}
+
+.detector-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.detector-particle {
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.detector-particle.blue { color: rgba(80, 140, 255, 0.9); }
+.detector-particle.green { color: rgba(46, 204, 113, 0.9); }
+.detector-particle.purple { color: rgba(160, 100, 240, 0.9); }
+.detector-particle.cyan { color: rgba(80, 220, 240, 0.9); }
+
+.detector-props {
+  display: flex;
+  gap: 8px;
+  font-size: 8px;
+  color: rgba(160, 170, 200, 0.5);
+}
+
+.detector-props .val {
+  color: rgba(200, 210, 240, 0.7);
+  font-weight: 500;
+}
+
+.detector-status {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 3px;
+}
+
+.status-stable { background: rgba(46, 204, 113, 0.1); color: rgba(46, 204, 113, 0.7); }
+.status-reflected { background: rgba(243, 156, 18, 0.1); color: rgba(243, 156, 18, 0.7); }
+.status-decaying { background: rgba(160, 100, 240, 0.1); color: rgba(160, 100, 240, 0.7); }
+.status-terminal { background: rgba(80, 220, 240, 0.1); color: rgba(80, 220, 240, 0.7); }
+
+/* ─── Mobile Mode Overrides ─── */
+#preview-mobile:checked ~ .window .chamber {
+  width: 300px;
+  height: 520px;
+  border-radius: 160px / 260px;
+}
+
+#preview-mobile:checked ~ .window .chamber::before {
+  top: 50px; left: 40px; right: 40px; bottom: 50px;
+}
+
+#preview-mobile:checked ~ .window .chamber::after {
+  top: 100px; left: 80px; right: 80px; bottom: 100px;
+}
+
+#preview-mobile:checked ~ .window .ring-inner {
+  top: 150px; left: 110px; right: 110px; bottom: 150px;
+}
+
+#preview-mobile:checked ~ .window .detector-readout {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .controls-bar {
+  flex-wrap: wrap;
+  width: 340px;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+#preview-mobile:checked ~ .window .question-panel {
+  bottom: 10px;
+  right: 10px;
+  width: 160px;
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .incoming-track { width: 150px; }
+#preview-mobile:checked ~ .window .track-a { width: 100px; height: 100px; border-radius: 100px 0 0 0; transform: translate(-14px, -100px) rotate(45deg); }
+#preview-mobile:checked ~ .window .track-b { width: 110px; height: 90px; border-radius: 0 0 0 90px; }
+#preview-mobile:checked ~ .window .track-c { width: 80px; height: 90px; border-radius: 0 80px 0 0; transform: translate(-14px, -90px) rotate(15deg); }
+#preview-mobile:checked ~ .window .track-d { width: 70px; height: 80px; border-radius: 0 0 0 70px; }
+
+#preview-mobile:checked ~ .window .track-a-end,
+#preview-mobile:checked ~ .window .track-a-label,
+#preview-mobile:checked ~ .window .track-a1,
+#preview-mobile:checked ~ .window .track-a1-label,
+#preview-mobile:checked ~ .window .track-a2,
+#preview-mobile:checked ~ .window .track-a2-label,
+#preview-mobile:checked ~ .window .track-b-label,
+#preview-mobile:checked ~ .window .track-c-end,
+#preview-mobile:checked ~ .window .track-c-label,
+#preview-mobile:checked ~ .window .track-d-end,
+#preview-mobile:checked ~ .window .track-d-label,
+#preview-mobile:checked ~ .window .track-a-hover,
+#preview-mobile:checked ~ .window .track-b-hover,
+#preview-mobile:checked ~ .window .track-c-hover,
+#preview-mobile:checked ~ .window .reflect-label,
+#preview-mobile:checked ~ .window .reflect-sublabel {
+  display: none;
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v18</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Particle Chamber (v8) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + animation toggle, hover particle trails, collision type radios.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v18.html as an enhanced iteration of v8 (Particle Chamber). Take the existing Particle Chamber and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: checkbox to toggle particle decay animation states, :hover on particle trails shows agent spawn tree, radio buttons for collision types (different prompt entry scenarios). Mobile: simplified particle count, vertical chamber. Preserve dark physics lab aesthetic with neon trails.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt 1 (v1&ndash;v10) &rarr;</a>
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt 2 (v11&ndash;v20) &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Enhanced Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Enhanced Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Enhanced Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Enhanced Cartographic</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Enhanced Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Enhanced Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Enhanced Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Enhanced Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Enhanced Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Enhanced Mycelium Network</span>
+        </a>
+        <div class="exp-vc-group">Original Series (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <!-- Interaction state -->
+    <input type="checkbox" id="decay-toggle">
+    <input type="radio" name="collision" id="collision-direct" checked>
+    <input type="radio" name="collision" id="collision-branching">
+    <input type="radio" name="collision" id="collision-cascade">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Controls bar -->
+      <div class="controls-bar">
+        <div class="ctrl-group">
+          <span class="ctrl-label">Decay</span>
+          <label for="decay-toggle" class="toggle-label">
+            <span class="toggle-track"></span>
+            <span>Animate</span>
+          </label>
+        </div>
+        <div class="ctrl-divider"></div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">Collision</span>
+          <label for="collision-direct" class="collision-radio" data-type="direct">
+            <span class="collision-dot"></span>
+            Direct
+          </label>
+          <label for="collision-branching" class="collision-radio" data-type="branching">
+            <span class="collision-dot"></span>
+            Branching
+          </label>
+          <label for="collision-cascade" class="collision-radio" data-type="cascade">
+            <span class="collision-dot"></span>
+            Cascade
+          </label>
+        </div>
+      </div>
+
+      <div class="chamber-scene">
+        <div class="chamber">
+          <div class="grid-h"></div>
+          <div class="grid-v"></div>
+          <div class="ring-inner"></div>
+
+          <!-- Incoming particle -->
+          <div class="incoming-track"></div>
+          <div class="incoming-label">
+            Human Prompt
+            <span>"Refactor the authentication system"</span>
+          </div>
+
+          <!-- Collision -->
+          <div class="collision"></div>
+          <div class="collision-label">Orchestrator</div>
+          <div class="collision-sublabel">Primary Decay</div>
+
+          <!-- Track A — Security Audit Agent (blue) -->
+          <div class="track-a"></div>
+          <div class="track-a-end"></div>
+          <div class="track-a-label">Security Audit Agent</div>
+          <div class="track-a-hover">
+            <span class="tree-agent">Security Audit Agent</span><br>
+            <span class="tree-line">&ensp;&boxvr;&horbar; </span><span class="tree-sub">OAuth Analyzer</span><br>
+            <span class="tree-line">&ensp;&boxur;&horbar; </span><span class="tree-sub">JWT Validator</span>
+          </div>
+
+          <!-- Track A sub-particles -->
+          <div class="track-a1"></div>
+          <div class="track-a1-label">OAuth Analyzer</div>
+          <div class="track-a2"></div>
+          <div class="track-a2-label">JWT Validator</div>
+
+          <!-- Track B — Code Migration Agent (green) -->
+          <div class="track-b"></div>
+          <div class="track-b-label">Code Migration Agent</div>
+          <div class="track-b-hover">
+            <span style="color:rgba(46,204,113,0.9);font-weight:600;">Code Migration Agent</span><br>
+            <span class="tree-line">&ensp;&boxur;&horbar; </span><span style="color:rgba(243,156,18,0.8);">Reflected &mdash; needs input</span>
+          </div>
+
+          <!-- Track B reflection -->
+          <div class="reflect-flash"></div>
+          <div class="track-b-reflect"></div>
+          <div class="reflect-label">Reflected &mdash; needs energy</div>
+          <div class="reflect-sublabel">(human input required)</div>
+
+          <!-- Track C — Test Generation Agent (purple) -->
+          <div class="track-c"></div>
+          <div class="track-c-end"></div>
+          <div class="track-c-label">Test Generation Agent</div>
+          <div class="track-c-hover">
+            <span style="color:rgba(160,100,240,0.9);font-weight:600;">Test Generation Agent</span><br>
+            <span class="tree-line">&ensp;&boxvr;&horbar; </span><span style="color:rgba(200,170,255,0.7);">Unit test suite</span><br>
+            <span class="tree-line">&ensp;&boxur;&horbar; </span><span style="color:rgba(200,170,255,0.7);">Integration harness</span>
+          </div>
+
+          <!-- Track D — Documentation Agent (cyan) -->
+          <div class="track-d"></div>
+          <div class="track-d-end"></div>
+          <div class="track-d-label">Documentation Agent</div>
+
+          <!-- Question panel -->
+          <div class="question-panel">
+            <div class="question-panel-title">Reflected Particle &mdash; Awaiting Energy</div>
+            <div class="question-panel-text">
+              Migrate to OAuth 2.0 or switch to Passkeys?<br>
+              Current system uses OAuth 1.0a.
+            </div>
+          </div>
+        </div>
+
+        <!-- Detector Readout -->
+        <div class="detector-readout">
+          <div class="detector-title">Detector Readout</div>
+          <div class="detector-row">
+            <div class="detector-particle blue">Security Audit Agent</div>
+            <div class="detector-props">
+              <span>E: <span class="val">0.8 GeV</span></span>
+              <span>Track: <span class="val">Curved</span></span>
+            </div>
+            <div class="detector-status status-stable">Stable &mdash; Spiraling</div>
+          </div>
+          <div class="detector-row">
+            <div class="detector-particle green">Code Migration Agent</div>
+            <div class="detector-props">
+              <span>E: <span class="val">0.3 GeV</span></span>
+              <span>Track: <span class="val">Reflected</span></span>
+            </div>
+            <div class="detector-status status-reflected">Reflected &mdash; Awaiting Input</div>
+          </div>
+          <div class="detector-row">
+            <div class="detector-particle purple">Test Generator</div>
+            <div class="detector-props">
+              <span>E: <span class="val">0.6 GeV</span></span>
+              <span>Track: <span class="val">Curved</span></span>
+            </div>
+            <div class="detector-status status-decaying">Stable &mdash; Decaying</div>
+          </div>
+          <div class="detector-row">
+            <div class="detector-particle cyan">Documentation Agent</div>
+            <div class="detector-props">
+              <span>E: <span class="val">0.2 GeV</span></span>
+              <span>Track: <span class="val">Fading</span></span>
+            </div>
+            <div class="detector-status status-terminal">Stable &mdash; Terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

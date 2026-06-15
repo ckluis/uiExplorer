@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v6: Contextual Whisper</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f8f9fc; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ═══════════════════════════════════════════════
+   GUIDED CHECKLISTS VARIANT 06 — CONTEXTUAL WHISPER
+   ═══════════════════════════════════════════════ */
+
+.settings-app { display: flex; height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #1f2937; background: #f8f9fc; }
+
+/* ─── Settings Navigation Sidebar ─── */
+.settings-nav { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #e5e7eb; padding: 20px 0; display: flex; flex-direction: column; }
+.settings-nav-header { padding: 0 20px 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 12px; }
+.settings-nav-header h1 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.settings-nav-header .subtitle { font-size: 12px; color: #6b7280; }
+
+.nav-section { padding: 8px 12px; }
+.nav-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 6px; padding: 0 8px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #4b5563; cursor: default; position: relative; transition: background 0.15s; }
+.nav-item:hover { background: #f3f4f6; }
+.nav-item.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+.nav-item-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.7; }
+.nav-item.active .nav-item-icon { opacity: 1; }
+
+/* Warning count badge on nav items */
+.nav-warning-count { margin-left: auto; min-width: 18px; height: 18px; border-radius: 9px; background: #fef3c7; color: #d97706; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.nav-warning-count.critical { background: #fee2e2; color: #dc2626; }
+
+/* ─── Settings Main Area ─── */
+.settings-main { flex: 1; overflow-y: auto; padding: 32px 40px 48px; }
+.settings-main h2 { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 8px; }
+.settings-main .page-desc { font-size: 14px; color: #6b7280; margin: 0 0 28px; line-height: 1.5; }
+
+/* ─── Form Sections ─── */
+.form-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+.form-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; }
+.form-section h3 { font-size: 15px; font-weight: 600; color: #111827; margin: 0; }
+.form-section-desc { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+/* Section-level warning indicator */
+.section-warning { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; font-size: 11px; font-weight: 600; color: #b45309; }
+.section-warning.critical { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+/* ─── Form Fields ─── */
+.form-row { margin-bottom: 20px; position: relative; }
+.form-row:last-child { margin-bottom: 0; }
+.form-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.form-input { width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #1f2937; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+.form-input::placeholder { color: #9ca3af; }
+.form-help { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+/* Select dropdown */
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+/* ─── Contextual Whisper Indicators ─── */
+
+/* Warning dot — the subtle inline indicator */
+.whisper-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; cursor: pointer; animation: whisper-pulse 2s ease-in-out infinite; }
+.whisper-dot.critical { background: #ef4444; }
+@keyframes whisper-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
+}
+
+/* Whisper container wraps field + popover */
+.whisper-wrap { position: relative; }
+
+/* The popover that appears on hover/focus */
+.whisper-popover { position: absolute; top: 100%; left: 0; right: 0; margin-top: 8px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08); padding: 16px; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: all 0.2s ease; z-index: 100; }
+
+/* Show popover on hover or focus-within */
+.whisper-wrap:hover .whisper-popover,
+.whisper-wrap:focus-within .whisper-popover { opacity: 1; visibility: visible; transform: translateY(0); }
+
+/* Popover arrow */
+.whisper-popover::before { content: ''; position: absolute; top: -6px; left: 24px; width: 10px; height: 10px; background: #fff; border-left: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb; transform: rotate(45deg); }
+
+/* Popover content */
+.whisper-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.whisper-icon { width: 28px; height: 28px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.whisper-icon.critical { background: #fee2e2; }
+.whisper-title { font-size: 13px; font-weight: 600; color: #111827; margin: 0 0 2px; }
+.whisper-subtitle { font-size: 12px; color: #6b7280; line-height: 1.4; }
+
+/* Whisper body — the explanation */
+.whisper-body { font-size: 13px; color: #4b5563; line-height: 1.5; margin-bottom: 12px; }
+
+/* Connection indicator — shows the relationship path */
+.whisper-connection { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 6px; font-size: 12px; color: #6b7280; margin-bottom: 12px; }
+.whisper-connection-icon { font-size: 14px; }
+.whisper-connection-path { font-weight: 500; color: #374151; }
+
+/* Expand for more details */
+.whisper-expand { position: relative; }
+.whisper-expand-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; padding: 6px 0; }
+.whisper-expand-toggle::before { content: '+'; width: 16px; height: 16px; border-radius: 4px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.whisper-expand-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+#expand-1:checked ~ .whisper-wrap .whisper-expand-content,
+#expand-2:checked ~ .whisper-wrap .whisper-expand-content,
+#expand-3:checked ~ .whisper-wrap .whisper-expand-content { max-height: 200px; }
+#expand-1:checked ~ .whisper-wrap .whisper-expand-toggle::before,
+#expand-2:checked ~ .whisper-wrap .whisper-expand-toggle::before,
+#expand-3:checked ~ .whisper-wrap .whisper-expand-toggle::before { content: '-'; }
+.whisper-details { padding: 12px; background: #f9fafb; border-radius: 6px; margin-top: 8px; font-size: 12px; color: #4b5563; line-height: 1.5; }
+.whisper-details ul { margin: 8px 0 0 16px; }
+.whisper-details li { margin-bottom: 4px; }
+
+/* Action buttons in popover */
+.whisper-actions { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+.whisper-action { flex: 1; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-align: center; cursor: default; transition: background 0.15s; }
+.whisper-action.primary { background: #2563eb; color: #fff; }
+.whisper-action.primary:hover { background: #1d4ed8; }
+.whisper-action.secondary { background: #f3f4f6; color: #374151; }
+.whisper-action.secondary:hover { background: #e5e7eb; }
+
+/* Dismiss/snooze options */
+.whisper-dismiss { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; margin-top: 12px; border-top: 1px solid #f3f4f6; font-size: 11px; color: #9ca3af; }
+.whisper-dismiss-btn { color: #6b7280; cursor: pointer; }
+.whisper-dismiss-btn:hover { color: #374151; text-decoration: underline; }
+
+/* Field with warning state */
+.form-input.has-warning { border-color: #f59e0b; background: #fffbeb; }
+.form-input.has-warning:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+.form-input.has-critical { border-color: #ef4444; background: #fef2f2; }
+.form-input.has-critical:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); }
+
+/* ─── Toggle Switch ─── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-info { flex: 1; }
+.toggle-label { font-size: 14px; font-weight: 500; color: #111827; }
+.toggle-desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.toggle-switch { width: 44px; height: 24px; background: #d1d5db; border-radius: 12px; position: relative; cursor: default; transition: background 0.2s; }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.toggle-switch.on { background: #2563eb; }
+.toggle-switch.on::after { transform: translateX(20px); }
+
+/* ─── Save Bar ─── */
+.save-bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 16px 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 24px; }
+.save-btn { padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: default; }
+.save-btn.primary { background: #2563eb; color: #fff; }
+.save-btn.secondary { background: #f3f4f6; color: #374151; }
+
+/* ─── Inherited Value Indicator ─── */
+.inherited-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; font-size: 10px; font-weight: 600; color: #6b7280; margin-left: 8px; }
+.inherited-badge .arrow { font-size: 8px; }
+
+/* ─── Mobile Overrides ─── */
+#preview-mobile:checked ~ .window .settings-nav { display: none; }
+#preview-mobile:checked ~ .window .settings-main { padding: 20px 16px; }
+#preview-mobile:checked ~ .window .form-section { padding: 16px; }
+#preview-mobile:checked ~ .window .whisper-popover { position: fixed; top: auto; bottom: 0; left: 0; right: 0; margin: 0; border-radius: 16px 16px 0 0; max-height: 70vh; overflow-y: auto; }
+#preview-mobile:checked ~ .window .whisper-popover::before { display: none; }
+#preview-mobile:checked ~ .window .whisper-actions { flex-direction: column; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explore non-intrusive inline indicators for surfacing cross-page configuration issues in enterprise software. Issues are discovered naturally while working, with contextual popovers providing progressive disclosure of details and remediation paths.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Contextual Whisper"</strong> &mdash; Subtle warning dots appear next to affected form fields and sections. Users discover issues in the natural flow of their work rather than being interrupted by modals or panels. Hovering reveals popovers with context, relationship paths, and links to related settings. The approach minimizes disruption while ensuring issues are visible to those who need them.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v6: "Contextual Whisper" &mdash; Inline Indicators with Popovers</strong><br><br>
+        Tagline: "This field is affected by settings elsewhere."<br><br>
+        Core Concept: Non-intrusive inline indicators that appear next to affected form fields and sections. Users discover issues naturally while working, rather than being interrupted. Hovering/clicking reveals popovers with context and links to related settings.<br><br>
+        Exposure Method: Subtle inline warning dots (small amber circles) next to form fields/sections. No central list &mdash; issues surface in context.<br><br>
+        Presentation Style: Tooltips/popovers that expand on hover or click. Progressive disclosure of details.<br><br>
+        Target Persona: Regular user mid-task. Doesn't want interruption but appreciates contextual help. Discovers issues naturally.<br><br>
+        Platform: Web (desktop), simplified mobile.<br><br>
+        Key UI Elements: Small warning dots (8px amber circles with pulse animation). Popover on hover/focus (appears above/below field). Progressive disclosure ("Show more" expands). "View related setting" deep links. Dismiss/snooze options in popover. Severity colors (amber for warning, red for critical). Connection lines showing relationship (CSS dashed borders).<br><br>
+        Sample Form Context (Settings page with fields): "Company Name" field &mdash; normal. "Default Currency" field &mdash; [warning dot] "This conflicts with 3 customer records in USD". "Tax Rate" field &mdash; [warning dot] "Inherited from: Organization Settings, last changed 2 days ago". "Integration Endpoint" field &mdash; [critical dot] "Webhook delivery failing since yesterday".<br><br>
+        Color/Mood: Subtle, unobtrusive. Amber/orange for warnings that don't scream. Clean form aesthetic with whispered hints.<br><br>
+        Interaction Patterns: :hover on dots shows popover. :focus-within keeps popover visible. Checkbox for "Show more" expansion. Smooth max-height transitions for reveal.<br><br>
+        Device Preview: Include desktop/mobile/fullscreen switcher.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series exploring guided checklists for enterprise software.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Expand toggles for progressive disclosure -->
+    <input type="checkbox" id="expand-1">
+    <input type="checkbox" id="expand-2">
+    <input type="checkbox" id="expand-3">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="settings-app">
+
+        <!-- ─── Settings Navigation Sidebar ─── -->
+        <nav class="settings-nav">
+          <div class="settings-nav-header">
+            <h1>Settings</h1>
+            <div class="subtitle">Acme Corporation</div>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Organization</div>
+            <div class="nav-item active">
+              <span class="nav-item-icon">&#9881;</span>
+              General
+              <span class="nav-warning-count">2</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128101;</span>
+              Team Members
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128274;</span>
+              Permissions
+            </div>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Billing</div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128179;</span>
+              Payment Methods
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128196;</span>
+              Invoices
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128184;</span>
+              Tax Settings
+              <span class="nav-warning-count">1</span>
+            </div>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Integrations</div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128279;</span>
+              Connected Apps
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#9889;</span>
+              Webhooks
+              <span class="nav-warning-count critical">1</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128272;</span>
+              API Keys
+            </div>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Advanced</div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128202;</span>
+              Data Export
+            </div>
+            <div class="nav-item">
+              <span class="nav-item-icon">&#128295;</span>
+              Developer
+            </div>
+          </div>
+        </nav>
+
+        <!-- ─── Settings Main Content ─── -->
+        <main class="settings-main">
+          <h2>General Settings</h2>
+          <p class="page-desc">Manage your organization's basic information, regional preferences, and default configurations.</p>
+
+          <!-- Company Information Section -->
+          <section class="form-section">
+            <div class="form-section-header">
+              <div>
+                <h3>Company Information</h3>
+                <div class="form-section-desc">Basic details about your organization</div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Company Name</label>
+              <input type="text" class="form-input" value="Acme Corporation" placeholder="Enter company name">
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Legal Entity Name</label>
+              <input type="text" class="form-input" value="Acme Corporation, Inc." placeholder="Enter legal name">
+              <div class="form-help">Used for legal documents and invoices</div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Industry</label>
+              <select class="form-input form-select">
+                <option>Technology</option>
+                <option>Healthcare</option>
+                <option selected>Manufacturing</option>
+                <option>Retail</option>
+                <option>Finance</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- Regional Settings Section — has warnings -->
+          <section class="form-section">
+            <div class="form-section-header">
+              <div>
+                <h3>Regional Settings</h3>
+                <div class="form-section-desc">Currency, timezone, and localization preferences</div>
+              </div>
+              <div class="section-warning">
+                <span>&#9888;</span>
+                2 configuration notes
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Timezone</label>
+              <select class="form-input form-select">
+                <option>(UTC-08:00) Pacific Time</option>
+                <option>(UTC-07:00) Mountain Time</option>
+                <option>(UTC-06:00) Central Time</option>
+                <option selected>(UTC-05:00) Eastern Time</option>
+                <option>(UTC+00:00) UTC</option>
+              </select>
+            </div>
+
+            <!-- Currency field with warning whisper -->
+            <div class="form-row whisper-wrap">
+              <label class="form-label">
+                Default Currency
+                <span class="whisper-dot" title="Configuration note"></span>
+              </label>
+              <select class="form-input form-select has-warning">
+                <option>USD - US Dollar</option>
+                <option selected>EUR - Euro</option>
+                <option>GBP - British Pound</option>
+                <option>CAD - Canadian Dollar</option>
+              </select>
+
+              <!-- Whisper Popover -->
+              <div class="whisper-popover">
+                <div class="whisper-header">
+                  <div class="whisper-icon">&#9888;</div>
+                  <div>
+                    <div class="whisper-title">Currency Mismatch Detected</div>
+                    <div class="whisper-subtitle">This setting conflicts with existing records</div>
+                  </div>
+                </div>
+                <div class="whisper-body">
+                  Your default currency is set to <strong>EUR</strong>, but <strong>3 customer records</strong> have invoices in USD. Changing this won't convert existing records.
+                </div>
+                <div class="whisper-connection">
+                  <span class="whisper-connection-icon">&#128279;</span>
+                  <span>Related: </span>
+                  <span class="whisper-connection-path">Billing &rarr; Invoices &rarr; Currency Settings</span>
+                </div>
+                <div class="whisper-expand">
+                  <label for="expand-1" class="whisper-expand-toggle">Show affected customers</label>
+                  <div class="whisper-expand-content">
+                    <div class="whisper-details">
+                      <strong>Affected customers (3):</strong>
+                      <ul>
+                        <li>Globex Inc. &mdash; 12 invoices in USD</li>
+                        <li>Initech Ltd. &mdash; 8 invoices in USD</li>
+                        <li>Umbrella Corp &mdash; 3 invoices in USD</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="whisper-actions">
+                  <div class="whisper-action secondary">Keep EUR</div>
+                  <div class="whisper-action primary">View Invoices</div>
+                </div>
+                <div class="whisper-dismiss">
+                  <span>Last checked: 2 hours ago</span>
+                  <span class="whisper-dismiss-btn">Dismiss for now</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tax Rate with inherited value whisper -->
+            <div class="form-row whisper-wrap">
+              <label class="form-label">
+                Default Tax Rate
+                <span class="whisper-dot" title="Inherited value"></span>
+                <span class="inherited-badge">
+                  <span class="arrow">&larr;</span>
+                  Inherited
+                </span>
+              </label>
+              <input type="text" class="form-input has-warning" value="8.25%" disabled>
+
+              <!-- Whisper Popover -->
+              <div class="whisper-popover">
+                <div class="whisper-header">
+                  <div class="whisper-icon">&#128279;</div>
+                  <div>
+                    <div class="whisper-title">Inherited Setting</div>
+                    <div class="whisper-subtitle">This value comes from a parent configuration</div>
+                  </div>
+                </div>
+                <div class="whisper-body">
+                  This tax rate is inherited from <strong>Organization Settings</strong> and was last modified <strong>2 days ago</strong> by Sarah Mitchell.
+                </div>
+                <div class="whisper-connection">
+                  <span class="whisper-connection-icon">&#128279;</span>
+                  <span>Source: </span>
+                  <span class="whisper-connection-path">Billing &rarr; Tax Settings &rarr; Default Rate</span>
+                </div>
+                <div class="whisper-expand">
+                  <label for="expand-2" class="whisper-expand-toggle">View inheritance chain</label>
+                  <div class="whisper-expand-content">
+                    <div class="whisper-details">
+                      <strong>Inheritance path:</strong>
+                      <ul>
+                        <li>Global Default (7.00%) &rarr;</li>
+                        <li>Region: North America (8.00%) &rarr;</li>
+                        <li>Organization: Acme Corp (8.25%) &larr; current</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="whisper-actions">
+                  <div class="whisper-action secondary">Override Locally</div>
+                  <div class="whisper-action primary">Edit Source</div>
+                </div>
+                <div class="whisper-dismiss">
+                  <span>Modified: Jan 28, 2025</span>
+                  <span class="whisper-dismiss-btn">Got it</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Date Format</label>
+              <select class="form-input form-select">
+                <option selected>MM/DD/YYYY</option>
+                <option>DD/MM/YYYY</option>
+                <option>YYYY-MM-DD</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- Integration Settings Section — has critical -->
+          <section class="form-section">
+            <div class="form-section-header">
+              <div>
+                <h3>Integration Settings</h3>
+                <div class="form-section-desc">Webhook endpoints and external connections</div>
+              </div>
+              <div class="section-warning critical">
+                <span>&#9888;</span>
+                1 critical issue
+              </div>
+            </div>
+
+            <!-- Webhook endpoint with critical whisper -->
+            <div class="form-row whisper-wrap">
+              <label class="form-label">
+                Webhook Endpoint
+                <span class="whisper-dot critical" title="Critical issue"></span>
+              </label>
+              <input type="text" class="form-input has-critical" value="https://api.acme.com/webhooks/receive" placeholder="Enter webhook URL">
+
+              <!-- Whisper Popover -->
+              <div class="whisper-popover">
+                <div class="whisper-header">
+                  <div class="whisper-icon critical">&#128680;</div>
+                  <div>
+                    <div class="whisper-title">Webhook Delivery Failing</div>
+                    <div class="whisper-subtitle">Events are not being delivered to this endpoint</div>
+                  </div>
+                </div>
+                <div class="whisper-body">
+                  Webhook delivery has been failing since <strong>yesterday at 3:42 PM</strong>. The endpoint is returning <strong>HTTP 503</strong> errors. 47 events are queued and waiting for retry.
+                </div>
+                <div class="whisper-connection">
+                  <span class="whisper-connection-icon">&#128279;</span>
+                  <span>Related: </span>
+                  <span class="whisper-connection-path">Integrations &rarr; Webhooks &rarr; Event Queue</span>
+                </div>
+                <div class="whisper-expand">
+                  <label for="expand-3" class="whisper-expand-toggle">View recent failures</label>
+                  <div class="whisper-expand-content">
+                    <div class="whisper-details">
+                      <strong>Recent delivery attempts:</strong>
+                      <ul>
+                        <li>Jan 30, 4:15 PM &mdash; 503 Service Unavailable</li>
+                        <li>Jan 30, 3:15 PM &mdash; 503 Service Unavailable</li>
+                        <li>Jan 30, 2:15 PM &mdash; Timeout after 30s</li>
+                        <li>Jan 30, 1:15 PM &mdash; 503 Service Unavailable</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="whisper-actions">
+                  <div class="whisper-action secondary">Retry Now</div>
+                  <div class="whisper-action primary">View Event Queue</div>
+                </div>
+                <div class="whisper-dismiss">
+                  <span>Failing for 24+ hours</span>
+                  <span class="whisper-dismiss-btn">Snooze 1 hour</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">API Version</label>
+              <select class="form-input form-select">
+                <option>v1 (Legacy)</option>
+                <option selected>v2 (Current)</option>
+                <option>v3 (Beta)</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- Notification Preferences — clean section -->
+          <section class="form-section">
+            <div class="form-section-header">
+              <div>
+                <h3>Notification Preferences</h3>
+                <div class="form-section-desc">Control how and when you receive alerts</div>
+              </div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Email notifications</div>
+                <div class="toggle-desc">Receive important updates via email</div>
+              </div>
+              <div class="toggle-switch on"></div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Browser notifications</div>
+                <div class="toggle-desc">Show desktop notifications for real-time alerts</div>
+              </div>
+              <div class="toggle-switch on"></div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Weekly digest</div>
+                <div class="toggle-desc">Summary of activity sent every Monday</div>
+              </div>
+              <div class="toggle-switch"></div>
+            </div>
+          </section>
+
+          <!-- Save Bar -->
+          <div class="save-bar">
+            <div class="save-btn secondary">Cancel</div>
+            <div class="save-btn primary">Save Changes</div>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

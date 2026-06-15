@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Feed — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+input[name="preview"] { display: none; }
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #f8f9fc;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Timeline Feed ─── */
+.timeline-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 40px;
+  height: 100%;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.timeline-header {
+  margin-bottom: 36px;
+}
+
+.timeline-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.timeline-header p {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 32px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e0e3eb;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-node {
+  position: absolute;
+  left: -32px;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #e0e3eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-node svg {
+  width: 12px;
+  height: 12px;
+  stroke: #fff;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Event type colors */
+.timeline-item[data-type="commit"] .timeline-node { background: #6366f1; box-shadow: 0 0 0 2px #c7d2fe; }
+.timeline-item[data-type="comment"] .timeline-node { background: #f59e0b; box-shadow: 0 0 0 2px #fde68a; }
+.timeline-item[data-type="deployment"] .timeline-node { background: #10b981; box-shadow: 0 0 0 2px #a7f3d0; }
+.timeline-item[data-type="review"] .timeline-node { background: #8b5cf6; box-shadow: 0 0 0 2px #ddd6fe; }
+.timeline-item[data-type="merge"] .timeline-node { background: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.timeline-item[data-type="alert"] .timeline-node { background: #ef4444; box-shadow: 0 0 0 2px #fecaca; }
+
+.timeline-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.timeline-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.timeline-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.timeline-item[data-type="commit"] .timeline-type { background: #eef2ff; color: #4f46e5; }
+.timeline-item[data-type="comment"] .timeline-type { background: #fffbeb; color: #d97706; }
+.timeline-item[data-type="deployment"] .timeline-type { background: #ecfdf5; color: #059669; }
+.timeline-item[data-type="review"] .timeline-type { background: #f5f3ff; color: #7c3aed; }
+.timeline-item[data-type="merge"] .timeline-type { background: #eff6ff; color: #2563eb; }
+.timeline-item[data-type="alert"] .timeline-type { background: #fef2f2; color: #dc2626; }
+
+.timeline-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.timeline-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.timeline-desc {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .timeline-container {
+  padding: 24px 16px;
+}
+
+#preview-mobile:checked ~ .window .timeline-header h1 {
+  font-size: 20px;
+}
+
+#preview-mobile:checked ~ .window .timeline-card {
+  padding: 12px 14px;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Timeline Feed</h1>
+      <span class="exp-version">v1</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Basic vertical timeline with event nodes, colored by type, timestamps, and description cards. Foundation for the activity feed pattern.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        v1: Basic vertical timeline with events, colored nodes, timestamps. A vertical line with branching event nodes for commit, comment, deployment, review, merge, and alert types — each with a distinct color. Simple cards with type badge, title, description, and timestamp.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="timeline-feed-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Pulse animations</span>
+        </a>
+        <a href="timeline-feed-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Alternating layout</span>
+        </a>
+        <a href="timeline-feed-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Category filtering</span>
+        </a>
+        <a href="timeline-feed-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable cards</span>
+        </a>
+        <a href="timeline-feed-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial timeline</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="timeline-container">
+        <div class="timeline-header">
+          <h1>Activity Feed</h1>
+          <p>Recent events across your projects</p>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-item" data-type="deployment">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Deployment</span>
+                <span class="timeline-time">2 min ago</span>
+              </div>
+              <div class="timeline-title">Production deploy succeeded</div>
+              <div class="timeline-desc">v2.4.1 deployed to production cluster us-east-1. All health checks passing.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="commit">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22.95" y2="12"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Commit</span>
+                <span class="timeline-time">18 min ago</span>
+              </div>
+              <div class="timeline-title">fix: resolve race condition in auth flow</div>
+              <div class="timeline-desc">Fixed a timing issue where token refresh could overlap with initial authentication, causing intermittent 401 errors.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="review">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Review</span>
+                <span class="timeline-time">34 min ago</span>
+              </div>
+              <div class="timeline-title">PR #421 approved by Sarah Chen</div>
+              <div class="timeline-desc">Code review approved with minor suggestions. Ready to merge after CI passes.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="comment">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Comment</span>
+                <span class="timeline-time">1 hr ago</span>
+              </div>
+              <div class="timeline-title">Alex Kim commented on issue #389</div>
+              <div class="timeline-desc">Reproduced the bug on Safari 17. The CSS grid fallback isn't triggering correctly on older WebKit builds.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="alert">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Alert</span>
+                <span class="timeline-time">1 hr ago</span>
+              </div>
+              <div class="timeline-title">CPU spike on worker-03</div>
+              <div class="timeline-desc">Worker node exceeded 90% CPU utilization for 5 minutes. Auto-scaling triggered.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="merge">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Merge</span>
+                <span class="timeline-time">2 hrs ago</span>
+              </div>
+              <div class="timeline-title">Merged feature/dashboard-redesign into main</div>
+              <div class="timeline-desc">14 commits, 42 files changed. New analytics dashboard with real-time charts and improved filtering.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="commit">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22.95" y2="12"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Commit</span>
+                <span class="timeline-time">3 hrs ago</span>
+              </div>
+              <div class="timeline-title">feat: add CSV export to reports</div>
+              <div class="timeline-desc">Users can now export any report table as CSV. Includes header row and proper escaping for special characters.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item" data-type="deployment">
+            <div class="timeline-node">
+              <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-type">Deployment</span>
+                <span class="timeline-time">4 hrs ago</span>
+              </div>
+              <div class="timeline-title">Staging deploy for v2.4.1-rc.2</div>
+              <div class="timeline-desc">Release candidate deployed to staging environment for QA validation.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

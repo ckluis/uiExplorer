@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Feed — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+input[name="preview"] { display: none; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f5f6fa; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Timeline Feed v5 — Production Quality ─── */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer-line {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.window-layout {
+  display: flex;
+  height: 100%;
+}
+
+/* Left nav */
+.side-nav {
+  width: 56px;
+  min-width: 56px;
+  background: #1e1e3a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+}
+
+.side-nav-logo {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.side-nav-item {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.35);
+  transition: all 0.15s;
+}
+
+.side-nav-item:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
+.side-nav-item.active { color: #fff; background: rgba(99, 102, 241, 0.2); }
+.side-nav-item svg { width: 18px; height: 18px; }
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar */
+.top-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 32px;
+  border-bottom: 1px solid #e8eaef;
+  background: #fff;
+  gap: 16px;
+}
+
+.top-bar h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.top-bar-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.top-bar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.live-label { font-size: 11px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* Filter */
+input[id^="filter-"] { display: none; }
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px;
+}
+.filter-label {
+  font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  transition: all 0.15s; border: 1.5px solid transparent; display: flex; align-items: center; gap: 5px;
+}
+.filter-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.filter-label[for="filter-commit"] { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+.filter-label[for="filter-commit"] .filter-dot { background: #6366f1; }
+.filter-label[for="filter-comment"] { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.filter-label[for="filter-comment"] .filter-dot { background: #f59e0b; }
+.filter-label[for="filter-deployment"] { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.filter-label[for="filter-deployment"] .filter-dot { background: #10b981; }
+.filter-label[for="filter-review"] { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+.filter-label[for="filter-review"] .filter-dot { background: #8b5cf6; }
+.filter-label[for="filter-merge"] { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.filter-label[for="filter-merge"] .filter-dot { background: #3b82f6; }
+.filter-label[for="filter-alert"] { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.filter-label[for="filter-alert"] .filter-dot { background: #ef4444; }
+
+#filter-commit:checked ~ .filter-bar .filter-label[for="filter-commit"],
+#filter-comment:checked ~ .filter-bar .filter-label[for="filter-comment"],
+#filter-deployment:checked ~ .filter-bar .filter-label[for="filter-deployment"],
+#filter-review:checked ~ .filter-bar .filter-label[for="filter-review"],
+#filter-merge:checked ~ .filter-bar .filter-label[for="filter-merge"],
+#filter-alert:checked ~ .filter-bar .filter-label[for="filter-alert"] { opacity: 0.3; border-color: transparent; }
+
+#filter-commit:checked ~ .timeline .tl-commit,
+#filter-comment:checked ~ .timeline .tl-comment,
+#filter-deployment:checked ~ .timeline .tl-deployment,
+#filter-review:checked ~ .timeline .tl-review,
+#filter-merge:checked ~ .timeline .tl-merge,
+#filter-alert:checked ~ .timeline .tl-alert { display: none; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 44px; }
+.timeline::before { content: ''; position: absolute; left: 17px; top: 4px; bottom: 0; width: 2px; background: linear-gradient(to bottom, #d1d5db, #e5e7eb 30%, #e5e7eb 70%, transparent); }
+
+.timeline-date {
+  position: relative;
+  margin: 4px 0 20px -44px;
+  padding-left: 44px;
+}
+.timeline-date span {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Expand */
+.timeline-expand-toggle { display: none; }
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 20px;
+  animation: fade-in-up 0.3s ease both;
+}
+.timeline-item:nth-child(2) { animation-delay: 0.05s; }
+.timeline-item:nth-child(3) { animation-delay: 0.1s; }
+.timeline-item:nth-child(4) { animation-delay: 0.15s; }
+
+.timeline-item:last-child { padding-bottom: 0; }
+
+/* Node */
+.timeline-node {
+  position: absolute;
+  left: -44px;
+  top: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+  z-index: 2;
+}
+
+.timeline-node:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.timeline-item[data-type="commit"] .timeline-node { background: linear-gradient(135deg, #6366f1, #818cf8); }
+.timeline-item[data-type="comment"] .timeline-node { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.timeline-item[data-type="deployment"] .timeline-node { background: linear-gradient(135deg, #10b981, #34d399); }
+.timeline-item[data-type="review"] .timeline-node { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+.timeline-item[data-type="merge"] .timeline-node { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+.timeline-item[data-type="alert"] .timeline-node { background: linear-gradient(135deg, #ef4444, #f87171); }
+
+/* Pulse on first two items (latest) */
+.timeline-item.is-latest .timeline-node {
+  animation: pulse 2.5s ease-in-out infinite;
+}
+.timeline-item.is-latest[data-type="deployment"] .timeline-node {
+  animation: pulse-green 2.5s ease-in-out infinite;
+}
+.timeline-item.is-latest[data-type="alert"] .timeline-node {
+  animation: pulse-red 2.5s ease-in-out infinite;
+}
+
+/* Card */
+.timeline-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+  overflow: hidden;
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.timeline-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03);
+  transform: translateY(-2px);
+}
+
+.timeline-card-main { padding: 16px 20px; }
+
+.timeline-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.timeline-author-name { font-size: 13px; font-weight: 600; color: #111827; }
+.timeline-type {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 5px;
+}
+
+.timeline-item[data-type="commit"] .timeline-type { background: #eef2ff; color: #4f46e5; }
+.timeline-item[data-type="comment"] .timeline-type { background: #fffbeb; color: #d97706; }
+.timeline-item[data-type="deployment"] .timeline-type { background: #ecfdf5; color: #059669; }
+.timeline-item[data-type="review"] .timeline-type { background: #f5f3ff; color: #7c3aed; }
+.timeline-item[data-type="merge"] .timeline-type { background: #eff6ff; color: #2563eb; }
+.timeline-item[data-type="alert"] .timeline-type { background: #fef2f2; color: #dc2626; }
+
+.timeline-time {
+  font-size: 11px; color: #b0b7c3; margin-left: auto; font-weight: 500;
+}
+
+.timeline-title {
+  font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 4px;
+  letter-spacing: -0.01em; line-height: 1.4;
+}
+
+.timeline-desc {
+  font-size: 13px; color: #6b7280; line-height: 1.55;
+}
+
+/* Latest badge */
+.latest-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  margin-left: 4px;
+}
+
+.timeline-expand-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  cursor: pointer;
+  margin-top: 10px;
+  padding: 4px 12px;
+  background: #f0f0ff;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.timeline-expand-label:hover { background: #e0e7ff; }
+.timeline-expand-label svg { width: 12px; height: 12px; transition: transform 0.2s; }
+
+.timeline-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #fafbfc;
+  border-top: 1px solid transparent;
+}
+
+.timeline-detail-inner {
+  padding: 14px 20px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.7;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+}
+
+.timeline-detail-inner dt { font-weight: 600; color: #374151; }
+.timeline-detail-inner dd { margin: 0; }
+
+.timeline-expand-toggle:checked + .timeline-item .timeline-detail {
+  max-height: 250px;
+  border-top-color: #f0f0f0;
+}
+
+.timeline-expand-toggle:checked + .timeline-item .timeline-expand-label {
+  background: #6366f1;
+  color: #fff;
+}
+
+.timeline-expand-toggle:checked + .timeline-item .timeline-expand-label svg {
+  transform: rotate(180deg);
+}
+
+/* ─── Mobile ─── */
+#preview-mobile:checked ~ .window .side-nav { display: none; }
+#preview-mobile:checked ~ .window .top-bar { padding: 14px 16px; }
+#preview-mobile:checked ~ .window .top-bar h1 { font-size: 16px; }
+#preview-mobile:checked ~ .window .scroll-area { padding: 16px; }
+#preview-mobile:checked ~ .window .filter-bar { gap: 4px; }
+#preview-mobile:checked ~ .window .filter-label { font-size: 10px; padding: 4px 8px; }
+#preview-mobile:checked ~ .window .timeline { padding-left: 38px; }
+#preview-mobile:checked ~ .window .timeline::before { left: 14px; }
+#preview-mobile:checked ~ .window .timeline-node { left: -38px; width: 30px; height: 30px; font-size: 10px; }
+#preview-mobile:checked ~ .window .timeline-card-main { padding: 12px 14px; }
+#preview-mobile:checked ~ .window .timeline-title { font-size: 13px; }
+#preview-mobile:checked ~ .window .timeline-card-top { flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Timeline Feed</h1>
+      <span class="exp-version">v5</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality timeline with pulse animations on latest events, app-shell layout with side nav, refined typography with tighter letter-spacing, gradient avatar nodes, and polished card interactions. The culmination of all previous iterations.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        v5: Pulse animations on latest events, refined typography, production quality. Wrap the timeline in a proper app shell with a narrow icon side-nav and top bar with live indicator. Add CSS pulse keyframe animations on the most recent event nodes. Use gradient backgrounds on avatar nodes instead of flat colors. Refine all typography with tighter letter-spacing on headings and heavier font weights. Add fade-in-up entrance animations. Polish card hover states and detail expansion with smoother cubic-bezier transitions. Use a dl/dt/dd grid for detail sections.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="timeline-feed-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Pulse animations</span>
+        </a>
+        <a href="timeline-feed-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Alternating layout</span>
+        </a>
+        <a href="timeline-feed-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Category filtering</span>
+        </a>
+        <a href="timeline-feed-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable cards</span>
+        </a>
+        <a href="timeline-feed-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial timeline</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="window-layout">
+        <!-- Side nav -->
+        <nav class="side-nav">
+          <div class="side-nav-logo"></div>
+          <div class="side-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          </div>
+          <div class="side-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="side-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="side-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+        </nav>
+
+        <div class="main-content">
+          <div class="top-bar">
+            <h1>Activity Feed</h1>
+            <span class="top-bar-subtitle">All projects</span>
+            <div class="top-bar-right">
+              <div class="live-dot"></div>
+              <span class="live-label">Live</span>
+            </div>
+          </div>
+
+          <div class="scroll-area">
+            <input type="checkbox" id="filter-commit">
+            <input type="checkbox" id="filter-comment">
+            <input type="checkbox" id="filter-deployment">
+            <input type="checkbox" id="filter-review">
+            <input type="checkbox" id="filter-merge">
+            <input type="checkbox" id="filter-alert">
+
+            <div class="filter-bar">
+              <label for="filter-commit" class="filter-label"><span class="filter-dot"></span>Commits</label>
+              <label for="filter-comment" class="filter-label"><span class="filter-dot"></span>Comments</label>
+              <label for="filter-deployment" class="filter-label"><span class="filter-dot"></span>Deploys</label>
+              <label for="filter-review" class="filter-label"><span class="filter-dot"></span>Reviews</label>
+              <label for="filter-merge" class="filter-label"><span class="filter-dot"></span>Merges</label>
+              <label for="filter-alert" class="filter-label"><span class="filter-dot"></span>Alerts</label>
+            </div>
+
+            <div class="timeline">
+              <div class="timeline-date"><span>Today</span></div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-1">
+              <div class="timeline-item tl-deployment is-latest" data-type="deployment">
+                <div class="timeline-node">JR</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Jake Rivera</span>
+                      <span class="timeline-type">Deploy</span>
+                      <span class="latest-badge">Latest</span>
+                      <span class="timeline-time">2 min ago</span>
+                    </div>
+                    <div class="timeline-title">Production deploy succeeded</div>
+                    <div class="timeline-desc">v2.4.1 deployed to production cluster us-east-1. All health checks passing.</div>
+                    <label for="expand-1" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Environment</dt><dd>production (us-east-1)</dd>
+                      <dt>Version</dt><dd>v2.4.1 (build #1847)</dd>
+                      <dt>Duration</dt><dd>3m 42s</dd>
+                      <dt>Health</dt><dd>All 12 endpoints passing</dd>
+                      <dt>Rollback</dt><dd>v2.4.0 available</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-2">
+              <div class="timeline-item tl-commit is-latest" data-type="commit">
+                <div class="timeline-node">ML</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Maya Liu</span>
+                      <span class="timeline-type">Commit</span>
+                      <span class="timeline-time">18 min ago</span>
+                    </div>
+                    <div class="timeline-title">fix: resolve race condition in auth flow</div>
+                    <div class="timeline-desc">Fixed timing issue where token refresh could overlap with initial authentication, causing intermittent 401 errors.</div>
+                    <label for="expand-2" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Branch</dt><dd>fix/auth-race-condition</dd>
+                      <dt>SHA</dt><dd>a3f7c2d</dd>
+                      <dt>Files</dt><dd>3 changed (auth.ts, middleware.ts, token-manager.ts)</dd>
+                      <dt>Lines</dt><dd>+47 / -12</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-3">
+              <div class="timeline-item tl-review" data-type="review">
+                <div class="timeline-node">SC</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Sarah Chen</span>
+                      <span class="timeline-type">Review</span>
+                      <span class="timeline-time">34 min ago</span>
+                    </div>
+                    <div class="timeline-title">PR #421 approved</div>
+                    <div class="timeline-desc">Code review approved with minor suggestions on error handling. Ready to merge after CI.</div>
+                    <label for="expand-3" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>PR</dt><dd>#421 — Add CSV export to reports</dd>
+                      <dt>Status</dt><dd>Approved</dd>
+                      <dt>Comments</dt><dd>3 inline suggestions</dd>
+                      <dt>CI</dt><dd>All checks passing</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-4">
+              <div class="timeline-item tl-comment" data-type="comment">
+                <div class="timeline-node">AK</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Alex Kim</span>
+                      <span class="timeline-type">Comment</span>
+                      <span class="timeline-time">1 hr ago</span>
+                    </div>
+                    <div class="timeline-title">Commented on issue #389</div>
+                    <div class="timeline-desc">Reproduced the Safari 17 grid bug. The CSS grid fallback isn't triggering on older WebKit.</div>
+                    <label for="expand-4" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Issue</dt><dd>#389 — Grid layout broken on Safari</dd>
+                      <dt>Browser</dt><dd>Safari 17.2 on macOS Sonoma</dd>
+                      <dt>Affected</dt><dd>Dashboard cards, report tables</dd>
+                      <dt>Fix</dt><dd>Explicit grid-template-columns</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-5">
+              <div class="timeline-item tl-alert" data-type="alert">
+                <div class="timeline-node">!</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">System Alert</span>
+                      <span class="timeline-type">Alert</span>
+                      <span class="timeline-time">1 hr ago</span>
+                    </div>
+                    <div class="timeline-title">CPU spike on worker-03</div>
+                    <div class="timeline-desc">Worker node exceeded 90% CPU utilization for 5 minutes. Auto-scaling triggered successfully.</div>
+                    <label for="expand-5" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Node</dt><dd>worker-03 (us-east-1b)</dd>
+                      <dt>Peak CPU</dt><dd>94.2%</dd>
+                      <dt>Duration</dt><dd>5m 12s</dd>
+                      <dt>Action</dt><dd>Scaled from 3 to 5 instances</dd>
+                      <dt>Status</dt><dd>Resolved — CPU now at 43%</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-date"><span>Yesterday</span></div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-6">
+              <div class="timeline-item tl-merge" data-type="merge">
+                <div class="timeline-node">DP</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">David Park</span>
+                      <span class="timeline-type">Merge</span>
+                      <span class="timeline-time">Yesterday 4:12pm</span>
+                    </div>
+                    <div class="timeline-title">Merged feature/dashboard-redesign into main</div>
+                    <div class="timeline-desc">14 commits, 42 files changed. New analytics dashboard with real-time charts and improved filtering.</div>
+                    <label for="expand-6" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Branch</dt><dd>feature/dashboard-redesign</dd>
+                      <dt>Commits</dt><dd>14</dd>
+                      <dt>Files</dt><dd>42 changed (+2,847 / -891)</dd>
+                      <dt>Reviewers</dt><dd>Sarah Chen, Maya Liu</dd>
+                      <dt>CI</dt><dd>All 24 tests passing</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-7">
+              <div class="timeline-item tl-commit" data-type="commit">
+                <div class="timeline-node">RO</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Rachel Okafor</span>
+                      <span class="timeline-type">Commit</span>
+                      <span class="timeline-time">Yesterday 2:30pm</span>
+                    </div>
+                    <div class="timeline-title">feat: add CSV export to reports</div>
+                    <div class="timeline-desc">Users can now export any report table as CSV with header row and proper character escaping.</div>
+                    <label for="expand-7" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Branch</dt><dd>feature/csv-export</dd>
+                      <dt>SHA</dt><dd>f82e1a9</dd>
+                      <dt>Files</dt><dd>5 changed (+124 / -8)</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-8">
+              <div class="timeline-item tl-deployment" data-type="deployment">
+                <div class="timeline-node">JR</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Jake Rivera</span>
+                      <span class="timeline-type">Deploy</span>
+                      <span class="timeline-time">Yesterday 11:45am</span>
+                    </div>
+                    <div class="timeline-title">Staging deploy v2.4.1-rc.2</div>
+                    <div class="timeline-desc">Release candidate deployed to staging environment for QA validation.</div>
+                    <label for="expand-8" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>Environment</dt><dd>staging</dd>
+                      <dt>Version</dt><dd>v2.4.1-rc.2</dd>
+                      <dt>Duration</dt><dd>2m 18s</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-date"><span>Jan 28</span></div>
+
+              <input type="checkbox" class="timeline-expand-toggle" id="expand-9">
+              <div class="timeline-item tl-review" data-type="review">
+                <div class="timeline-node">ML</div>
+                <div class="timeline-card">
+                  <div class="timeline-card-main">
+                    <div class="timeline-card-top">
+                      <span class="timeline-author-name">Maya Liu</span>
+                      <span class="timeline-type">Review</span>
+                      <span class="timeline-time">Jan 28, 3:20pm</span>
+                    </div>
+                    <div class="timeline-title">PR #418 changes requested</div>
+                    <div class="timeline-desc">Requested error handling improvements in the payment processing module.</div>
+                    <label for="expand-9" class="timeline-expand-label">
+                      Details
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </label>
+                  </div>
+                  <div class="timeline-detail">
+                    <dl class="timeline-detail-inner">
+                      <dt>PR</dt><dd>#418 — Payment refactor</dd>
+                      <dt>Comments</dt><dd>7 inline suggestions</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

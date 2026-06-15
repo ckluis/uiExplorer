@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Columns — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139,156,247,0.12); border: 1px solid rgba(139,156,247,0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── AskUserQuestion Visualization ─── */
+.experiment-sidebar .exp-ask {
+  background: rgba(139,156,247,0.08); border: 1px solid rgba(139,156,247,0.2);
+  border-radius: 6px; padding: 10px 12px; margin-top: 10px; font-style: normal;
+}
+.experiment-sidebar .exp-ask-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8b9cf7; margin-bottom: 6px; }
+.experiment-sidebar .exp-ask-question { font-size: 11px; color: #ddd; font-style: normal; margin-bottom: 8px; line-height: 1.4; }
+.experiment-sidebar .exp-ask-options { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.experiment-sidebar .exp-ask-option { font-size: 10px; color: #999; padding: 3px 8px; background: rgba(255,255,255,0.04); border-radius: 4px; border: 1px solid rgba(255,255,255,0.06); }
+.experiment-sidebar .exp-ask-option.selected { color: #fff; background: rgba(139,156,247,0.18); border-color: rgba(139,156,247,0.4); font-weight: 600; }
+.experiment-sidebar .exp-ask-answer { font-size: 11px; color: #ccc; font-style: normal; padding: 6px 8px; background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.2); border-radius: 4px; line-height: 1.4; }
+.experiment-sidebar .exp-ask-answer strong { color: #2ecc71; font-weight: 600; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar {
+  display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1a1a2e;
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Orchestrator Bar ─── */
+.orch-bar {
+  height: 56px; min-height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid #e8e8ec;
+  background: #fff;
+}
+.orch-left { display: flex; align-items: center; gap: 12px; }
+.orch-icon {
+  width: 28px; height: 28px; border-radius: 6px; background: #5e6ad2;
+  display: flex; align-items: center; justify-content: center;
+}
+.orch-icon svg { width: 16px; height: 16px; color: #fff; }
+.orch-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.orch-status {
+  font-size: 12px; color: #5e6ad2; font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.orch-pulse {
+  width: 6px; height: 6px; border-radius: 50%; background: #5e6ad2;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.orch-right { display: flex; align-items: center; gap: 16px; }
+.orch-progress-wrap { display: flex; align-items: center; gap: 8px; }
+.orch-progress-bar {
+  width: 120px; height: 4px; background: #e8e8ec; border-radius: 2px; overflow: hidden;
+}
+.orch-progress-fill {
+  height: 100%; width: 67%; background: #5e6ad2; border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.orch-progress-text { font-size: 12px; color: #8a8a9a; font-weight: 500; }
+.orch-toggle-wrap { display: flex; align-items: center; gap: 6px; }
+.orch-toggle-label { font-size: 11px; color: #8a8a9a; font-weight: 500; cursor: pointer; }
+.orch-toggle {
+  width: 32px; height: 18px; background: #ddd; border-radius: 9px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.orch-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+/* Detail toggle */
+#detail-toggle:checked ~ .window .orch-toggle { background: #5e6ad2; }
+#detail-toggle:checked ~ .window .orch-toggle::after { transform: translateX(14px); }
+#detail-toggle:checked ~ .window .agent-desc { max-height: 20px; opacity: 1; }
+
+/* ─── Columns Area ─── */
+.columns-area {
+  flex: 1; display: flex; overflow: hidden;
+}
+.manager-col {
+  flex: 1; display: flex; flex-direction: column;
+  border-right: 1px solid #e8e8ec; overflow-y: auto;
+}
+.manager-col:last-child { border-right: none; }
+
+/* Manager Header */
+.manager-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #f0f0f4;
+  position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.manager-name {
+  font-size: 13px; font-weight: 600; color: #1a1a2e;
+  display: flex; align-items: center; gap: 8px;
+}
+.manager-name .status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.manager-meta {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+}
+.manager-count {
+  font-size: 11px; color: #8a8a9a; font-weight: 500;
+}
+.manager-bar {
+  flex: 1; height: 3px; background: #f0f0f4; border-radius: 1.5px; overflow: hidden;
+}
+.manager-bar-fill {
+  height: 100%; border-radius: 1.5px; transition: width 0.3s ease;
+}
+
+/* ─── Agent Rows ─── */
+.agent-list { padding: 4px 0; }
+.agent-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 7px 16px; cursor: default;
+  transition: background 0.12s;
+}
+.agent-row:hover { background: #f8f8fb; }
+.agent-dot-wrap {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  margin-top: 1px;
+}
+.agent-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.agent-info { flex: 1; min-width: 0; }
+.agent-name {
+  font-size: 13px; font-weight: 500; color: #1a1a2e; line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.agent-desc {
+  font-size: 11px; color: #8a8a9a; line-height: 16px;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+}
+.agent-row:hover .agent-desc { max-height: 20px; opacity: 1; }
+
+/* Status Variants */
+.dot-done { background: #2da44e; }
+.dot-active { background: #5e6ad2; animation: pulse 2s ease-in-out infinite; }
+.dot-queued { background: #d1d1db; }
+
+.agent-row.done .agent-name {
+  text-decoration: line-through; color: #b0b0be;
+}
+.agent-row.done .agent-desc { color: #c8c8d4; }
+.agent-row.queued .agent-name { color: #8a8a9a; }
+
+/* Done checkmark */
+.agent-check {
+  width: 7px; height: 7px; display: none;
+}
+.agent-row.done .agent-dot { display: none; }
+.agent-row.done .agent-check { display: block; }
+
+/* Manager status colors */
+.bar-done { background: #2da44e; }
+.bar-active { background: #5e6ad2; }
+.bar-partial { background: linear-gradient(90deg, #2da44e 0%, #5e6ad2 100%); }
+.dot-manager-done { background: #2da44e; }
+.dot-manager-active { background: #5e6ad2; animation: pulse 2s ease-in-out infinite; }
+
+/* ─── Mobile Responsive ─── */
+#preview-mobile:checked ~ .window .orch-bar {
+  height: auto; flex-wrap: wrap; padding: 12px 16px; gap: 8px;
+}
+#preview-mobile:checked ~ .window .orch-right { display: none; }
+#preview-mobile:checked ~ .window .columns-area {
+  flex-direction: column;
+}
+#preview-mobile:checked ~ .window .manager-col {
+  border-right: none; border-bottom: 1px solid #e8e8ec;
+  overflow-y: visible;
+}
+#preview-mobile:checked ~ .window .manager-col:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Agent Columns</h1>
+      <span class="exp-version">v1</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A Linear.com-inspired orchestration dashboard where an orchestrator sits on top and manager columns beneath it show sub-agents as single-line items with progress indicators. The meta-project is generating a UI framework — each manager owns a piece, each sub-agent is a task.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        Time for a new experiment. We already attempted an human/agent experiment autonomously, but frankly I feel like it failed.<br><br>I'd like to consider something more column like. The orchestrator sits on top and there are columns beneath it for managers who each have sub-agents. Each sub-agent is represented with a single description line (with a hover over to see more) and a progress indicator and/or crossed off when done.<br><br>The project could be generating an experimental UI framework (just to keep it meta) you could explain what the orchestrator is doing and its managers and their subagents to run experiements. Each manager would be an experiment and each subagent the individual attempts.<br><br>We need be REALLY clean and crisp with the ui like linear.com designed this framework. Not atlassian.
+
+        <div class="exp-ask">
+          <div class="exp-ask-label">AskUserQuestion</div>
+          <div class="exp-ask-question">Should the experiment use a light theme (like Linear's default) or dark theme to match the existing experiments' content areas?</div>
+          <div class="exp-ask-options">
+            <div class="exp-ask-option selected">Light (Recommended) — White/gray background like Linear.com</div>
+            <div class="exp-ask-option">Dark — Dark background matching most existing experiments</div>
+          </div>
+          <div class="exp-ask-answer"><strong>Answer:</strong> Light (Recommended)</div>
+        </div>
+
+        <div class="exp-ask">
+          <div class="exp-ask-label">AskUserQuestion</div>
+          <div class="exp-ask-question">How many manager columns should we show?</div>
+          <div class="exp-ask-options">
+            <div class="exp-ask-option selected">5 columns — Layout System, Components, Theme Engine, Animation Kit, Icons</div>
+            <div class="exp-ask-option">3 columns — Fewer but wider columns with more breathing room</div>
+          </div>
+          <div class="exp-ask-answer"><strong>Answer:</strong> 5 columns</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-columns-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Obsessive calm — simplified cards</span>
+        </a>
+        <a href="agent-columns-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Model badges, token/cost tracking</span>
+        </a>
+        <a href="agent-columns-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Dependencies, phase groups, manager cards</span>
+        </a>
+        <a href="agent-columns-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — Linear-style column layout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="checkbox" id="detail-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Orchestrator Bar -->
+      <div class="orch-bar">
+        <div class="orch-left">
+          <div class="orch-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            </svg>
+          </div>
+          <span class="orch-title">UI Framework v2.0</span>
+          <div class="orch-status">
+            <span class="orch-pulse"></span>
+            Executing
+          </div>
+        </div>
+        <div class="orch-right">
+          <div class="orch-progress-wrap">
+            <div class="orch-progress-bar"><div class="orch-progress-fill"></div></div>
+            <span class="orch-progress-text">12 / 18</span>
+          </div>
+          <div class="orch-toggle-wrap">
+            <label for="detail-toggle" class="orch-toggle-label">Detail</label>
+            <label for="detail-toggle" class="orch-toggle"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columns -->
+      <div class="columns-area">
+
+        <!-- Layout System -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-name">
+              <span class="status-dot dot-manager-active"></span>
+              Layout System
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">3 / 5</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:60%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7" fill="#2da44e"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Grid primitives</div>
+                <div class="agent-desc">12-column CSS grid with named areas and auto-flow</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7" fill="#2da44e"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Flex utilities</div>
+                <div class="agent-desc">Responsive flex-wrap helpers with gap tokens</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7" fill="#2da44e"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Stack component</div>
+                <div class="agent-desc">Vertical/horizontal stack with spacing scale</div>
+              </div>
+            </div>
+            <div class="agent-row">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Float patterns</div>
+                <div class="agent-desc">Legacy float clearfix and wrap behaviors</div>
+              </div>
+            </div>
+            <div class="agent-row queued">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Masonry layout</div>
+                <div class="agent-desc">CSS-only masonry with column-count fallback</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Component Library -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-name">
+              <span class="status-dot dot-manager-active"></span>
+              Component Library
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">2 / 4</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:50%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Button system</div>
+                <div class="agent-desc">Primary, secondary, ghost, danger variants with size tokens</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Input fields</div>
+                <div class="agent-desc">Text, select, textarea with validation states</div>
+              </div>
+            </div>
+            <div class="agent-row">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Modal dialog</div>
+                <div class="agent-desc">Overlay with focus trap, size variants, and nested scroll</div>
+              </div>
+            </div>
+            <div class="agent-row queued">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Data table</div>
+                <div class="agent-desc">Sortable, filterable table with sticky header and pagination</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Engine -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-name">
+              <span class="status-dot dot-manager-done"></span>
+              Theme Engine
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">4 / 4</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Design tokens</div>
+                <div class="agent-desc">CSS custom properties for color, space, radius, shadow</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Dark mode</div>
+                <div class="agent-desc">Inverted token set with automatic media-query switching</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Light mode</div>
+                <div class="agent-desc">Default token set tuned for WCAG AA contrast</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">High contrast</div>
+                <div class="agent-desc">Accessibility-first palette meeting WCAG AAA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Animation Kit -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-name">
+              <span class="status-dot dot-manager-active"></span>
+              Animation Kit
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">1 / 3</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-partial" style="width:33%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Easing curves</div>
+                <div class="agent-desc">Cubic-bezier presets for enter, exit, and emphasis</div>
+              </div>
+            </div>
+            <div class="agent-row">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-active"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Spring physics</div>
+                <div class="agent-desc">CSS spring() approximation with configurable damping</div>
+              </div>
+            </div>
+            <div class="agent-row queued">
+              <div class="agent-dot-wrap"><span class="agent-dot dot-queued"></span></div>
+              <div class="agent-info">
+                <div class="agent-name">Gesture responses</div>
+                <div class="agent-desc">Scroll-linked and hover-triggered motion patterns</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icon Set -->
+        <div class="manager-col">
+          <div class="manager-header">
+            <div class="manager-name">
+              <span class="status-dot dot-manager-done"></span>
+              Icon Set
+            </div>
+            <div class="manager-meta">
+              <span class="manager-count">2 / 2</span>
+              <div class="manager-bar"><div class="manager-bar-fill bar-done" style="width:100%"></div></div>
+            </div>
+          </div>
+          <div class="agent-list">
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Core icon set</div>
+                <div class="agent-desc">48 essential UI icons at 20px, stroke-based SVG</div>
+              </div>
+            </div>
+            <div class="agent-row done">
+              <div class="agent-dot-wrap">
+                <svg class="agent-check" viewBox="0 0 7 7"><path d="M6 1.5L2.75 5.5L1 3.5" stroke="#2da44e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="agent-dot dot-done"></span>
+              </div>
+              <div class="agent-info">
+                <div class="agent-name">Custom glyphs</div>
+                <div class="agent-desc">Brand-specific icons for product features and status</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

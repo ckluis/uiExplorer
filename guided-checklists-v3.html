@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — v3: Mobile Fixer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: #ccc; }
+.experiment-sidebar .exp-origination-link a { color: #2ecc71; font-weight: 600; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 375px; height: 720px; background: #f8f9fa; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-web:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Mobile App Layout ─── */
+.mobile-app { display: flex; flex-direction: column; height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8f9fa; position: relative; overflow: hidden; }
+
+/* Status bar (iOS style) */
+.status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 14px; font-weight: 600; color: #1a1a2e; flex-shrink: 0; }
+.status-bar .time { font-weight: 600; }
+.status-bar .icons { display: flex; gap: 4px; align-items: center; }
+.status-bar .icons svg { width: 18px; height: 18px; }
+
+/* App header */
+.app-header { background: #fff; padding: 8px 20px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); flex-shrink: 0; }
+.app-header h1 { font-size: 28px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.02em; }
+.app-header .subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+
+/* Main scrollable content area */
+.app-content { flex: 1; overflow-y: auto; padding: 16px 20px; padding-bottom: 100px; }
+
+/* Quick summary cards */
+.summary-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.summary-card { flex: 1; background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.summary-card .value { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+.summary-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+.summary-card.urgent .value { color: #e74c3c; }
+.summary-card.fixed .value { color: #2ecc71; }
+
+/* Recent activity section */
+.section-header { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+.activity-list { display: flex; flex-direction: column; gap: 10px; }
+.activity-item { display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.activity-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.activity-icon.success { background: rgba(46, 204, 113, 0.12); color: #2ecc71; }
+.activity-icon.pending { background: rgba(52, 152, 219, 0.12); color: #3498db; }
+.activity-icon svg { width: 20px; height: 20px; }
+.activity-text { flex: 1; min-width: 0; }
+.activity-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.activity-time { font-size: 11px; color: #999; margin-top: 2px; }
+
+/* ─── Bottom Tab Bar ─── */
+.tab-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 84px; background: #fff; display: flex; align-items: flex-start; justify-content: space-around; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06); z-index: 50; }
+.tab-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 16px; cursor: default; }
+.tab-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: #999; position: relative; }
+.tab-icon svg { width: 24px; height: 24px; }
+.tab-item.active .tab-icon { color: #007aff; }
+.tab-label { font-size: 10px; color: #999; font-weight: 500; }
+.tab-item.active .tab-label { color: #007aff; }
+
+/* Issues badge */
+.tab-badge { position: absolute; top: -4px; right: -8px; min-width: 18px; height: 18px; background: #e74c3c; color: #fff; font-size: 11px; font-weight: 700; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+
+/* Issues tab is our trigger */
+.issues-trigger { cursor: pointer; }
+.issues-trigger .tab-icon { color: #e74c3c; }
+.issues-trigger .tab-label { color: #e74c3c; font-weight: 600; }
+
+/* ─── Bottom Sheet ─── */
+.sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 60; }
+.bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); z-index: 70; max-height: 85%; display: flex; flex-direction: column; }
+
+/* Sheet visible state */
+#sheet-toggle:checked ~ .mobile-app .sheet-backdrop { opacity: 1; pointer-events: auto; }
+#sheet-toggle:checked ~ .mobile-app .bottom-sheet { transform: translateY(0); }
+
+/* Drag handle */
+.sheet-handle { padding: 12px 0 8px; display: flex; justify-content: center; flex-shrink: 0; }
+.sheet-handle-bar { width: 36px; height: 5px; background: #ddd; border-radius: 3px; }
+
+/* Sheet header */
+.sheet-header { padding: 8px 20px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); flex-shrink: 0; }
+.sheet-header h2 { font-size: 20px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 10px; }
+.sheet-count { background: #e74c3c; color: #fff; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 12px; }
+.sheet-subtitle { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* Sheet scrollable content */
+.sheet-content { flex: 1; overflow-y: auto; padding: 16px 20px 100px; }
+
+/* Issue cards */
+.issue-card { background: #f8f9fa; border-radius: 16px; padding: 18px; margin-bottom: 14px; border: 1px solid rgba(0,0,0,0.04); }
+.issue-card.resolved { opacity: 0.5; transform: scale(0.98); }
+.issue-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.issue-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.issue-icon.warning { background: rgba(243, 156, 18, 0.12); color: #f39c12; }
+.issue-icon.error { background: rgba(231, 76, 60, 0.12); color: #e74c3c; }
+.issue-icon.info { background: rgba(52, 152, 219, 0.12); color: #3498db; }
+.issue-icon.success { background: rgba(46, 204, 113, 0.12); color: #2ecc71; }
+.issue-icon svg { width: 22px; height: 22px; }
+.issue-text { flex: 1; }
+.issue-title { font-size: 15px; font-weight: 600; color: #1a1a2e; line-height: 1.3; }
+.issue-desc { font-size: 12px; color: #888; margin-top: 4px; line-height: 1.4; }
+
+/* A/B Choice buttons */
+.choice-buttons { display: flex; gap: 10px; }
+.choice-btn { flex: 1; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: default; transition: all 0.2s; border: none; }
+.choice-btn.primary { background: #007aff; color: #fff; }
+.choice-btn.primary:hover { background: #0066dd; transform: scale(1.02); }
+.choice-btn.secondary { background: #e9ecef; color: #495057; }
+.choice-btn.secondary:hover { background: #dee2e6; transform: scale(1.02); }
+
+/* Haptic pulse indicator */
+.choice-btn:active { transform: scale(0.96); }
+
+/* ─── Success Toast ─── */
+.toast { position: absolute; bottom: 100px; left: 20px; right: 20px; background: #2ecc71; color: #fff; padding: 14px 18px; border-radius: 14px; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); pointer-events: none; z-index: 80; box-shadow: 0 8px 24px rgba(46, 204, 113, 0.3); }
+.toast svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+/* Toast visible state */
+#toast-show:checked ~ .mobile-app .toast { opacity: 1; transform: translateY(0); pointer-events: auto; animation: toast-bounce 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes toast-bounce {
+  0% { transform: translateY(20px) scale(0.9); opacity: 0; }
+  50% { transform: translateY(-5px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ─── Close sheet via backdrop ─── */
+.sheet-backdrop-close { position: absolute; inset: 0; cursor: pointer; }
+
+/* ─── Swipe gesture hint ─── */
+.swipe-hint { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; color: #999; font-size: 11px; }
+.swipe-hint svg { width: 16px; height: 16px; animation: swipe-anim 2s ease-in-out infinite; }
+@keyframes swipe-anim {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(8px); }
+}
+
+/* ─── Resolved state ─── */
+.issue-card.resolved .issue-icon { background: rgba(46, 204, 113, 0.12); color: #2ecc71; }
+.issue-card.resolved .choice-buttons { display: none; }
+.issue-card.resolved .resolved-badge { display: flex; }
+.resolved-badge { display: none; align-items: center; gap: 8px; color: #2ecc71; font-size: 13px; font-weight: 600; }
+.resolved-badge svg { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-variant">v3</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A mobile-first bottom sheet interface optimized for field workers who need to fix cross-page configuration issues quickly while on-the-go. Large touch targets, thumb-zone layout, and simple A/B choices for rapid decision-making. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Mobile Fixer" &mdash; Fix it now, you're in the field.</strong> Bottom sheet with one-tap fixes, thumb-zone optimized for field workers. iOS-style bottom tab bar with warning badge exposes issues. Large touch targets (48px+), high contrast for outdoor visibility, swipe-to-dismiss patterns.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v3: "Mobile Fixer" &mdash; Bottom Sheet with One-Tap Fixes</strong><br><br>
+        Tagline: "Fix it now, you're in the field."<br><br>
+        Core Concept: A mobile-first bottom sheet interface optimized for field workers who need to fix issues while on-the-go. Large touch targets, thumb-zone layout, one-tap fixes. No complex forms &mdash; just quick A/B choices.<br><br>
+        Exposure Method: Bottom tab bar icon with red warning badge showing count. Tapping reveals bottom sheet.<br><br>
+        Presentation Style: iOS-style bottom sheet that swipes up from bottom. Drag handle at top. Issues presented as large cards with one-tap actions.<br><br>
+        Target Persona: Mobile casual user, field worker (sales rep, technician, etc.). Needs to fix things quickly between appointments. Often outdoors, possibly wearing gloves.<br><br>
+        Platform: Mobile-first (375x720 primary view). Desktop shows centered mobile frame.<br><br>
+        Key UI Elements: Bottom tab bar with Issues icon + badge, Drag handle on bottom sheet, Large touch targets (48px minimum), Thumb-zone layout (actions near bottom), Simple A/B choice buttons ("Option A" | "Option B"), Haptic feedback pulse indicators (visual ripples), Quick fix confirmations (green checkmark toast), Swipe-to-dismiss on resolved items.<br><br>
+        Sample Checklist Items: 1. "Customer address outdated" &mdash; Update now | Ask customer. 2. "Appointment overlap detected" &mdash; Keep earlier | Keep later. 3. "Missing product photo" &mdash; Take photo | Skip. 4. "Route needs optimization" &mdash; Optimize | Keep current. 5. "Check-in required" &mdash; Check in now | Remind later.<br><br>
+        Color/Mood: Clean, high-contrast for outdoor visibility. iOS-inspired with system blue accents. Large, readable typography.<br><br>
+        Interaction Patterns: Checkbox toggle for bottom sheet visibility, :checked state shows sheet at different heights (peek/full), Large button tap states, Swipe gesture indicators.<br><br>
+        Device Preview: Include switcher, but default to mobile view. Desktop shows phone frame.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series exploring bolt-on guided checklists for enterprise software.
+        <a href="guided-checklists.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="guided-checklists.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="guided-checklists-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Ambient Intelligence</span>
+        </a>
+        <a href="guided-checklists-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Task Triage</span>
+        </a>
+        <a href="guided-checklists-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Proactive Monitor</span>
+        </a>
+        <a href="guided-checklists-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Support Toolkit</span>
+        </a>
+        <a href="guided-checklists-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Contextual Whisper</span>
+        </a>
+        <a href="guided-checklists-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Executive Dashboard</span>
+        </a>
+        <a href="guided-checklists-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">AI Collaborator</span>
+        </a>
+        <a href="guided-checklists-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Mobile Fixer</span>
+        </a>
+        <a href="guided-checklists-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Gentle Guide</span>
+        </a>
+        <a href="guided-checklists-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Command Center</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state (default to mobile) -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Sheet toggle state -->
+    <input type="checkbox" id="sheet-toggle" checked>
+
+    <!-- Toast state -->
+    <input type="checkbox" id="toast-show">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="mobile-app">
+
+        <!-- iOS Status Bar -->
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.95 3 3 6.95 3 12s3.95 9 9 9 9-4.05 9-9-4.05-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7z"/><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 17h20v2H2v-2zm1.15-4.05L4 11.47l.85 1.48 1.3-.75-.85-1.48H7v-1.5H5.3l.85-1.47L4.85 7 4 8.47 3.15 7l-1.3.75.85 1.47H1v1.5h1.7l-.85 1.48 1.3.75zm8.35 0l.85-1.48 1.3.75-.85 1.48L14 16.47l-.85-1.48-1.3.75.85 1.48H11v-1.5h1.7l-.85-1.47 1.3-.75-.85-1.48H11v-1.5h1.7l-.85-1.47 1.3-.75.85 1.47.85-1.47 1.3.75-.85 1.47H17v1.5h-1.7l.85 1.48-1.3.75L14 11.47l-.85 1.48-1.3-.75zm6.5 0l.85-1.48 1.3.75-.85 1.48L21 16.47l-.85-1.48-1.3.75.85 1.48H18v-1.5h1.7l-.85-1.47 1.3-.75-.85-1.48H18v-1.5h1.7l-.85-1.47 1.3-.75.85 1.47.85-1.47 1.3.75-.85 1.47H23v1.5h-1.7l.85 1.48-1.3.75L20 11.47l-.85 1.48z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+          <h1>Field App</h1>
+          <div class="subtitle">Tuesday, Feb 6 &middot; 5 appointments today</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="app-content">
+          <div class="summary-row">
+            <div class="summary-card urgent">
+              <div class="value">5</div>
+              <div class="label">Issues</div>
+            </div>
+            <div class="summary-card fixed">
+              <div class="value">12</div>
+              <div class="label">Fixed Today</div>
+            </div>
+          </div>
+
+          <div class="section-header">Recent Activity</div>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="activity-text">
+                <div class="activity-title">Route optimized</div>
+                <div class="activity-time">Saved 23 minutes &middot; 2 min ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="activity-text">
+                <div class="activity-title">Customer verified</div>
+                <div class="activity-time">Johnson, M. &middot; 15 min ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon pending">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="activity-text">
+                <div class="activity-title">Next appointment</div>
+                <div class="activity-time">Smith residence &middot; in 45 min</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item active">
+            <div class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <span class="tab-label">Home</span>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <span class="tab-label">Schedule</span>
+          </div>
+          <label for="sheet-toggle" class="tab-item issues-trigger">
+            <div class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span class="tab-badge">5</span>
+            </div>
+            <span class="tab-label">Issues</span>
+          </label>
+          <div class="tab-item">
+            <div class="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="tab-label">Profile</span>
+          </div>
+        </div>
+
+        <!-- Sheet Backdrop (click to close) -->
+        <label for="sheet-toggle" class="sheet-backdrop">
+          <span class="sheet-backdrop-close"></span>
+        </label>
+
+        <!-- Bottom Sheet -->
+        <div class="bottom-sheet">
+          <div class="sheet-handle">
+            <div class="sheet-handle-bar"></div>
+          </div>
+
+          <div class="sheet-header">
+            <h2>Issues <span class="sheet-count">5</span></h2>
+            <div class="sheet-subtitle">Quick fixes for your route</div>
+          </div>
+
+          <div class="sheet-content">
+            <!-- Issue 1 -->
+            <div class="issue-card">
+              <div class="issue-header">
+                <div class="issue-icon warning">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="issue-text">
+                  <div class="issue-title">Customer address outdated</div>
+                  <div class="issue-desc">Smith residence moved to 742 Oak Lane last month</div>
+                </div>
+              </div>
+              <div class="choice-buttons">
+                <div class="choice-btn primary">Update now</div>
+                <div class="choice-btn secondary">Ask customer</div>
+              </div>
+              <div class="resolved-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Fixed
+              </div>
+            </div>
+
+            <!-- Issue 2 -->
+            <div class="issue-card">
+              <div class="issue-header">
+                <div class="issue-icon error">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="issue-text">
+                  <div class="issue-title">Appointment overlap detected</div>
+                  <div class="issue-desc">2:00 PM slot has two bookings &mdash; Johnson and Martinez</div>
+                </div>
+              </div>
+              <div class="choice-buttons">
+                <div class="choice-btn primary">Keep earlier</div>
+                <div class="choice-btn secondary">Keep later</div>
+              </div>
+              <div class="resolved-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Fixed
+              </div>
+            </div>
+
+            <!-- Issue 3 -->
+            <div class="issue-card">
+              <div class="issue-header">
+                <div class="issue-icon info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div class="issue-text">
+                  <div class="issue-title">Missing product photo</div>
+                  <div class="issue-desc">Installation at Davis home needs before/after photos</div>
+                </div>
+              </div>
+              <div class="choice-buttons">
+                <div class="choice-btn primary">Take photo</div>
+                <div class="choice-btn secondary">Skip</div>
+              </div>
+              <div class="resolved-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Fixed
+              </div>
+            </div>
+
+            <!-- Issue 4 -->
+            <div class="issue-card">
+              <div class="issue-header">
+                <div class="issue-icon warning">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                </div>
+                <div class="issue-text">
+                  <div class="issue-title">Route needs optimization</div>
+                  <div class="issue-desc">Current route is 23 min longer than optimal path</div>
+                </div>
+              </div>
+              <div class="choice-buttons">
+                <div class="choice-btn primary">Optimize</div>
+                <div class="choice-btn secondary">Keep current</div>
+              </div>
+              <div class="resolved-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Fixed
+              </div>
+            </div>
+
+            <!-- Issue 5 -->
+            <div class="issue-card">
+              <div class="issue-header">
+                <div class="issue-icon error">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="issue-text">
+                  <div class="issue-title">Check-in required</div>
+                  <div class="issue-desc">You haven't checked in to Wilson job site yet</div>
+                </div>
+              </div>
+              <div class="choice-buttons">
+                <div class="choice-btn primary">Check in now</div>
+                <div class="choice-btn secondary">Remind later</div>
+              </div>
+              <div class="resolved-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Fixed
+              </div>
+            </div>
+
+            <!-- Swipe hint -->
+            <div class="swipe-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              Swipe to dismiss resolved items
+            </div>
+          </div>
+        </div>
+
+        <!-- Success Toast -->
+        <div class="toast">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Issue fixed!
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

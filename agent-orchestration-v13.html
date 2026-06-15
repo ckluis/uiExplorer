@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v13: Orchestra Score (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  padding: 8px 10px 2px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+input[name="preview"] { display: none; }
+input[name="time-pos"] { display: none; }
+input[name="mute"] { display: none; }
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #0d0d1a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Score Container ─── */
+.score-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+}
+
+.score-container {
+  padding: 28px 30px 60px;
+  min-width: 1200px;
+}
+
+#preview-mobile:checked ~ .window .score-container {
+  min-width: 0;
+  padding: 16px 12px 40px;
+}
+
+.score-title {
+  text-align: center;
+  color: #d4af37;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.score-subtitle {
+  text-align: center;
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ─── Controls Bar ─── */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+}
+
+.time-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #999;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #ccc;
+}
+
+/* Time position radio highlighting */
+#time-intro:checked ~ .window .score-wrap .controls-bar label[for="time-intro"],
+#time-delegate:checked ~ .window .score-wrap .controls-bar label[for="time-delegate"],
+#time-execute:checked ~ .window .score-wrap .controls-bar label[for="time-execute"],
+#time-fermata:checked ~ .window .score-wrap .controls-bar label[for="time-fermata"] {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #d4af37;
+}
+
+/* Mute checkbox labels */
+.mute-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.mute-btn .mute-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: opacity 0.2s;
+}
+
+.mute-conductor .mute-dot { background: #d4af37; }
+.mute-orchestrator .mute-dot { background: #e8d5a3; }
+.mute-woodwinds .mute-dot { background: #5dade2; }
+.mute-brass .mute-dot { background: #e67e22; }
+.mute-percussion .mute-dot { background: #e74c3c; }
+.mute-harp .mute-dot { background: #2ecc71; }
+
+.mute-conductor { color: #d4af37; }
+.mute-orchestrator { color: #e8d5a3; }
+.mute-woodwinds { color: #5dade2; }
+.mute-brass { color: #e67e22; }
+.mute-percussion { color: #e74c3c; }
+.mute-harp { color: #2ecc71; }
+
+/* When mute checkbox is checked, dim the corresponding staff */
+#mute-conductor:checked ~ .window .staff-conductor { opacity: 0.15; }
+#mute-orchestrator:checked ~ .window .staff-orchestrator { opacity: 0.15; }
+#mute-woodwinds:checked ~ .window .staff-woodwinds { opacity: 0.15; }
+#mute-brass:checked ~ .window .staff-brass { opacity: 0.15; }
+#mute-percussion:checked ~ .window .staff-percussion { opacity: 0.15; }
+#mute-harp:checked ~ .window .staff-harp { opacity: 0.15; }
+
+/* When mute checkbox is checked, style the label */
+#mute-conductor:checked ~ .window .score-wrap .controls-bar label.mute-conductor { opacity: 0.35; text-decoration: line-through; }
+#mute-orchestrator:checked ~ .window .score-wrap .controls-bar label.mute-orchestrator { opacity: 0.35; text-decoration: line-through; }
+#mute-woodwinds:checked ~ .window .score-wrap .controls-bar label.mute-woodwinds { opacity: 0.35; text-decoration: line-through; }
+#mute-brass:checked ~ .window .score-wrap .controls-bar label.mute-brass { opacity: 0.35; text-decoration: line-through; }
+#mute-percussion:checked ~ .window .score-wrap .controls-bar label.mute-percussion { opacity: 0.35; text-decoration: line-through; }
+#mute-harp:checked ~ .window .score-wrap .controls-bar label.mute-harp { opacity: 0.35; text-decoration: line-through; }
+
+/* ─── Time position highlight cursor ─── */
+.time-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  z-index: 5;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  display: none;
+}
+
+#time-intro:checked ~ .window .time-cursor { display: block; left: 260px; }
+#time-delegate:checked ~ .window .time-cursor { display: block; left: 460px; }
+#time-execute:checked ~ .window .time-cursor { display: block; left: 740px; }
+#time-fermata:checked ~ .window .time-cursor { display: block; left: 1010px; }
+
+/* ─── Score Layout ─── */
+.score {
+  position: relative;
+  padding-left: 180px;
+}
+
+.score::before {
+  content: '';
+  position: absolute;
+  left: 168px;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+}
+.score::after {
+  content: '';
+  position: absolute;
+  left: 163px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: rgba(255,255,255,0.15);
+}
+
+.time-sig {
+  position: absolute;
+  left: 186px;
+  top: 28px;
+  color: rgba(255,255,255,0.5);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.time-sig span { display: block; }
+
+/* ─── Staff System ─── */
+.staff-system {
+  position: relative;
+  margin-bottom: 8px;
+  transition: opacity 0.3s;
+}
+
+.staff-label {
+  position: absolute;
+  left: -170px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: right;
+  width: 155px;
+}
+
+.staff-label .agent-name {
+  font-size: 11px;
+  font-weight: 600;
+  display: block;
+}
+
+.staff-label .instrument-name {
+  font-size: 10px;
+  opacity: 0.5;
+  display: block;
+}
+
+.baton-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  position: relative;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.baton-icon::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 2px;
+  background: #d4af37;
+  transform: rotate(-30deg);
+  transform-origin: left center;
+  border-radius: 1px;
+}
+.baton-icon::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: #d4af37;
+  border-radius: 50%;
+}
+
+.staff-clef {
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 32px;
+  color: rgba(255,255,255,0.25);
+  line-height: 1;
+}
+
+.staff-lines {
+  position: relative;
+  height: 52px;
+  margin-left: 30px;
+}
+
+.staff-lines .line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+.staff-lines .line:nth-child(1) { top: 6px; }
+.staff-lines .line:nth-child(2) { top: 17px; }
+.staff-lines .line:nth-child(3) { top: 28px; }
+.staff-lines .line:nth-child(4) { top: 39px; }
+.staff-lines .line:nth-child(5) { top: 50px; }
+
+.barline {
+  position: absolute;
+  top: 4px;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.15);
+}
+
+/* ─── Notes ─── */
+.note {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.note-head {
+  width: 10px;
+  height: 8px;
+  border-radius: 50%;
+  transform: rotate(-15deg);
+}
+
+.note-head.filled { background: currentColor; }
+.note-head.hollow {
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+.note-head.whole {
+  width: 14px;
+  height: 10px;
+  background: transparent;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.note-stem {
+  width: 1.5px;
+  height: 28px;
+  background: currentColor;
+  position: absolute;
+  bottom: 6px;
+  right: -1px;
+}
+
+.note-label {
+  font-size: 8px;
+  white-space: nowrap;
+  margin-top: 4px;
+  opacity: 0.7;
+  position: absolute;
+  top: 100%;
+  font-weight: 500;
+}
+
+/* ─── Note Tooltips ─── */
+.note-tip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.note-tip .tip-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 40, 0.95);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 10px;
+  color: #eee;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+
+.note-tip .tip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(255,255,255,0.15);
+}
+
+.note-tip:hover .tip-content {
+  opacity: 1;
+}
+
+.note-tip .tip-action {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.note-tip .tip-detail {
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Rest symbol */
+.rest {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0.4;
+}
+
+/* ─── Fermata ─── */
+.fermata {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+
+.fermata-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d4af37;
+  transition: transform 0.3s;
+}
+
+.fermata-arc {
+  width: 22px;
+  height: 12px;
+  border: 2px solid #d4af37;
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  margin-bottom: 2px;
+  transition: transform 0.3s;
+}
+
+/* Fermata hover pulse */
+.fermata:hover .fermata-arc {
+  transform: scale(1.2);
+}
+.fermata:hover .fermata-dot {
+  transform: scale(1.3);
+}
+
+.fermata .fermata-question {
+  position: absolute;
+  top: calc(100% + 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  font-size: 10px;
+  color: #ddd;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  z-index: 20;
+}
+
+.fermata .fermata-question .fq-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b9cf7;
+  margin-bottom: 4px;
+}
+
+.fermata:hover .fermata-question {
+  opacity: 1;
+}
+
+/* Spawn bracket */
+.spawn-bracket {
+  position: absolute;
+  border-left: 1.5px dashed rgba(46, 204, 113, 0.4);
+  border-bottom: 1.5px dashed rgba(46, 204, 113, 0.4);
+}
+
+/* ─── Colors ─── */
+.color-conductor { color: #d4af37; }
+.color-orchestrator { color: #e8d5a3; }
+.color-woodwinds { color: #5dade2; }
+.color-brass { color: #e67e22; }
+.color-percussion { color: #e74c3c; }
+.color-harp { color: #2ecc71; }
+
+/* ─── AskUser Panel ─── */
+.ask-panel {
+  position: absolute;
+  background: rgba(139, 156, 247, 0.1);
+  border: 1px solid rgba(139, 156, 247, 0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  width: 220px;
+  z-index: 10;
+}
+
+.ask-panel-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b9cf7;
+  margin-bottom: 6px;
+}
+
+.ask-panel-question {
+  font-size: 11px;
+  color: #ddd;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.ask-panel-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ask-panel-option {
+  font-size: 10px;
+  color: #999;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+}
+
+/* ─── Legend ─── */
+.legend {
+  margin-top: 30px;
+  padding-left: 30px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+}
+
+.legend-note {
+  width: 8px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+}
+
+.legend-note.hollow-leg {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.5);
+}
+
+.legend-rest-sym {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+}
+
+.legend-fermata-sym {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.legend-fermata-sym .f-arc {
+  width: 12px;
+  height: 6px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.legend-fermata-sym .f-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  margin-top: 1px;
+}
+
+/* ─── Mobile Overrides ─── */
+#preview-mobile:checked ~ .window .score-container {
+  min-width: 0;
+  padding: 16px 10px 40px;
+}
+
+#preview-mobile:checked ~ .window .score-title {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+#preview-mobile:checked ~ .window .score-subtitle {
+  font-size: 9px;
+  margin-bottom: 8px;
+}
+
+#preview-mobile:checked ~ .window .controls-bar {
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+#preview-mobile:checked ~ .window .controls-group {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+#preview-mobile:checked ~ .window .score {
+  padding-left: 0;
+}
+
+#preview-mobile:checked ~ .window .score::before,
+#preview-mobile:checked ~ .window .score::after,
+#preview-mobile:checked ~ .window .time-sig {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .staff-system {
+  margin-bottom: 20px;
+}
+
+#preview-mobile:checked ~ .window .staff-label {
+  position: relative;
+  left: 0;
+  top: 0;
+  transform: none;
+  text-align: left;
+  width: auto;
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+#preview-mobile:checked ~ .window .staff-clef {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .staff-lines {
+  margin-left: 0;
+  overflow-x: auto;
+  min-width: 340px;
+}
+
+#preview-mobile:checked ~ .window .ask-panel {
+  position: relative;
+  left: auto !important;
+  top: auto !important;
+  width: 100%;
+  margin-top: 12px;
+}
+
+#preview-mobile:checked ~ .window .legend {
+  padding-left: 4px;
+  gap: 12px;
+}
+
+#preview-mobile:checked ~ .window .time-cursor {
+  display: none !important;
+}
+
+/* Hide spawned staff label extra info on mobile */
+#preview-mobile:checked ~ .window .staff-harp .staff-label span:last-child {
+  display: none;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v13</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Orchestra Score (v3) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + checkbox instrument muting, hover note tooltips, time scrubbing via radio buttons, and fermata hover reveals question text.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v13.html as an enhanced iteration of v3 (Orchestra Score). Take the existing Orchestra Score and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: checkbox per instrument staff to mute/highlight that agent line, :hover on notes shows action detail tooltips, radio buttons for time position (different moments in orchestration), fermata symbols pulse on :hover revealing question text. Mobile: stacked staves (3-4 visible), simplified notation. Preserve the parchment/ink score aesthetic.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Terrarium (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Weaving Loom (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Particle Chamber (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Cartographic Expedition (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Kitchen Brigade (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Tidal Pool (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Mission Control (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Orchestra Score (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Geological Strata (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Mycelium Network (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <div class="exp-vc-group">Original Variants (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Time position radios -->
+    <input type="radio" name="time-pos" id="time-intro">
+    <input type="radio" name="time-pos" id="time-delegate">
+    <input type="radio" name="time-pos" id="time-execute">
+    <input type="radio" name="time-pos" id="time-fermata">
+
+    <!-- Mute checkboxes -->
+    <input type="checkbox" name="mute" id="mute-conductor">
+    <input type="checkbox" name="mute" id="mute-orchestrator">
+    <input type="checkbox" name="mute" id="mute-woodwinds">
+    <input type="checkbox" name="mute" id="mute-brass">
+    <input type="checkbox" name="mute" id="mute-percussion">
+    <input type="checkbox" name="mute" id="mute-harp">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="score-wrap">
+        <div class="time-cursor"></div>
+        <div class="score-container">
+          <div class="score-title">ORCHESTRATION IN C MAJOR</div>
+          <div class="score-subtitle">A Marketing Campaign &mdash; Op. 1</div>
+
+          <!-- Controls Bar -->
+          <div class="controls-bar">
+            <div class="controls-group">
+              <span class="controls-label">Time:</span>
+              <label for="time-intro" class="time-btn">Intro</label>
+              <label for="time-delegate" class="time-btn">Delegate</label>
+              <label for="time-execute" class="time-btn">Execute</label>
+              <label for="time-fermata" class="time-btn">Fermata</label>
+            </div>
+            <div class="controls-group">
+              <span class="controls-label">Mute:</span>
+              <label for="mute-conductor" class="mute-btn mute-conductor"><span class="mute-dot"></span>Conductor</label>
+              <label for="mute-orchestrator" class="mute-btn mute-orchestrator"><span class="mute-dot"></span>1st Violin</label>
+              <label for="mute-woodwinds" class="mute-btn mute-woodwinds"><span class="mute-dot"></span>Woodwinds</label>
+              <label for="mute-brass" class="mute-btn mute-brass"><span class="mute-dot"></span>Brass</label>
+              <label for="mute-percussion" class="mute-btn mute-percussion"><span class="mute-dot"></span>Percussion</label>
+              <label for="mute-harp" class="mute-btn mute-harp"><span class="mute-dot"></span>Harp</label>
+            </div>
+          </div>
+
+          <div class="score">
+            <!-- Time Signature -->
+            <div class="time-sig">
+              <span>4</span>
+              <span>4</span>
+            </div>
+
+            <!-- ═══ Staff 1: Conductor / Human ═══ -->
+            <div class="staff-system staff-conductor" style="margin-bottom: 14px;">
+              <div class="staff-label">
+                <span class="agent-name color-conductor"><span class="baton-icon"></span>Conductor</span>
+                <span class="instrument-name">Human</span>
+              </div>
+              <div class="staff-clef" style="color: #d4af37;">&#119070;</div>
+              <div class="staff-lines">
+                <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+
+                <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+                <!-- Whole note with tooltip -->
+                <div class="note-tip color-conductor" style="left: 60px; top: 22px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Initial Directive</div>
+                    <div class="tip-detail">Human issues the campaign brief</div>
+                  </div>
+                  <div class="note-head whole"></div>
+                  <span class="note-label" style="font-size: 9px; color: #d4af37; opacity: 1; width: 160px; text-align: center; left: -73px;">"Build a marketing campaign"</span>
+                </div>
+
+                <!-- Fermata at measure 4 -->
+                <div class="fermata" style="left: 802px; top: -6px;">
+                  <div class="fermata-arc"></div>
+                  <div class="fermata-dot"></div>
+                  <div class="fermata-question">
+                    <div class="fq-label">&#9835; Cadenza &mdash; AskUserQuestion</div>
+                    "Which demographic should we target?"
+                  </div>
+                </div>
+                <div class="note-tip color-conductor" style="left: 800px; top: 22px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Human Pause</div>
+                    <div class="tip-detail">Orchestra pauses for conductor guidance</div>
+                  </div>
+                  <div class="note-head whole"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Staff 2: First Violin / Orchestrator ═══ -->
+            <div class="staff-system staff-orchestrator" style="margin-bottom: 14px;">
+              <div class="staff-label">
+                <span class="agent-name color-orchestrator">First Violin</span>
+                <span class="instrument-name">Orchestrator Agent</span>
+              </div>
+              <div class="staff-clef" style="color: #e8d5a3;">&#119070;</div>
+              <div class="staff-lines">
+                <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+                <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+                <div class="note-tip color-orchestrator" style="left: 80px; top: 11px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Analyze</div>
+                    <div class="tip-detail">Parse brief, identify requirements</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">analyze</span>
+                </div>
+                <div class="note-tip color-orchestrator" style="left: 160px; top: 22px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Plan</div>
+                    <div class="tip-detail">Create task decomposition strategy</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">plan</span>
+                </div>
+                <div class="note-tip color-orchestrator" style="left: 260px; top: 0px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Delegate &rarr; Content</div>
+                    <div class="tip-detail">Assign copywriting to Woodwinds</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">delegate</span>
+                </div>
+                <div class="note-tip color-orchestrator" style="left: 340px; top: 11px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Delegate &rarr; Design</div>
+                    <div class="tip-detail">Assign visual assets to Brass</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">delegate</span>
+                </div>
+                <div class="note-tip color-orchestrator" style="left: 420px; top: 22px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Delegate &rarr; Analytics</div>
+                    <div class="tip-detail">Assign metric collection to Percussion</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">delegate</span>
+                </div>
+                <div class="note-tip color-orchestrator" style="left: 920px; top: 17px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Review</div>
+                    <div class="tip-detail">Consolidate all sub-agent outputs</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">review</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Staff 3: Woodwinds / Content Agent ═══ -->
+            <div class="staff-system staff-woodwinds" style="margin-bottom: 14px;">
+              <div class="staff-label">
+                <span class="agent-name color-woodwinds">Woodwinds</span>
+                <span class="instrument-name">Content Agent</span>
+              </div>
+              <div class="staff-clef" style="color: #5dade2;">&#119070;</div>
+              <div class="staff-lines">
+                <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+                <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+                <div class="rest" style="left: 100px; top: 14px; color: #5dade2;">&#119102;</div>
+
+                <div class="note-tip color-woodwinds" style="left: 280px; top: 11px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Draft Copy</div>
+                    <div class="tip-detail">Generate initial campaign messaging</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">draft copy</span>
+                </div>
+                <div class="note-tip color-woodwinds" style="left: 390px; top: 22px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Refine Tone</div>
+                    <div class="tip-detail">Adjust voice for brand consistency</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">refine tone</span>
+                </div>
+                <div class="note-tip color-woodwinds" style="left: 500px; top: 6px;">
+                  <div class="tip-content">
+                    <div class="tip-action">A/B Variants</div>
+                    <div class="tip-detail">Create alternative messaging options</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">A/B variants</span>
+                </div>
+                <div class="note-tip color-woodwinds" style="left: 580px; top: 33px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Spawn Sub-Agent</div>
+                    <div class="tip-detail">Create Social Media Writer (Harp)</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label" style="color: #2ecc71;">spawn &darr;</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Staff 4: Brass / Design Agent ═══ -->
+            <div class="staff-system staff-brass" style="margin-bottom: 14px;">
+              <div class="staff-label">
+                <span class="agent-name color-brass">Brass</span>
+                <span class="instrument-name">Design Agent</span>
+              </div>
+              <div class="staff-clef" style="color: #e67e22;">&#119070;</div>
+              <div class="staff-lines">
+                <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+                <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+                <div class="rest" style="left: 100px; top: 14px; color: #e67e22;">&#119102;</div>
+
+                <div class="note-tip color-brass" style="left: 280px; top: 17px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Mood Board</div>
+                    <div class="tip-detail">Collect visual references and inspiration</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">mood board</span>
+                </div>
+                <div class="note-tip color-brass" style="left: 500px; top: 6px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Layout Concepts</div>
+                    <div class="tip-detail">Design 3 layout options for campaign</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">layout concepts</span>
+                </div>
+                <div class="rest" style="left: 620px; top: 14px; color: #e67e22;">&#119102;</div>
+                <div class="note-tip color-brass" style="left: 720px; top: 28px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Color Palette</div>
+                    <div class="tip-detail">Finalize brand-aligned color system</div>
+                  </div>
+                  <div class="note-head filled"></div>
+                  <div class="note-stem"></div>
+                  <span class="note-label">color palette</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Staff 5: Percussion / Analytics Agent ═══ -->
+            <div class="staff-system staff-percussion" style="margin-bottom: 14px;">
+              <div class="staff-label">
+                <span class="agent-name color-percussion">Percussion</span>
+                <span class="instrument-name">Analytics Agent</span>
+              </div>
+              <div class="staff-clef" style="color: #e74c3c;">&#119070;</div>
+              <div class="staff-lines">
+                <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+                <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+                <div class="note-tip color-percussion" style="left: 260px; top: 28px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Pull Metrics</div>
+                    <div class="tip-detail">Fetch historical campaign performance data</div>
+                  </div>
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                  <span class="note-label">pull metrics</span>
+                </div>
+                <div class="note color-percussion" style="left: 320px; top: 17px;">
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                </div>
+                <div class="note color-percussion" style="left: 370px; top: 28px;">
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                </div>
+                <div class="note-tip color-percussion" style="left: 470px; top: 11px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Segment Audiences</div>
+                    <div class="tip-detail">Cluster user groups by behavior patterns</div>
+                  </div>
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                  <span class="note-label">segment audiences</span>
+                </div>
+                <div class="note color-percussion" style="left: 530px; top: 22px;">
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                </div>
+                <div class="note color-percussion" style="left: 580px; top: 11px;">
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                </div>
+                <div class="note-tip color-percussion" style="left: 700px; top: 17px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Forecast Reach</div>
+                    <div class="tip-detail">Project campaign impression estimates</div>
+                  </div>
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                  <span class="note-label">forecast reach</span>
+                </div>
+                <div class="note color-percussion" style="left: 760px; top: 28px;">
+                  <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+                  <div class="note-stem" style="height: 22px;"></div>
+                </div>
+                <div class="note color-percussion" style="left: 800px; top: 11px;">
+                  <div class="note-head hollow"></div>
+                  <div class="note-stem"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Staff 6: Harp / Social Media Writer (spawned) ═══ -->
+            <div class="staff-system staff-harp" style="margin-bottom: 14px; opacity: 0.85;">
+              <div class="staff-label">
+                <span class="agent-name color-harp" style="font-size: 10px;">Harp</span>
+                <span class="instrument-name" style="font-size: 9px;">Social Media Writer</span>
+                <span style="font-size: 8px; color: #2ecc71; opacity: 0.7;">spawned m.3</span>
+              </div>
+              <div class="staff-clef" style="color: #2ecc71; font-size: 26px;">&#119070;</div>
+              <div class="staff-lines" style="height: 44px;">
+                <div class="line"></div><div class="line" style="top: 14px;"></div><div class="line" style="top: 22px;"></div><div class="line" style="top: 30px;"></div><div class="line" style="top: 38px;"></div>
+
+                <div class="barline" style="left: 440px; height: 34px; top: 4px;"></div>
+                <div class="barline" style="left: 660px; height: 34px; top: 4px;"></div>
+                <div class="barline" style="left: 880px; height: 34px; top: 4px;"></div>
+
+                <div style="position: absolute; left: 0; top: 21px; width: 440px; height: 1px; border-top: 1px dashed rgba(46,204,113,0.2);"></div>
+
+                <div class="note-tip color-harp" style="left: 580px; top: 8px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Instagram</div>
+                    <div class="tip-detail">Craft visual-first carousel posts</div>
+                  </div>
+                  <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+                  <div class="note-stem" style="height: 20px;"></div>
+                  <span class="note-label">Instagram</span>
+                </div>
+                <div class="note-tip color-harp" style="left: 660px; top: 18px;">
+                  <div class="tip-content">
+                    <div class="tip-action">Twitter</div>
+                    <div class="tip-detail">Write concise thread with hooks</div>
+                  </div>
+                  <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+                  <div class="note-stem" style="height: 20px;"></div>
+                  <span class="note-label">Twitter</span>
+                </div>
+                <div class="note-tip color-harp" style="left: 740px; top: 8px;">
+                  <div class="tip-content">
+                    <div class="tip-action">LinkedIn</div>
+                    <div class="tip-detail">Professional-tone thought leadership post</div>
+                  </div>
+                  <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+                  <div class="note-stem" style="height: 20px;"></div>
+                  <span class="note-label">LinkedIn</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ AskUserQuestion Panel (Cadenza) ═══ -->
+            <div class="ask-panel" style="left: 830px; top: 230px;">
+              <div class="ask-panel-label">&#9835; Cadenza &mdash; AskUserQuestion</div>
+              <div class="ask-panel-question">Target demographic?</div>
+              <div class="ask-panel-options">
+                <div class="ask-panel-option">Gen-Z</div>
+                <div class="ask-panel-option">Millennials</div>
+                <div class="ask-panel-option">Gen-X</div>
+              </div>
+            </div>
+
+            <!-- Double barline at end -->
+            <div style="position: absolute; left: 1090px; top: 22px; height: 400px;">
+              <div style="position: absolute; left: 0; top: 0; width: 1.5px; height: 100%; background: rgba(255,255,255,0.2);"></div>
+              <div style="position: absolute; left: 5px; top: 0; width: 4px; height: 100%; background: rgba(255,255,255,0.25); border-radius: 1px;"></div>
+            </div>
+
+          </div>
+
+          <!-- Legend -->
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-note"></div>
+              <span>Filled note = action</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-note hollow-leg"></div>
+              <span>Hollow note = waiting</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-rest-sym">&#119102;</div>
+              <span>Rest = idle</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-fermata-sym">
+                <div class="f-arc"></div>
+                <div class="f-dot"></div>
+              </div>
+              <span>Fermata = human pause (hover)</span>
+            </div>
+            <div class="legend-item">
+              <div style="width: 20px; height: 1px; border-top: 1.5px dashed rgba(46,204,113,0.5);"></div>
+              <span>Dashed = spawned agent</span>
+            </div>
+            <div class="legend-item">
+              <span style="font-size: 9px; color: #888;">&#9654;</span>
+              <span>Hover notes for details</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

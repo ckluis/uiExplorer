@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v9: Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #faf9f7; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── CRM Dashboard ─── */
+.crm { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #1a1a2e; overflow: hidden; }
+
+/* ─── Role Toggle ─── */
+.role-bar { display: flex; align-items: center; gap: 6px; }
+.role-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #999; margin-right: 4px; }
+.role-pill { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #f0eeeb; color: #888; cursor: pointer; transition: all 0.2s; }
+.role-pill:hover { background: #e8e5e0; color: #555; }
+
+#role-solo:checked ~ .window .crm .role-bar label[for="role-solo"],
+#role-team:checked ~ .window .crm .role-bar label[for="role-team"],
+#role-admin:checked ~ .window .crm .role-bar label[for="role-admin"] { background: #1a1a2e; color: #fff; }
+
+/* ─── Left Panel ─── */
+.left-panel { width: 300px; min-width: 300px; background: #fff; border-right: 1px solid #e8e5e0; display: flex; flex-direction: column; overflow: hidden; }
+.left-header { padding: 20px 20px 0; }
+.left-header h2 { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; letter-spacing: -0.02em; }
+.left-header .date-range { font-size: 12px; color: #999; margin-bottom: 16px; }
+
+/* View Toggle */
+.view-toggle { display: flex; gap: 4px; margin-bottom: 16px; padding: 0 20px; }
+.view-pill { padding: 5px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; background: #f5f4f1; color: #888; cursor: pointer; transition: all 0.2s; }
+.view-pill:hover { background: #ebe9e5; }
+#view-week:checked ~ .window .crm .view-pill[for="view-week"],
+#view-day:checked ~ .window .crm .view-pill[for="view-day"] { background: #1a1a2e; color: #fff; }
+
+/* Unscheduled Section */
+.unscheduled { padding: 16px 20px; border-bottom: 1px solid #eee; }
+.unscheduled-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.unscheduled-header h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #c0392b; }
+.unscheduled-count { background: #c0392b; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+.unsched-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: #fef9f6; border: 1px solid #f5e6da; border-radius: 8px; margin-bottom: 6px; }
+.unsched-priority { width: 4px; min-height: 32px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+.unsched-priority.high { background: #e74c3c; }
+.unsched-priority.med { background: #f39c12; }
+.unsched-priority.low { background: #3498db; }
+.unsched-info h4 { font-size: 12px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+.unsched-info p { font-size: 11px; color: #888; line-height: 1.3; }
+.unsched-info .unsched-tag { display: inline-block; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-top: 4px; }
+.unsched-tag.follow-up { background: rgba(231,76,60,0.1); color: #e74c3c; }
+.unsched-tag.new-lead { background: rgba(52,152,219,0.1); color: #3498db; }
+.unsched-tag.overdue { background: rgba(192,57,43,0.15); color: #c0392b; }
+
+/* Today's Agenda */
+.today-agenda { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.today-agenda h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #555; margin-bottom: 12px; }
+.agenda-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f4f1; }
+.agenda-time { font-size: 11px; font-weight: 600; color: #999; min-width: 52px; padding-top: 1px; }
+.agenda-detail h4 { font-size: 12px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+.agenda-detail p { font-size: 11px; color: #888; }
+.agenda-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.agenda-dot.showing { background: #3498db; }
+.agenda-dot.meeting { background: #2ecc71; }
+.agenda-dot.deadline { background: #f39c12; }
+.agenda-dot.closing { background: #9b59b6; }
+
+/* ─── Calendar Grid ─── */
+.calendar-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.cal-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #e8e5e0; background: #fff; }
+.cal-toolbar h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.02em; }
+
+.cal-scroll { flex: 1; overflow: auto; }
+.cal-grid { display: grid; grid-template-columns: 56px repeat(5, 1fr); min-height: 100%; }
+
+/* Day Headers */
+.cal-day-headers { display: contents; }
+.cal-corner { background: #fff; border-bottom: 2px solid #e8e5e0; border-right: 1px solid #eee; position: sticky; top: 0; z-index: 10; }
+.cal-day-header { background: #fff; border-bottom: 2px solid #e8e5e0; border-right: 1px solid #eee; padding: 10px 8px; text-align: center; position: sticky; top: 0; z-index: 10; }
+.cal-day-header .day-name { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+.cal-day-header .day-num { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-top: 2px; }
+.cal-day-header.today .day-num { background: #1a1a2e; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Time Column */
+.cal-time { font-size: 10px; font-weight: 500; color: #bbb; text-align: right; padding: 0 8px 0 0; border-right: 1px solid #eee; height: 64px; position: relative; }
+.cal-time span { position: absolute; top: -6px; right: 8px; }
+
+/* Day Columns */
+.cal-cell { border-right: 1px solid #f0eeeb; border-bottom: 1px solid #f5f4f1; height: 64px; position: relative; padding: 2px; }
+.cal-cell:last-child { border-right: none; }
+
+/* Time Zone Backgrounds */
+.cal-cell.zone-prospect { background: rgba(52, 152, 219, 0.03); }
+.cal-cell.zone-showing { background: rgba(46, 204, 113, 0.03); }
+.cal-cell.zone-admin { background: rgba(149, 165, 166, 0.04); }
+
+/* Zone Labels */
+.zone-label { position: absolute; top: 2px; right: 4px; font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #ddd; pointer-events: none; }
+
+/* Event Blocks */
+.cal-event { position: absolute; left: 3px; right: 3px; border-radius: 6px; padding: 6px 8px; font-size: 11px; overflow: hidden; z-index: 5; cursor: default; border-left: 3px solid; }
+.cal-event h5 { font-size: 11px; font-weight: 600; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-event p { font-size: 9px; color: inherit; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-event .event-badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-top: 2px; }
+
+/* Event Types */
+.cal-event.showing { background: rgba(52, 152, 219, 0.12); border-color: #3498db; color: #2471a3; }
+.cal-event.showing .event-badge { background: rgba(52, 152, 219, 0.2); color: #2471a3; }
+.cal-event.meeting { background: rgba(46, 204, 113, 0.12); border-color: #2ecc71; color: #1e8449; }
+.cal-event.meeting .event-badge { background: rgba(46, 204, 113, 0.2); color: #1e8449; }
+.cal-event.deadline { background: rgba(243, 156, 18, 0.12); border-color: #f39c12; color: #b7791f; }
+.cal-event.deadline .event-badge { background: rgba(243, 156, 18, 0.2); color: #b7791f; }
+.cal-event.closing { background: rgba(155, 89, 182, 0.12); border-color: #9b59b6; color: #7d3c98; }
+.cal-event.closing .event-badge { background: rgba(155, 89, 182, 0.2); color: #7d3c98; }
+
+/* Deadline Marker */
+.deadline-marker { position: absolute; left: 0; right: 0; height: 2px; background: #e74c3c; z-index: 8; }
+.deadline-marker::after { content: attr(data-label); position: absolute; right: 4px; top: -8px; font-size: 8px; font-weight: 700; color: #fff; background: #e74c3c; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+
+/* Availability Gap */
+.cal-cell.available { border: 2px dashed #ddd; background: rgba(255,255,255,0.6); }
+
+/* End-of-Day Summary */
+.day-summary { position: absolute; bottom: 0; left: 0; right: 0; background: #f9f8f6; border-top: 1px solid #eee; padding: 4px 8px; font-size: 9px; color: #999; display: flex; justify-content: space-between; }
+
+/* ─── Team Lead View ─── */
+.team-view, .admin-view { display: none; }
+#role-team:checked ~ .window .crm .solo-view { display: none; }
+#role-team:checked ~ .window .crm .team-view { display: flex; }
+#role-admin:checked ~ .window .crm .solo-view { display: none; }
+#role-admin:checked ~ .window .crm .admin-view { display: flex; }
+
+.team-view { flex: 1; flex-direction: column; overflow: hidden; }
+.team-header { padding: 16px 24px; border-bottom: 1px solid #e8e5e0; background: #fff; display: flex; align-items: center; justify-content: space-between; }
+.team-header h2 { font-size: 18px; font-weight: 700; }
+.team-scroll { flex: 1; overflow: auto; }
+.team-row { display: flex; border-bottom: 1px solid #eee; min-height: 80px; }
+.team-agent { width: 140px; min-width: 140px; padding: 12px 16px; background: #faf9f7; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; }
+.team-agent h4 { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.team-agent p { font-size: 10px; color: #999; }
+.team-slots { display: flex; flex: 1; gap: 4px; padding: 8px; align-items: center; overflow-x: auto; }
+.team-event { padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: 500; white-space: nowrap; border-left: 3px solid; }
+.team-event.showing { background: rgba(52,152,219,0.1); border-color: #3498db; color: #2471a3; }
+.team-event.meeting { background: rgba(46,204,113,0.1); border-color: #2ecc71; color: #1e8449; }
+.team-event.closing { background: rgba(155,89,182,0.1); border-color: #9b59b6; color: #7d3c98; }
+.team-event.conflict { outline: 2px solid #e74c3c; outline-offset: -1px; }
+.team-unscheduled { padding: 16px 24px; border-bottom: 1px solid #eee; background: #fef9f6; }
+.team-unscheduled h3 { font-size: 12px; font-weight: 700; color: #c0392b; margin-bottom: 8px; }
+.team-unsched-items { display: flex; gap: 8px; flex-wrap: wrap; }
+.team-unsched-chip { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 500; background: #fff; border: 1px solid #f5e6da; color: #666; }
+
+/* ─── Admin View ─── */
+.admin-view { flex: 1; flex-direction: column; overflow: hidden; }
+.admin-header { padding: 16px 24px; border-bottom: 1px solid #e8e5e0; background: #fff; display: flex; align-items: center; justify-content: space-between; }
+.admin-header h2 { font-size: 18px; font-weight: 700; }
+.admin-scroll { flex: 1; overflow: auto; padding: 24px; }
+.admin-section { margin-bottom: 28px; }
+.admin-section h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin-bottom: 14px; }
+.volume-bars { display: flex; gap: 16px; align-items: flex-end; height: 120px; }
+.volume-day { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.volume-bar { width: 100%; border-radius: 6px 6px 0 0; background: linear-gradient(to top, #3498db, #85c1e9); min-height: 8px; }
+.volume-day .vol-label { font-size: 10px; font-weight: 600; color: #999; }
+.volume-day .vol-count { font-size: 11px; font-weight: 700; color: #1a1a2e; }
+.closing-timeline { display: flex; flex-direction: column; gap: 8px; }
+.closing-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
+.closing-date { font-size: 11px; font-weight: 700; color: #9b59b6; min-width: 70px; }
+.closing-detail h4 { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.closing-detail p { font-size: 10px; color: #888; }
+.closing-amount { font-size: 13px; font-weight: 700; color: #2ecc71; margin-left: auto; }
+.capacity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.capacity-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 16px; }
+.capacity-card h4 { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+.capacity-card .cap-role { font-size: 10px; color: #999; margin-bottom: 10px; }
+.cap-meter { height: 6px; background: #f0eeeb; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.cap-fill { height: 100%; border-radius: 3px; }
+.cap-fill.low { background: #2ecc71; }
+.cap-fill.med { background: #f39c12; }
+.cap-fill.high { background: #e74c3c; }
+.cap-stats { font-size: 10px; color: #888; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .left-panel { display: none; }
+#preview-mobile:checked ~ .window .cal-grid { grid-template-columns: 40px repeat(5, 1fr); }
+#preview-mobile:checked ~ .window .cal-event h5 { font-size: 9px; }
+#preview-mobile:checked ~ .window .cal-event p { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v9</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A 10-variant origination series exploring CRM dashboard designs for real estate agents. Each variant takes a radically different approach to organizing contacts, deals, and workflows.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Schedule" — Calendar-First CRM.</strong> Time is your only real resource. A physical day planner metaphor where the weekly calendar drives all activity. Contacts and deals organized by when things happen, with an unscheduled backlog creating visual pressure.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v9: "Schedule" — Calendar-First CRM</strong><br><br>
+        Tagline: "Time is your only real resource."<br>
+        Core metaphor: A physical day planner — time is the primary axis, contacts and deals organized by when things happen.<br><br>
+        Layout: Large week-view calendar (~75%, right side) with hour rows (8am-6pm). Each event block is a rich mini-CRM card (contact name, property, deal stage badge). Left panel (~25%, ~300px) with "Unscheduled" items at top and today's agenda below. Color-coded by activity: blue=showings, green=meetings, amber=deadlines, purple=closings.<br><br>
+        Key UI elements: Rich event blocks as mini-CRM cards. "Unscheduled" queue creating visual pressure. Day/Week toggle. Deadline markers with countdown badges. Time-block category zones. Availability gaps with dotted borders. End-of-day summary bars. Week header with dates.<br><br>
+        Color/mood: Clean, structured. White background with subtle grid. Pastel event blocks. High-saturation red deadline markers. Organized, professional — premium leather planner.<br><br>
+        Role toggle: Solo Agent sees personal schedule. Team Lead gets multi-row view with conflict detection. Brokerage Admin sees high-level capacity view with volume bars.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; Origin Prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Role state -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <!-- View state -->
+    <input type="radio" name="view" id="view-week" checked>
+    <input type="radio" name="view" id="view-day">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="crm">
+
+        <!-- ═══════════ SOLO AGENT VIEW ═══════════ -->
+        <div class="solo-view" style="display:flex;width:100%;height:100%;">
+
+          <!-- Left Panel -->
+          <div class="left-panel">
+            <div class="left-header">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h2>Schedule</h2>
+                <div class="role-bar">
+                  <label for="role-solo" class="role-pill">Solo</label>
+                  <label for="role-team" class="role-pill">Team</label>
+                  <label for="role-admin" class="role-pill">Admin</label>
+                </div>
+              </div>
+              <div class="date-range">Week of January 27 &ndash; 31, 2025</div>
+              <div class="view-toggle">
+                <label for="view-week" class="view-pill">Week</label>
+                <label for="view-day" class="view-pill">Day</label>
+              </div>
+            </div>
+
+            <!-- Unscheduled Queue -->
+            <div class="unscheduled">
+              <div class="unscheduled-header">
+                <h3>Unscheduled</h3>
+                <span class="unscheduled-count">5</span>
+              </div>
+
+              <div class="unsched-item">
+                <div class="unsched-priority high"></div>
+                <div class="unsched-info">
+                  <h4>Maria Santos</h4>
+                  <p>Follow up on 742 Elm St offer</p>
+                  <span class="unsched-tag overdue">3 days overdue</span>
+                </div>
+              </div>
+
+              <div class="unsched-item">
+                <div class="unsched-priority high"></div>
+                <div class="unsched-info">
+                  <h4>James Whitfield</h4>
+                  <p>Pre-approval docs needed</p>
+                  <span class="unsched-tag follow-up">Follow up</span>
+                </div>
+              </div>
+
+              <div class="unsched-item">
+                <div class="unsched-priority med"></div>
+                <div class="unsched-info">
+                  <h4>Linda Cheng</h4>
+                  <p>Schedule listing photos</p>
+                  <span class="unsched-tag follow-up">Follow up</span>
+                </div>
+              </div>
+
+              <div class="unsched-item">
+                <div class="unsched-priority low"></div>
+                <div class="unsched-info">
+                  <h4>New Lead: Derek Hall</h4>
+                  <p>Zillow inquiry — 3BR Westside</p>
+                  <span class="unsched-tag new-lead">New lead</span>
+                </div>
+              </div>
+
+              <div class="unsched-item">
+                <div class="unsched-priority low"></div>
+                <div class="unsched-info">
+                  <h4>New Lead: Priya Patel</h4>
+                  <p>Open house sign-up, downtown condo</p>
+                  <span class="unsched-tag new-lead">New lead</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Today's Agenda -->
+            <div class="today-agenda">
+              <h3>Today &mdash; Wednesday</h3>
+
+              <div class="agenda-item">
+                <span class="agenda-time">9:00 AM</span>
+                <div class="agenda-dot meeting"></div>
+                <div class="agenda-detail">
+                  <h4>Team Standup</h4>
+                  <p>Weekly pipeline review</p>
+                </div>
+              </div>
+
+              <div class="agenda-item">
+                <span class="agenda-time">10:30 AM</span>
+                <div class="agenda-dot showing"></div>
+                <div class="agenda-detail">
+                  <h4>Showing: 88 Park Ave</h4>
+                  <p>Robert Kim &mdash; Buyer tour</p>
+                </div>
+              </div>
+
+              <div class="agenda-item">
+                <span class="agenda-time">1:00 PM</span>
+                <div class="agenda-dot showing"></div>
+                <div class="agenda-detail">
+                  <h4>Showing: 1250 Oak Dr</h4>
+                  <p>Susan & Tom Barnes</p>
+                </div>
+              </div>
+
+              <div class="agenda-item">
+                <span class="agenda-time">3:00 PM</span>
+                <div class="agenda-dot deadline"></div>
+                <div class="agenda-detail">
+                  <h4>Inspection Deadline</h4>
+                  <p>445 River Rd &mdash; Thompson deal</p>
+                </div>
+              </div>
+
+              <div class="agenda-item">
+                <span class="agenda-time">4:30 PM</span>
+                <div class="agenda-dot closing"></div>
+                <div class="agenda-detail">
+                  <h4>Closing Prep Call</h4>
+                  <p>Davis family &mdash; title company</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Area -->
+          <div class="calendar-area">
+            <div class="cal-toolbar">
+              <h2>January 27 &ndash; 31, 2025</h2>
+              <div style="display:flex;gap:12px;align-items:center;">
+                <div style="display:flex;gap:10px;font-size:10px;color:#999;">
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#3498db;display:inline-block;"></span> Showing</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;display:inline-block;"></span> Meeting</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#f39c12;display:inline-block;"></span> Deadline</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#9b59b6;display:inline-block;"></span> Closing</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cal-scroll">
+              <div class="cal-grid">
+                <!-- Day Headers -->
+                <div class="cal-corner"></div>
+                <div class="cal-day-header">
+                  <div class="day-name">Mon</div>
+                  <div class="day-num">27</div>
+                </div>
+                <div class="cal-day-header">
+                  <div class="day-name">Tue</div>
+                  <div class="day-num">28</div>
+                </div>
+                <div class="cal-day-header today">
+                  <div class="day-name">Wed</div>
+                  <div class="day-num">29</div>
+                </div>
+                <div class="cal-day-header">
+                  <div class="day-name">Thu</div>
+                  <div class="day-num">30</div>
+                </div>
+                <div class="cal-day-header">
+                  <div class="day-name">Fri</div>
+                  <div class="day-num">31</div>
+                </div>
+
+                <!-- 8 AM Row -->
+                <div class="cal-time"><span>8 AM</span></div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <span class="zone-label">Prospecting</span>
+                </div>
+                <div class="cal-cell zone-prospect"></div>
+                <div class="cal-cell zone-prospect"></div>
+                <div class="cal-cell zone-prospect"></div>
+                <div class="cal-cell zone-prospect"></div>
+
+                <!-- 9 AM Row -->
+                <div class="cal-time"><span>9 AM</span></div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Cold Calls Block</h5>
+                    <p>Lead list — 15 contacts</p>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 320 Maple Ln</h5>
+                    <p>Jennifer Wu</p>
+                    <span class="event-badge">Buyer Tour</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Team Standup</h5>
+                    <p>Pipeline review</p>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Lender Meeting</h5>
+                    <p>First National — rates</p>
+                    <span class="event-badge">Pre-Approval</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect"></div>
+
+                <!-- 10 AM Row -->
+                <div class="cal-time"><span>10 AM</span></div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:120px;">
+                    <h5>Showing: 55 Cedar Ct</h5>
+                    <p>Mark & Lisa Johnson</p>
+                    <span class="event-badge">2nd Showing</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect available"></div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event showing" style="top:18px;height:90px;">
+                    <h5>Showing: 88 Park Ave</h5>
+                    <p>Robert Kim — Buyer tour</p>
+                    <span class="event-badge">New Listing</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-prospect available"></div>
+                <div class="cal-cell zone-prospect" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Listing Presentation</h5>
+                    <p>456 Pine St — Garcias</p>
+                    <span class="event-badge">Listing</span>
+                  </div>
+                </div>
+
+                <!-- 11 AM Row -->
+                <div class="cal-time"><span>11 AM</span></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell" style="position:relative;">
+                  <div class="cal-event deadline" style="top:2px;height:56px;">
+                    <h5>Appraisal Due</h5>
+                    <p>742 Elm St — Santos deal</p>
+                    <span class="event-badge">Due Today</span>
+                  </div>
+                </div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 901 Birch Rd</h5>
+                    <p>Amanda Foster</p>
+                    <span class="event-badge">Buyer Tour</span>
+                  </div>
+                </div>
+                <div class="cal-cell available"></div>
+
+                <!-- 12 PM Row -->
+                <div class="cal-time"><span>12 PM</span></div>
+                <div class="cal-cell" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Lunch: Referral Partner</h5>
+                    <p>Sarah Chen — mortgage broker</p>
+                  </div>
+                </div>
+                <div class="cal-cell available"></div>
+                <div class="cal-cell available"></div>
+                <div class="cal-cell available"></div>
+                <div class="cal-cell" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Lunch: Client Check-in</h5>
+                    <p>Thompson family</p>
+                  </div>
+                </div>
+
+                <!-- 1 PM Row -->
+                <div class="cal-time"><span>1 PM</span></div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <span class="zone-label">Showings</span>
+                  <div class="cal-event showing" style="top:2px;height:120px;">
+                    <h5>Showing: 1250 Oak Dr</h5>
+                    <p>Susan & Tom Barnes</p>
+                    <span class="event-badge">3rd Showing</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 678 Walnut</h5>
+                    <p>David Park</p>
+                    <span class="event-badge">Buyer Tour</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:120px;">
+                    <h5>Showing: 1250 Oak Dr</h5>
+                    <p>Susan & Tom Barnes</p>
+                    <span class="event-badge">Buyer Tour</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing available"></div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 22 Lake View</h5>
+                    <p>Rachel & Mike Adams</p>
+                    <span class="event-badge">New Listing</span>
+                  </div>
+                </div>
+
+                <!-- 2 PM Row -->
+                <div class="cal-time"><span>2 PM</span></div>
+                <div class="cal-cell zone-showing"></div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 140 Sunset</h5>
+                    <p>Alex Rivera — Luxury</p>
+                    <span class="event-badge">$1.2M</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing"></div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event showing" style="top:2px;height:56px;">
+                    <h5>Showing: 567 Ridge</h5>
+                    <p>Chris & Natalie Wong</p>
+                    <span class="event-badge">2nd Showing</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing available"></div>
+
+                <!-- 3 PM Row -->
+                <div class="cal-time"><span>3 PM</span></div>
+                <div class="cal-cell zone-showing available"></div>
+                <div class="cal-cell zone-showing available"></div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="deadline-marker" style="top:30px;" data-label="Inspection — 3 days"></div>
+                  <div class="cal-event deadline" style="top:2px;height:56px;">
+                    <h5>Inspection Deadline</h5>
+                    <p>445 River Rd — Thompson</p>
+                    <span class="event-badge">3 Days Left</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Offer Strategy Call</h5>
+                    <p>Barnes — 1250 Oak Dr</p>
+                    <span class="event-badge">Negotiation</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-showing" style="position:relative;">
+                  <div class="cal-event closing" style="top:2px;height:120px;">
+                    <h5>Closing: 330 Main St</h5>
+                    <p>Davis family — Title Co.</p>
+                    <span class="event-badge">$485,000</span>
+                  </div>
+                </div>
+
+                <!-- 4 PM Row -->
+                <div class="cal-time"><span>4 PM</span></div>
+                <div class="cal-cell zone-admin" style="position:relative;">
+                  <span class="zone-label">Admin</span>
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>CMA Prep</h5>
+                    <p>456 Pine St listing</p>
+                  </div>
+                </div>
+                <div class="cal-cell zone-admin available"></div>
+                <div class="cal-cell zone-admin" style="position:relative;">
+                  <div class="cal-event closing" style="top:18px;height:56px;">
+                    <h5>Closing Prep Call</h5>
+                    <p>Davis — title company</p>
+                    <span class="event-badge">Final Walk</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-admin available"></div>
+                <div class="cal-cell zone-admin"></div>
+
+                <!-- 5 PM Row -->
+                <div class="cal-time"><span>5 PM</span></div>
+                <div class="cal-cell zone-admin"></div>
+                <div class="cal-cell zone-admin" style="position:relative;">
+                  <div class="cal-event meeting" style="top:2px;height:56px;">
+                    <h5>Contract Review</h5>
+                    <p>742 Elm St — attorney</p>
+                    <span class="event-badge">Under Contract</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-admin"></div>
+                <div class="cal-cell zone-admin" style="position:relative;">
+                  <div class="cal-event deadline" style="top:2px;height:56px;">
+                    <h5>Financing Deadline</h5>
+                    <p>Kim deal — 88 Park Ave</p>
+                    <span class="event-badge">5 Days Left</span>
+                  </div>
+                </div>
+                <div class="cal-cell zone-admin"></div>
+
+                <!-- 6 PM Row -->
+                <div class="cal-time"><span>6 PM</span></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"></div>
+                <div class="cal-cell"></div>
+
+              </div><!-- /cal-grid -->
+            </div><!-- /cal-scroll -->
+          </div><!-- /calendar-area -->
+
+        </div><!-- /solo-view -->
+
+        <!-- ═══════════ TEAM LEAD VIEW ═══════════ -->
+        <div class="team-view">
+          <div class="team-header">
+            <h2>Team Schedule &mdash; Jan 27&ndash;31</h2>
+            <div class="role-bar">
+              <label for="role-solo" class="role-pill">Solo</label>
+              <label for="role-team" class="role-pill">Team</label>
+              <label for="role-admin" class="role-pill">Admin</label>
+            </div>
+          </div>
+
+          <div class="team-unscheduled">
+            <h3>Team Unscheduled Items (8)</h3>
+            <div class="team-unsched-items">
+              <span class="team-unsched-chip">Maria Santos &mdash; follow up offer</span>
+              <span class="team-unsched-chip">Derek Hall &mdash; new lead</span>
+              <span class="team-unsched-chip">Priya Patel &mdash; open house</span>
+              <span class="team-unsched-chip">Linda Cheng &mdash; listing photos</span>
+              <span class="team-unsched-chip">James W. &mdash; pre-approval</span>
+              <span class="team-unsched-chip">Kevin Moore &mdash; price reduction</span>
+              <span class="team-unsched-chip">Sarah Lee &mdash; buyer consult</span>
+              <span class="team-unsched-chip">Tom Brady &mdash; expired listing</span>
+            </div>
+          </div>
+
+          <div class="team-scroll">
+            <div class="team-row">
+              <div class="team-agent">
+                <h4>You</h4>
+                <p>6 events today</p>
+              </div>
+              <div class="team-slots">
+                <div class="team-event meeting">9:00 Team Standup</div>
+                <div class="team-event showing">10:30 88 Park Ave</div>
+                <div class="team-event showing">1:00 1250 Oak Dr</div>
+                <div class="team-event deadline">3:00 Inspection Due</div>
+                <div class="team-event closing">4:30 Closing Prep</div>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="team-agent">
+                <h4>Rachel Torres</h4>
+                <p>4 events today</p>
+              </div>
+              <div class="team-slots">
+                <div class="team-event meeting">9:00 Team Standup</div>
+                <div class="team-event showing">11:00 445 River Rd</div>
+                <div class="team-event showing conflict">1:00 88 Park Ave</div>
+                <div class="team-event meeting">3:30 Client Call</div>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="team-agent">
+                <h4>Marcus Chen</h4>
+                <p>5 events today</p>
+              </div>
+              <div class="team-slots">
+                <div class="team-event meeting">9:00 Team Standup</div>
+                <div class="team-event showing">10:00 22 Lake View</div>
+                <div class="team-event showing">12:30 567 Ridge</div>
+                <div class="team-event showing">2:00 140 Sunset</div>
+                <div class="team-event closing">4:00 330 Main Closing</div>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="team-agent">
+                <h4>Emily Watson</h4>
+                <p>3 events today</p>
+              </div>
+              <div class="team-slots">
+                <div class="team-event meeting">9:00 Team Standup</div>
+                <div class="team-event showing">11:30 320 Maple Ln</div>
+                <div class="team-event meeting">2:00 Listing Consult</div>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="team-agent">
+                <h4>Jason Park</h4>
+                <p>3 events today</p>
+              </div>
+              <div class="team-slots">
+                <div class="team-event showing">10:00 901 Birch Rd</div>
+                <div class="team-event showing">1:30 678 Walnut</div>
+                <div class="team-event deadline">4:00 Financing Due</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════ BROKERAGE ADMIN VIEW ═══════════ -->
+        <div class="admin-view">
+          <div class="admin-header">
+            <h2>Brokerage Overview &mdash; Week of Jan 27</h2>
+            <div class="role-bar">
+              <label for="role-solo" class="role-pill">Solo</label>
+              <label for="role-team" class="role-pill">Team</label>
+              <label for="role-admin" class="role-pill">Admin</label>
+            </div>
+          </div>
+
+          <div class="admin-scroll">
+            <div class="admin-section">
+              <h3>Showing Volume by Day</h3>
+              <div class="volume-bars">
+                <div class="volume-day">
+                  <span class="vol-count">6</span>
+                  <div class="volume-bar" style="height:72px;"></div>
+                  <span class="vol-label">Mon</span>
+                </div>
+                <div class="volume-day">
+                  <span class="vol-count">8</span>
+                  <div class="volume-bar" style="height:96px;"></div>
+                  <span class="vol-label">Tue</span>
+                </div>
+                <div class="volume-day">
+                  <span class="vol-count">7</span>
+                  <div class="volume-bar" style="height:84px;"></div>
+                  <span class="vol-label">Wed</span>
+                </div>
+                <div class="volume-day">
+                  <span class="vol-count">5</span>
+                  <div class="volume-bar" style="height:60px;"></div>
+                  <span class="vol-label">Thu</span>
+                </div>
+                <div class="volume-day">
+                  <span class="vol-count">4</span>
+                  <div class="volume-bar" style="height:48px;"></div>
+                  <span class="vol-label">Fri</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3>Closing Timeline</h3>
+              <div class="closing-timeline">
+                <div class="closing-row">
+                  <span class="closing-date">Jan 31</span>
+                  <div class="closing-detail">
+                    <h4>330 Main St &mdash; Davis</h4>
+                    <p>Marcus Chen &middot; Clear to close</p>
+                  </div>
+                  <span class="closing-amount">$485,000</span>
+                </div>
+                <div class="closing-row">
+                  <span class="closing-date">Feb 7</span>
+                  <div class="closing-detail">
+                    <h4>742 Elm St &mdash; Santos</h4>
+                    <p>You &middot; Pending appraisal</p>
+                  </div>
+                  <span class="closing-amount">$367,000</span>
+                </div>
+                <div class="closing-row">
+                  <span class="closing-date">Feb 14</span>
+                  <div class="closing-detail">
+                    <h4>445 River Rd &mdash; Thompson</h4>
+                    <p>Rachel Torres &middot; Inspection pending</p>
+                  </div>
+                  <span class="closing-amount">$525,000</span>
+                </div>
+                <div class="closing-row">
+                  <span class="closing-date">Feb 21</span>
+                  <div class="closing-detail">
+                    <h4>88 Park Ave &mdash; Kim</h4>
+                    <p>You &middot; Under contract</p>
+                  </div>
+                  <span class="closing-amount">$412,000</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-section">
+              <h3>Agent Capacity</h3>
+              <div class="capacity-grid">
+                <div class="capacity-card">
+                  <h4>You</h4>
+                  <div class="cap-role">Lead Agent</div>
+                  <div class="cap-meter"><div class="cap-fill high" style="width:85%;"></div></div>
+                  <div class="cap-stats">17/20 slots filled &middot; 6 active deals</div>
+                </div>
+                <div class="capacity-card">
+                  <h4>Rachel Torres</h4>
+                  <div class="cap-role">Senior Agent</div>
+                  <div class="cap-meter"><div class="cap-fill med" style="width:65%;"></div></div>
+                  <div class="cap-stats">13/20 slots filled &middot; 4 active deals</div>
+                </div>
+                <div class="capacity-card">
+                  <h4>Marcus Chen</h4>
+                  <div class="cap-role">Agent</div>
+                  <div class="cap-meter"><div class="cap-fill high" style="width:90%;"></div></div>
+                  <div class="cap-stats">18/20 slots filled &middot; 5 active deals</div>
+                </div>
+                <div class="capacity-card">
+                  <h4>Emily Watson</h4>
+                  <div class="cap-role">Junior Agent</div>
+                  <div class="cap-meter"><div class="cap-fill low" style="width:40%;"></div></div>
+                  <div class="cap-stats">8/20 slots filled &middot; 2 active deals</div>
+                </div>
+                <div class="capacity-card">
+                  <h4>Jason Park</h4>
+                  <div class="cap-role">Agent</div>
+                  <div class="cap-meter"><div class="cap-fill med" style="width:55%;"></div></div>
+                  <div class="cap-stats">11/20 slots filled &middot; 3 active deals</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /crm -->
+    </div><!-- /window -->
+  </div><!-- /experiment-content -->
+</div><!-- /experiment-frame -->
+</body>
+</html>

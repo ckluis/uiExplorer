@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v8: Particle Chamber</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+/* ─── Experiment Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #050510;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ─── Chamber Layout ─── */
+.chamber-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── The Bubble Chamber ─── */
+.chamber {
+  position: relative;
+  width: 660px;
+  height: 660px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #080818 0%, #040410 60%, #020208 100%);
+  border: 2px solid rgba(100, 120, 180, 0.2);
+  box-shadow:
+    0 0 60px rgba(60, 80, 160, 0.08),
+    inset 0 0 80px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+/* Concentric detector rings */
+.chamber::before,
+.chamber::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(80, 100, 160, 0.06);
+}
+
+.chamber::before {
+  top: 80px; left: 80px; right: 80px; bottom: 80px;
+}
+
+.chamber::after {
+  top: 160px; left: 160px; right: 160px; bottom: 160px;
+}
+
+.ring-inner {
+  position: absolute;
+  top: 240px; left: 240px; right: 240px; bottom: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(80, 100, 160, 0.04);
+}
+
+/* Faint grid crosshairs */
+.grid-h, .grid-v {
+  position: absolute;
+  background: rgba(80, 100, 160, 0.03);
+}
+
+.grid-h {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+  left: 0;
+}
+
+.grid-v {
+  height: 100%;
+  width: 1px;
+  left: 50%;
+  top: 0;
+}
+
+/* ─── Incoming Particle ─── */
+.incoming-track {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 330px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 240, 150, 0.0) 0%, rgba(255, 240, 150, 0.6) 30%, rgba(255, 255, 200, 0.9) 100%);
+  box-shadow: 0 0 8px rgba(255, 240, 150, 0.4), 0 0 20px rgba(255, 240, 150, 0.15);
+  transform: translateY(-50%);
+}
+
+.incoming-label {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-32px);
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 240, 180, 0.7);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.incoming-label span {
+  display: block;
+  font-size: 9px;
+  color: rgba(255, 240, 180, 0.4);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* ─── Collision Point / Starburst ─── */
+.collision {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 220, 0.6) 30%, rgba(200, 200, 255, 0.2) 60%, transparent 100%);
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 0 40px rgba(200, 200, 255, 0.3),
+    0 0 80px rgba(150, 150, 255, 0.15);
+}
+
+.collision-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 22px);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.collision-sublabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 36px);
+  font-size: 8px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+
+/* ─── Particle Tracks (CSS curved borders) ─── */
+
+/* Track A — Security Audit Agent — upper-right curve (blue) */
+.track-a {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  border: none;
+  border-top: 3px solid rgba(80, 140, 255, 0.7);
+  border-radius: 200px 0 0 0;
+  transform: translate(-14px, -200px) rotate(45deg);
+  box-shadow: 0 -3px 12px rgba(80, 140, 255, 0.3);
+}
+
+/* Track A endpoint dot */
+.track-a-end {
+  position: absolute;
+  top: 115px;
+  right: 115px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(80, 140, 255, 0.9);
+  box-shadow: 0 0 8px rgba(80, 140, 255, 0.6), 0 0 20px rgba(80, 140, 255, 0.3);
+}
+
+.track-a-label {
+  position: absolute;
+  top: 100px;
+  right: 80px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(80, 140, 255, 0.8);
+  white-space: nowrap;
+}
+
+/* Track A1 — OAuth Analyzer — branch from A (light blue, thin) */
+.track-a1 {
+  position: absolute;
+  top: 115px;
+  right: 115px;
+  width: 80px;
+  height: 80px;
+  border: none;
+  border-right: 1.5px solid rgba(120, 180, 255, 0.5);
+  border-radius: 0 80px 0 0;
+  transform: rotate(-20deg);
+  box-shadow: 3px 0 8px rgba(120, 180, 255, 0.2);
+}
+
+.track-a1-label {
+  position: absolute;
+  top: 68px;
+  right: 28px;
+  font-size: 8px;
+  font-weight: 500;
+  color: rgba(120, 180, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Track A2 — JWT Validator — branch from A (light blue, thin) */
+.track-a2 {
+  position: absolute;
+  top: 115px;
+  right: 115px;
+  width: 70px;
+  height: 70px;
+  border: none;
+  border-top: 1.5px solid rgba(120, 180, 255, 0.5);
+  border-radius: 70px 0 0 0;
+  transform: rotate(10deg) translate(0, -10px);
+  box-shadow: 0 -2px 8px rgba(120, 180, 255, 0.2);
+}
+
+.track-a2-label {
+  position: absolute;
+  top: 52px;
+  right: 55px;
+  font-size: 8px;
+  font-weight: 500;
+  color: rgba(120, 180, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Track B — Code Migration Agent — lower-right curve (green) */
+.track-b {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 180px;
+  border: none;
+  border-bottom: 3px solid rgba(46, 204, 113, 0.7);
+  border-radius: 0 0 0 180px;
+  transform: translate(-14px, 0) rotate(-30deg);
+  box-shadow: 0 3px 12px rgba(46, 204, 113, 0.3);
+}
+
+.track-b-label {
+  position: absolute;
+  bottom: 160px;
+  right: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(46, 204, 113, 0.8);
+  white-space: nowrap;
+}
+
+/* Track B reflected — amber, bouncing back */
+.track-b-reflect {
+  position: absolute;
+  bottom: 118px;
+  right: 60px;
+  width: 100px;
+  height: 100px;
+  border: none;
+  border-left: 2px solid rgba(243, 156, 18, 0.7);
+  border-radius: 0 0 0 100px;
+  transform: rotate(40deg);
+  box-shadow: -2px 0 10px rgba(243, 156, 18, 0.3);
+}
+
+.reflect-flash {
+  position: absolute;
+  bottom: 130px;
+  right: 68px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(243, 156, 18, 0.8) 0%, rgba(243, 156, 18, 0.2) 60%, transparent 100%);
+  box-shadow: 0 0 12px rgba(243, 156, 18, 0.5);
+}
+
+.reflect-label {
+  position: absolute;
+  bottom: 145px;
+  right: 15px;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(243, 156, 18, 0.8);
+  white-space: nowrap;
+}
+
+.reflect-sublabel {
+  position: absolute;
+  bottom: 132px;
+  right: 15px;
+  font-size: 8px;
+  font-weight: 400;
+  color: rgba(243, 156, 18, 0.5);
+  white-space: nowrap;
+}
+
+/* Track C — Test Generation Agent — upward curve (purple) */
+.track-c {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 180px;
+  border: none;
+  border-right: 2px solid rgba(160, 100, 240, 0.7);
+  border-radius: 0 160px 0 0;
+  transform: translate(-14px, -180px) rotate(15deg);
+  box-shadow: 3px 0 10px rgba(160, 100, 240, 0.3);
+}
+
+.track-c-end {
+  position: absolute;
+  top: 140px;
+  left: 385px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(160, 100, 240, 0.8);
+  box-shadow: 0 0 6px rgba(160, 100, 240, 0.5);
+}
+
+.track-c-label {
+  position: absolute;
+  top: 128px;
+  left: 395px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(160, 100, 240, 0.8);
+  white-space: nowrap;
+}
+
+/* Track D — Documentation Agent — downward curve (cyan, thin) */
+.track-d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 160px;
+  border: none;
+  border-left: 1.5px solid rgba(80, 220, 240, 0.5);
+  border-radius: 0 0 0 140px;
+  transform: translate(-14px, 0) rotate(10deg);
+  box-shadow: -2px 0 8px rgba(80, 220, 240, 0.2);
+}
+
+.track-d-end {
+  position: absolute;
+  bottom: 135px;
+  left: 205px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(80, 220, 240, 0.7);
+  box-shadow: 0 0 6px rgba(80, 220, 240, 0.4);
+}
+
+.track-d-label {
+  position: absolute;
+  bottom: 120px;
+  left: 180px;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(80, 220, 240, 0.6);
+  white-space: nowrap;
+}
+
+/* ─── Question Panel (floating near reflection) ─── */
+.question-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 30px;
+  width: 240px;
+  background: rgba(243, 156, 18, 0.06);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 11px;
+  color: rgba(243, 156, 18, 0.8);
+  line-height: 1.5;
+}
+
+.question-panel-title {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(243, 156, 18, 0.5);
+  margin-bottom: 6px;
+}
+
+.question-panel-text {
+  color: rgba(255, 220, 150, 0.7);
+  font-size: 10px;
+}
+
+/* ─── Detector Readout Panel ─── */
+.detector-readout {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 260px;
+  background: rgba(10, 10, 30, 0.9);
+  border: 1px solid rgba(80, 100, 160, 0.15);
+  border-radius: 10px;
+  padding: 20px 18px;
+  font-family: 'Inter', sans-serif;
+}
+
+.detector-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(140, 160, 220, 0.6);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(80, 100, 160, 0.1);
+}
+
+.detector-row {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(80, 100, 160, 0.06);
+}
+
+.detector-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.detector-particle {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.detector-particle.blue { color: rgba(80, 140, 255, 0.9); }
+.detector-particle.green { color: rgba(46, 204, 113, 0.9); }
+.detector-particle.purple { color: rgba(160, 100, 240, 0.9); }
+.detector-particle.cyan { color: rgba(80, 220, 240, 0.9); }
+
+.detector-props {
+  display: flex;
+  gap: 10px;
+  font-size: 9px;
+  color: rgba(160, 170, 200, 0.5);
+}
+
+.detector-props .val {
+  color: rgba(200, 210, 240, 0.7);
+  font-weight: 500;
+}
+
+.detector-status {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.status-stable {
+  background: rgba(46, 204, 113, 0.1);
+  color: rgba(46, 204, 113, 0.7);
+}
+
+.status-reflected {
+  background: rgba(243, 156, 18, 0.1);
+  color: rgba(243, 156, 18, 0.7);
+}
+
+.status-decaying {
+  background: rgba(160, 100, 240, 0.1);
+  color: rgba(160, 100, 240, 0.7);
+}
+
+.status-terminal {
+  background: rgba(80, 220, 240, 0.1);
+  color: rgba(80, 220, 240, 0.7);
+}
+
+/* ─── Chamber Title ─── */
+.chamber-title {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(140, 160, 220, 0.3);
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as a particle physics bubble chamber &mdash; the prompt enters as a high-energy particle and decays into sub-particles (agents) that spiral outward in curved tracks. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Particle Chamber &mdash; dark circular chamber. Prompt enters from the left, hits the orchestrator, and decays into sub-particles spiraling outward. Track colors and thicknesses represent agent type and intensity. Reflected particles are questions bouncing back for more energy.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a bubble chamber visualization where a human prompt enters as a high-energy particle, collides with the orchestrator at center, and decays into multiple agent tracks spiraling outward. Each track's color, thickness, and curvature encodes agent type and energy level. When an agent needs human input (AskUserQuestion), its track reflects off the chamber wall in amber. A detector readout panel shows particle properties. Pure CSS curved tracks using border-radius tricks.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="chamber-title">Bubble Chamber &mdash; Agent Decay Topology</div>
+
+    <div class="chamber-scene">
+      <div class="chamber">
+        <!-- Grid crosshairs -->
+        <div class="grid-h"></div>
+        <div class="grid-v"></div>
+        <div class="ring-inner"></div>
+
+        <!-- Incoming particle track -->
+        <div class="incoming-track"></div>
+        <div class="incoming-label">
+          Human Prompt
+          <span>"Refactor the authentication system"</span>
+        </div>
+
+        <!-- Collision / starburst -->
+        <div class="collision"></div>
+        <div class="collision-label">Orchestrator</div>
+        <div class="collision-sublabel">Primary Decay</div>
+
+        <!-- Track A — Security Audit Agent (blue, thick, upper-right) -->
+        <div class="track-a"></div>
+        <div class="track-a-end"></div>
+        <div class="track-a-label">Security Audit Agent</div>
+
+        <!-- Track A1 — OAuth Analyzer (secondary decay) -->
+        <div class="track-a1"></div>
+        <div class="track-a1-label">OAuth Analyzer</div>
+
+        <!-- Track A2 — JWT Validator (secondary decay) -->
+        <div class="track-a2"></div>
+        <div class="track-a2-label">JWT Validator</div>
+
+        <!-- Track B — Code Migration Agent (green, lower-right) -->
+        <div class="track-b"></div>
+        <div class="track-b-label">Code Migration Agent</div>
+
+        <!-- Track B reflection (amber) -->
+        <div class="reflect-flash"></div>
+        <div class="track-b-reflect"></div>
+        <div class="reflect-label">Reflected &mdash; needs energy</div>
+        <div class="reflect-sublabel">(human input required)</div>
+
+        <!-- Track C — Test Generation Agent (purple, upward) -->
+        <div class="track-c"></div>
+        <div class="track-c-end"></div>
+        <div class="track-c-label">Test Generation Agent</div>
+
+        <!-- Track D — Documentation Agent (cyan, thin, downward) -->
+        <div class="track-d"></div>
+        <div class="track-d-end"></div>
+        <div class="track-d-label">Documentation Agent</div>
+
+        <!-- Question panel near reflection -->
+        <div class="question-panel">
+          <div class="question-panel-title">Reflected Particle &mdash; Awaiting Energy</div>
+          <div class="question-panel-text">
+            Migrate to OAuth 2.0 or switch to Passkeys?<br>
+            Current system uses OAuth 1.0a.
+          </div>
+        </div>
+      </div>
+
+      <!-- Detector Readout -->
+      <div class="detector-readout">
+        <div class="detector-title">Detector Readout</div>
+
+        <div class="detector-row">
+          <div class="detector-particle blue">Security Audit Agent</div>
+          <div class="detector-props">
+            <span>E: <span class="val">0.8 GeV</span></span>
+            <span>Track: <span class="val">Curved</span></span>
+          </div>
+          <div class="detector-status status-stable">Stable &mdash; Spiraling</div>
+        </div>
+
+        <div class="detector-row">
+          <div class="detector-particle green">Code Migration Agent</div>
+          <div class="detector-props">
+            <span>E: <span class="val">0.3 GeV</span></span>
+            <span>Track: <span class="val">Reflected</span></span>
+          </div>
+          <div class="detector-status status-reflected">Reflected &mdash; Awaiting Input</div>
+        </div>
+
+        <div class="detector-row">
+          <div class="detector-particle purple">Test Generator</div>
+          <div class="detector-props">
+            <span>E: <span class="val">0.6 GeV</span></span>
+            <span>Track: <span class="val">Curved</span></span>
+          </div>
+          <div class="detector-status status-decaying">Stable &mdash; Decaying</div>
+        </div>
+
+        <div class="detector-row">
+          <div class="detector-particle cyan">Documentation Agent</div>
+          <div class="detector-props">
+            <span>E: <span class="val">0.2 GeV</span></span>
+            <span>Track: <span class="val">Fading</span></span>
+          </div>
+          <div class="detector-status status-terminal">Stable &mdash; Terminal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v6: Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+.experiment-sidebar .exp-prev { font-size: 12px; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #0d1117; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Terminal CRM ─── */
+.terminal { display: flex; flex-direction: column; height: 100%; font-family: 'JetBrains Mono', monospace; color: #c9d1d9; font-size: 12px; line-height: 1.5; }
+
+/* Notification ticker */
+.ticker { height: 24px; background: #161b22; border-bottom: 1px solid #21262d; overflow: hidden; position: relative; white-space: nowrap; }
+.ticker-content { display: inline-block; padding-left: 100%; animation: ticker-scroll 40s linear infinite; }
+.ticker-content span { display: inline; padding: 0 40px 0 0; font-size: 11px; line-height: 24px; }
+.ticker-content .t-green { color: #3fb950; }
+.ticker-content .t-yellow { color: #d29922; }
+.ticker-content .t-red { color: #f85149; }
+.ticker-content .t-cyan { color: #58a6ff; }
+@keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+/* Status bar */
+.status-bar { height: 36px; background: #161b22; border-bottom: 1px solid #21262d; display: flex; align-items: center; padding: 0 16px; gap: 24px; font-size: 11px; flex-shrink: 0; }
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.green { background: #3fb950; }
+.status-dot.yellow { background: #d29922; }
+.status-dot.red { background: #f85149; }
+.status-dot.cyan { background: #58a6ff; }
+.status-dot.blink { animation: blink-dot 1.2s ease-in-out infinite; }
+@keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+.status-label { color: #8b949e; }
+.status-value { color: #c9d1d9; font-weight: 600; }
+.status-value.green { color: #3fb950; }
+.status-value.yellow { color: #d29922; }
+.status-value.red { color: #f85149; }
+.status-sep { color: #30363d; }
+
+/* Role toggle */
+.role-bar { height: 32px; background: #0d1117; border-bottom: 1px solid #21262d; display: flex; align-items: center; padding: 0 16px; gap: 4px; }
+.role-label { font-size: 10px; color: #484f58; margin-right: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.role-btn { padding: 4px 12px; border-radius: 4px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #8b949e; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+.role-btn:hover { color: #c9d1d9; background: rgba(255,255,255,0.04); }
+
+#role-solo:checked ~ .window .role-bar label[for="role-solo"],
+#role-team:checked ~ .window .role-bar label[for="role-team"],
+#role-admin:checked ~ .window .role-bar label[for="role-admin"] {
+  color: #58a6ff; background: rgba(88, 166, 255, 0.1); border-color: rgba(88, 166, 255, 0.3);
+}
+
+/* Main panels area */
+.panels { flex: 1; display: flex; overflow: hidden; }
+.panel-main { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #21262d; overflow: hidden; }
+.panel-side { width: 320px; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Panel headers */
+.panel-header { height: 28px; background: #161b22; border-bottom: 1px solid #21262d; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #8b949e; flex-shrink: 0; }
+.panel-header .ph-title { color: #58a6ff; font-weight: 600; }
+.panel-header .ph-dim { color: #484f58; margin-left: 8px; }
+
+/* Data table */
+.data-table { flex: 1; overflow-y: auto; }
+.data-table table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table th { position: sticky; top: 0; background: #161b22; text-align: left; padding: 6px 10px; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; border-bottom: 1px solid #21262d; z-index: 1; }
+.data-table td { padding: 5px 10px; border-bottom: 1px solid rgba(33, 38, 45, 0.5); white-space: nowrap; }
+.data-table tr:nth-child(even) td { background: rgba(22, 27, 34, 0.4); }
+.data-table tr:hover td { background: rgba(88, 166, 255, 0.06); }
+.data-table .cell-green { color: #3fb950; }
+.data-table .cell-yellow { color: #d29922; }
+.data-table .cell-red { color: #f85149; }
+.data-table .cell-cyan { color: #58a6ff; }
+.data-table .cell-dim { color: #484f58; }
+
+/* Watchlist / side panels */
+.watchlist { flex: 1; overflow-y: auto; padding: 4px 0; }
+.watch-item { display: flex; align-items: center; padding: 5px 12px; font-size: 11px; gap: 8px; border-bottom: 1px solid rgba(33, 38, 45, 0.4); }
+.watch-item:hover { background: rgba(88, 166, 255, 0.04); }
+.watch-pin { color: #d29922; font-size: 10px; }
+.watch-name { color: #c9d1d9; font-weight: 500; flex: 1; }
+.watch-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+.watch-tag.hot { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+.watch-tag.warm { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+.watch-tag.new { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+.watch-detail { color: #484f58; font-size: 10px; }
+
+/* Record detail */
+.record-detail { border-top: 1px solid #21262d; padding: 10px 12px; flex-shrink: 0; }
+.record-detail .rd-title { font-size: 11px; color: #58a6ff; font-weight: 600; margin-bottom: 8px; }
+.rd-row { display: flex; font-size: 11px; line-height: 1.8; }
+.rd-key { color: #8b949e; width: 100px; flex-shrink: 0; }
+.rd-val { color: #c9d1d9; }
+.rd-val.green { color: #3fb950; }
+.rd-val.yellow { color: #d29922; }
+.rd-val.red { color: #f85149; }
+
+/* Shortcut legend */
+.shortcut-legend { border-top: 1px solid #21262d; padding: 8px 12px; flex-shrink: 0; }
+.shortcut-legend .sl-title { font-size: 10px; color: #484f58; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.sl-item { display: flex; font-size: 10px; line-height: 1.8; gap: 8px; }
+.sl-cmd { color: #3fb950; font-weight: 600; min-width: 90px; }
+.sl-desc { color: #8b949e; }
+
+/* Command bar */
+.cmd-bar { height: 48px; background: #161b22; border-top: 1px solid #21262d; display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0; position: relative; }
+.cmd-prompt { color: #3fb950; font-weight: 700; font-size: 13px; }
+.cmd-input { color: #c9d1d9; font-size: 13px; }
+.cmd-cursor { display: inline-block; width: 8px; height: 16px; background: #c9d1d9; margin-left: 2px; vertical-align: middle; animation: cursor-blink 1s step-end infinite; }
+@keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Autocomplete suggestions */
+.cmd-suggest { position: absolute; bottom: 100%; left: 16px; background: #1c2128; border: 1px solid #30363d; border-radius: 6px; padding: 6px 0; margin-bottom: 4px; min-width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.cmd-suggest-item { padding: 4px 12px; font-size: 11px; display: flex; gap: 12px; }
+.cmd-suggest-item:hover { background: rgba(88, 166, 255, 0.08); }
+.cmd-suggest-item .cs-cmd { color: #3fb950; font-weight: 600; min-width: 100px; }
+.cmd-suggest-item .cs-desc { color: #8b949e; }
+
+/* Team mode extras */
+.team-section { display: none; }
+.admin-section { display: none; }
+
+#role-team:checked ~ .window .team-section { display: block; }
+#role-team:checked ~ .window .solo-metrics { display: none; }
+#role-admin:checked ~ .window .admin-section { display: block; }
+#role-admin:checked ~ .window .team-section { display: block; }
+#role-admin:checked ~ .window .solo-metrics { display: none; }
+
+/* Leaderboard */
+.leaderboard { border-top: 1px solid #21262d; padding: 8px 0; }
+.lb-row { display: flex; padding: 3px 12px; font-size: 11px; gap: 8px; align-items: center; }
+.lb-rank { color: #d29922; width: 18px; text-align: right; font-weight: 700; }
+.lb-name { color: #c9d1d9; flex: 1; }
+.lb-stat { color: #3fb950; font-weight: 600; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .panel-side { display: none; }
+#preview-mobile:checked ~ .window .status-bar { flex-wrap: wrap; height: auto; padding: 6px 10px; gap: 8px 16px; }
+#preview-mobile:checked ~ .window .cmd-suggest { min-width: 200px; }
+#preview-mobile:checked ~ .window .ticker-content { animation-duration: 20s; }
+#preview-mobile:checked ~ .window .data-table { font-size: 10px; }
+#preview-mobile:checked ~ .window .data-table th,
+#preview-mobile:checked ~ .window .data-table td { padding: 4px 6px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A terminal-inspired, command-line CRM for power-user real estate agents. Dense monospace data tables, keyboard shortcut legend, command bar with autocomplete, and tmux-style split panels. Optimized for agents who think faster than they click.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Terminal"</strong> &mdash; Command-Line CRM. Bloomberg Terminal meets real estate: dense text, monospace everything, blinking cursors, color-coded status indicators, and a command input bar for rapid navigation.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v6: "Terminal" — Command-Line CRM</strong><br><br>
+        Tagline: "For agents who think faster than they click."<br>
+        Core metaphor: A developer's terminal or Bloomberg Terminal — dense, keyboard-driven, text-based, brutally fast.<br><br>
+        Layout: Dark background, full screen. Persistent command input bar at bottom (~48px, monospace, blinking cursor via CSS animation). Main area divided into panels (tmux-style): wide main panel with dense tabular results, narrower side panel with watchlist/pinned contacts. Status bar at top with key metrics.<br><br>
+        Key UI elements: Command input bar with autocomplete suggestions. Dense monospace table with alternating rows and color-coded cells. Status bar with blinking indicators. Record detail view in key:value pairs. Shortcut legend panel. Watchlist panel. Notification ticker with CSS animation. Split-view panels.<br><br>
+        Color/mood: Dark mode exclusively. Background: #0d1117. Text: #c9d1d9. Terminal palette: green (#3fb950), yellow (#d29922), red (#f85149), cyan (#58a6ff). JetBrains Mono font. Powerful, focused, no-nonsense.<br><br>
+        Role toggle: Solo Agent queries personal data. Team Lead adds team metrics and agent leaderboard. Brokerage Admin shows brokerage-wide metrics and agent comparison panels.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; CRM Dashboard Origin</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Role state -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="terminal">
+        <!-- Notification Ticker -->
+        <div class="ticker">
+          <div class="ticker-content">
+            <span class="t-green">NEW LEAD: Sarah Mitchell — Referred by Zillow — $485K budget — Westside</span>
+            <span class="t-yellow">FOLLOW-UP DUE: Marcus Johnson — Last contact 3 days ago — Call scheduled</span>
+            <span class="t-red">OVERDUE: Elena Rodriguez — 7 days since last contact — Contract pending</span>
+            <span class="t-cyan">DEAL UPDATE: 742 Oak Ave closing moved to 2/14 — Buyer financing approved</span>
+            <span class="t-green">SHOWING CONFIRMED: 1820 Pine St — Tomorrow 2:00 PM — David Chen</span>
+            <span class="t-yellow">PRICE CHANGE: 955 Maple Dr reduced $15K — Alert sent to 3 matched buyers</span>
+            <span class="t-red">URGENT: Inspection report due today — 310 Elm Ct — Jennifer Park deal</span>
+            <span class="t-cyan team-section">TEAM: Agent Rachel Kim closed $1.2M deal — 128 Harbor View</span>
+            <span class="t-green admin-section">BROKERAGE: Monthly volume at $14.2M — 92% of target</span>
+          </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <div class="status-item solo-metrics">
+            <span class="status-dot green"></span>
+            <span class="status-label">Active Leads</span>
+            <span class="status-value green">24</span>
+          </div>
+          <div class="status-item solo-metrics">
+            <span class="status-dot cyan"></span>
+            <span class="status-label">Closing This Month</span>
+            <span class="status-value">5</span>
+          </div>
+          <div class="status-item solo-metrics">
+            <span class="status-dot red blink"></span>
+            <span class="status-label">Overdue Follow-ups</span>
+            <span class="status-value red">3</span>
+          </div>
+          <div class="status-item solo-metrics">
+            <span class="status-dot yellow"></span>
+            <span class="status-label">Showings This Week</span>
+            <span class="status-value yellow">8</span>
+          </div>
+          <span class="status-sep solo-metrics">|</span>
+          <div class="status-item solo-metrics">
+            <span class="status-label">Pipeline</span>
+            <span class="status-value">$3.2M</span>
+          </div>
+
+          <!-- Team metrics -->
+          <div class="status-item team-section">
+            <span class="status-dot green"></span>
+            <span class="status-label">Team Leads</span>
+            <span class="status-value green">87</span>
+          </div>
+          <div class="status-item team-section">
+            <span class="status-dot cyan"></span>
+            <span class="status-label">Team Closings</span>
+            <span class="status-value">12</span>
+          </div>
+          <div class="status-item team-section">
+            <span class="status-dot red blink"></span>
+            <span class="status-label">Team Overdue</span>
+            <span class="status-value red">9</span>
+          </div>
+          <div class="status-item team-section">
+            <span class="status-dot yellow"></span>
+            <span class="status-label">Agents Active</span>
+            <span class="status-value yellow">6/8</span>
+          </div>
+          <span class="status-sep team-section">|</span>
+          <div class="status-item team-section">
+            <span class="status-label">Team Pipeline</span>
+            <span class="status-value">$14.2M</span>
+          </div>
+        </div>
+
+        <!-- Role Toggle -->
+        <div class="role-bar">
+          <span class="role-label">Mode:</span>
+          <label for="role-solo" class="role-btn">Solo Agent</label>
+          <label for="role-team" class="role-btn">Team Lead</label>
+          <label for="role-admin" class="role-btn">Brokerage Admin</label>
+        </div>
+
+        <!-- Main panels -->
+        <div class="panels">
+          <!-- Main panel — lead table -->
+          <div class="panel-main">
+            <div class="panel-header">
+              <span class="ph-title">/leads</span>
+              <span class="ph-dim">— showing all active leads (24 results)</span>
+            </div>
+            <div class="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Budget</th>
+                    <th>Area</th>
+                    <th>Source</th>
+                    <th>Last Contact</th>
+                    <th>Next Action</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="cell-dim">01</td>
+                    <td>Sarah Mitchell</td>
+                    <td class="cell-green">New</td>
+                    <td>$485K</td>
+                    <td>Westside</td>
+                    <td>Zillow</td>
+                    <td class="cell-green">Today</td>
+                    <td>Initial call</td>
+                    <td class="cell-green">92</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">02</td>
+                    <td>Marcus Johnson</td>
+                    <td class="cell-yellow">Active</td>
+                    <td>$620K</td>
+                    <td>Downtown</td>
+                    <td>Referral</td>
+                    <td class="cell-yellow">3d ago</td>
+                    <td>Follow-up call</td>
+                    <td class="cell-yellow">74</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">03</td>
+                    <td>Elena Rodriguez</td>
+                    <td class="cell-red">Overdue</td>
+                    <td>$550K</td>
+                    <td>Midtown</td>
+                    <td>Open House</td>
+                    <td class="cell-red">7d ago</td>
+                    <td>Contract review</td>
+                    <td class="cell-red">88</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">04</td>
+                    <td>David Chen</td>
+                    <td class="cell-green">Active</td>
+                    <td>$780K</td>
+                    <td>Northshore</td>
+                    <td>Website</td>
+                    <td class="cell-green">1d ago</td>
+                    <td>Showing 2/2</td>
+                    <td class="cell-green">85</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">05</td>
+                    <td>Jennifer Park</td>
+                    <td class="cell-cyan">Closing</td>
+                    <td>$425K</td>
+                    <td>Eastside</td>
+                    <td>Realtor.com</td>
+                    <td class="cell-green">Today</td>
+                    <td>Inspection rpt</td>
+                    <td class="cell-green">95</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">06</td>
+                    <td>Robert Williams</td>
+                    <td class="cell-yellow">Active</td>
+                    <td>$390K</td>
+                    <td>Suburbs</td>
+                    <td>Cold Call</td>
+                    <td class="cell-yellow">4d ago</td>
+                    <td>Send listings</td>
+                    <td class="cell-yellow">61</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">07</td>
+                    <td>Amanda Foster</td>
+                    <td class="cell-green">New</td>
+                    <td>$1.1M</td>
+                    <td>Waterfront</td>
+                    <td>Referral</td>
+                    <td class="cell-green">Today</td>
+                    <td>Needs analysis</td>
+                    <td class="cell-green">89</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">08</td>
+                    <td>Kevin O'Brien</td>
+                    <td class="cell-red">Overdue</td>
+                    <td>$520K</td>
+                    <td>Midtown</td>
+                    <td>Social Media</td>
+                    <td class="cell-red">10d ago</td>
+                    <td>Re-engage</td>
+                    <td class="cell-red">45</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">09</td>
+                    <td>Lisa Nakamura</td>
+                    <td class="cell-cyan">Closing</td>
+                    <td>$695K</td>
+                    <td>Hillcrest</td>
+                    <td>Past Client</td>
+                    <td class="cell-green">1d ago</td>
+                    <td>Final walkthru</td>
+                    <td class="cell-green">97</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">10</td>
+                    <td>Brian Torres</td>
+                    <td class="cell-yellow">Active</td>
+                    <td>$340K</td>
+                    <td>Eastside</td>
+                    <td>Zillow</td>
+                    <td class="cell-yellow">2d ago</td>
+                    <td>Schedule show</td>
+                    <td class="cell-yellow">68</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">11</td>
+                    <td>Catherine Reed</td>
+                    <td class="cell-green">Active</td>
+                    <td>$870K</td>
+                    <td>Northshore</td>
+                    <td>Referral</td>
+                    <td class="cell-green">Today</td>
+                    <td>Buyer consult</td>
+                    <td class="cell-green">82</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">12</td>
+                    <td>James Whitfield</td>
+                    <td class="cell-red">Overdue</td>
+                    <td>$460K</td>
+                    <td>Suburbs</td>
+                    <td>Open House</td>
+                    <td class="cell-red">14d ago</td>
+                    <td>Last chance</td>
+                    <td class="cell-red">32</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">13</td>
+                    <td>Diana Morales</td>
+                    <td class="cell-green">New</td>
+                    <td>$575K</td>
+                    <td>Westside</td>
+                    <td>Instagram</td>
+                    <td class="cell-green">Today</td>
+                    <td>Qualify lead</td>
+                    <td class="cell-green">78</td>
+                  </tr>
+                  <tr>
+                    <td class="cell-dim">14</td>
+                    <td>Paul Henderson</td>
+                    <td class="cell-cyan">Closing</td>
+                    <td>$1.2M</td>
+                    <td>Waterfront</td>
+                    <td>Referral</td>
+                    <td class="cell-green">Today</td>
+                    <td>Sign papers</td>
+                    <td class="cell-green">99</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Side panel -->
+          <div class="panel-side">
+            <div class="panel-header">
+              <span class="ph-title">WATCHLIST</span>
+              <span class="ph-dim">— 6 pinned</span>
+            </div>
+            <div class="watchlist">
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">Elena Rodriguez</span>
+                <span class="watch-tag hot">HOT</span>
+                <span class="watch-detail">7d overdue</span>
+              </div>
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">Jennifer Park</span>
+                <span class="watch-tag hot">CLOSING</span>
+                <span class="watch-detail">Insp. today</span>
+              </div>
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">Lisa Nakamura</span>
+                <span class="watch-tag hot">CLOSING</span>
+                <span class="watch-detail">Final walk</span>
+              </div>
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">Amanda Foster</span>
+                <span class="watch-tag new">$1.1M</span>
+                <span class="watch-detail">New today</span>
+              </div>
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">Paul Henderson</span>
+                <span class="watch-tag hot">CLOSING</span>
+                <span class="watch-detail">Signing</span>
+              </div>
+              <div class="watch-item">
+                <span class="watch-pin">*</span>
+                <span class="watch-name">David Chen</span>
+                <span class="watch-tag warm">ACTIVE</span>
+                <span class="watch-detail">Show 2/2</span>
+              </div>
+            </div>
+
+            <!-- Record detail -->
+            <div class="record-detail">
+              <div class="rd-title">> RECORD: Elena Rodriguez</div>
+              <div class="rd-row"><span class="rd-key">status</span><span class="rd-val red">OVERDUE</span></div>
+              <div class="rd-row"><span class="rd-key">budget</span><span class="rd-val">$550,000</span></div>
+              <div class="rd-row"><span class="rd-key">area</span><span class="rd-val">Midtown</span></div>
+              <div class="rd-row"><span class="rd-key">source</span><span class="rd-val">Open House 1/15</span></div>
+              <div class="rd-row"><span class="rd-key">phone</span><span class="rd-val">(555) 234-8901</span></div>
+              <div class="rd-row"><span class="rd-key">email</span><span class="rd-val">e.rodriguez@mail.com</span></div>
+              <div class="rd-row"><span class="rd-key">last_contact</span><span class="rd-val red">7 days ago</span></div>
+              <div class="rd-row"><span class="rd-key">next_action</span><span class="rd-val yellow">Contract review</span></div>
+              <div class="rd-row"><span class="rd-key">notes</span><span class="rd-val">Preapproved. Wants 3BR.</span></div>
+            </div>
+
+            <!-- Team Leaderboard (Team/Admin mode) -->
+            <div class="team-section leaderboard">
+              <div class="panel-header">
+                <span class="ph-title">LEADERBOARD</span>
+                <span class="ph-dim">— this month</span>
+              </div>
+              <div class="lb-row"><span class="lb-rank">1</span><span class="lb-name">Rachel Kim</span><span class="lb-stat">$1.8M</span></div>
+              <div class="lb-row"><span class="lb-rank">2</span><span class="lb-name">You</span><span class="lb-stat">$1.4M</span></div>
+              <div class="lb-row"><span class="lb-rank">3</span><span class="lb-name">Tom Bradley</span><span class="lb-stat">$1.1M</span></div>
+              <div class="lb-row"><span class="lb-rank">4</span><span class="lb-name">Nina Patel</span><span class="lb-stat">$980K</span></div>
+              <div class="lb-row"><span class="lb-rank">5</span><span class="lb-name">Jake Morrison</span><span class="lb-stat">$870K</span></div>
+              <div class="lb-row"><span class="lb-rank">6</span><span class="lb-name">Cora Liu</span><span class="lb-stat">$640K</span></div>
+            </div>
+
+            <!-- Shortcut legend -->
+            <div class="shortcut-legend">
+              <div class="sl-title">Commands</div>
+              <div class="sl-item"><span class="sl-cmd">/leads</span><span class="sl-desc">List all leads</span></div>
+              <div class="sl-item"><span class="sl-cmd">/deal [name]</span><span class="sl-desc">View deal details</span></div>
+              <div class="sl-item"><span class="sl-cmd">/schedule</span><span class="sl-desc">Today's calendar</span></div>
+              <div class="sl-item"><span class="sl-cmd">/close</span><span class="sl-desc">Pending closings</span></div>
+              <div class="sl-item"><span class="sl-cmd">/stats</span><span class="sl-desc">Performance stats</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Command bar -->
+        <div class="cmd-bar">
+          <div class="cmd-suggest">
+            <div class="cmd-suggest-item"><span class="cs-cmd">/leads</span><span class="cs-desc">Show all active leads</span></div>
+            <div class="cmd-suggest-item"><span class="cs-cmd">/deal</span><span class="cs-desc">View deal by name</span></div>
+            <div class="cmd-suggest-item"><span class="cs-cmd">/schedule</span><span class="cs-desc">View today's schedule</span></div>
+            <div class="cmd-suggest-item"><span class="cs-cmd">/close</span><span class="cs-desc">Pending closings</span></div>
+            <div class="cmd-suggest-item"><span class="cs-cmd">/stats</span><span class="cs-desc">Performance dashboard</span></div>
+            <div class="cmd-suggest-item"><span class="cs-cmd">/overdue</span><span class="cs-desc">Show overdue follow-ups</span></div>
+          </div>
+          <span class="cmd-prompt">crm&gt;</span>
+          <span class="cmd-input">/leads --status active</span>
+          <span class="cmd-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

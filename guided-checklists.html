@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Checklists — Origination Prompt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+.experiment-sidebar .exp-origin-badge {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Variant Navigation Grid ─── */
+.experiment-sidebar .exp-variant-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.experiment-sidebar .exp-variant-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b9cf7;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.experiment-sidebar .exp-variant-nav a:hover {
+  background: rgba(139, 156, 247, 0.15);
+  border-color: rgba(139, 156, 247, 0.3);
+  text-decoration: none;
+}
+
+/* ─── Origin Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #0a0a14;
+  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.origin-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 40px 80px;
+}
+
+.origin-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.origin-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 32px 0 12px 0;
+}
+
+.origin-content p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #bbb;
+  margin: 0 0 16px 0;
+}
+
+.origin-prompt-block {
+  background: rgba(46, 204, 113, 0.06);
+  border: 1px solid rgba(46, 204, 113, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 24px 0 32px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #ccc;
+}
+
+.origin-prompt-block .label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2ecc71;
+  margin-bottom: 12px;
+}
+
+.research-domains {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 32px;
+}
+
+.research-domain {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.research-domain h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 6px 0;
+}
+
+.research-domain p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #999;
+  margin: 0;
+}
+
+.variant-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 32px;
+}
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.variant-row:hover {
+  background: rgba(139, 156, 247, 0.08);
+  border-color: rgba(139, 156, 247, 0.2);
+  text-decoration: none;
+}
+
+.variant-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ecc71;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.variant-info {
+  flex: 1;
+}
+
+.variant-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.variant-desc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.variant-tagline {
+  font-size: 11px;
+  color: #8b9cf7;
+  font-style: italic;
+}
+
+.variant-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.variant-meta .tag {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(139, 156, 247, 0.12);
+  color: #8b9cf7;
+}
+
+.variant-meta .tag.mobile {
+  background: rgba(243, 156, 18, 0.12);
+  color: #f39c12;
+}
+
+.variant-meta .tag.ai {
+  background: rgba(155, 89, 182, 0.12);
+  color: #9b59b6;
+}
+
+.execution-model {
+  background: rgba(139, 156, 247, 0.06);
+  border: 1px solid rgba(139, 156, 247, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.execution-model .step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.execution-model .step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(139, 156, 247, 0.15);
+  color: #8b9cf7;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.execution-model .arrow {
+  text-align: center;
+  color: #555;
+  font-size: 16px;
+  padding: 4px 0;
+}
+
+/* ─── Coverage Matrix ─── */
+.coverage-matrix {
+  margin: 16px 0 32px;
+  overflow-x: auto;
+}
+
+.coverage-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.coverage-matrix th {
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(139, 156, 247, 0.08);
+  color: #8b9cf7;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.coverage-matrix td {
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #999;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.coverage-matrix tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Guided Checklists</h1>
+      <span class="exp-origin-badge">Origination Prompt</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>This is the origination prompt for a 10-variant research series exploring "bolt-on" guided checklists for enterprise software where problems on one page are caused by configs/rules/states on other pages.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Execution Model</h2>
+      <p>Research Agent &rarr; 10 Parallel Build Agents &rarr; Validation Agent</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variants</h2>
+      <div class="exp-variant-nav">
+        <a href="guided-checklists-v1.html">01</a>
+        <a href="guided-checklists-v2.html">02</a>
+        <a href="guided-checklists-v3.html">03</a>
+        <a href="guided-checklists-v4.html">04</a>
+        <a href="guided-checklists-v5.html">05</a>
+        <a href="guided-checklists-v6.html">06</a>
+        <a href="guided-checklists-v7.html">07</a>
+        <a href="guided-checklists-v8.html">08</a>
+        <a href="guided-checklists-v9.html">09</a>
+        <a href="guided-checklists-v10.html">10</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="origin-content">
+
+      <h2>Origination Prompt</h2>
+      <p>This page documents the master prompt and research context that generated 10 autonomous guided checklist variants, each exploring a fundamentally different approach to surfacing and resolving cross-page configuration issues in enterprise software.</p>
+
+      <div class="origin-prompt-block">
+        <div class="label">Verbatim Origination Prompt</div>
+        I want to explore multiple versions of an idea for a "bolt-on" guided checklists concept.<br><br>
+        Exposing the guided checklists could include: floating action button, notification/checklist icon in menu bar with warnings, on-page widgets, in main menu.<br><br>
+        The checklists could be: modal, action sheet, drawer, side-panel, full-page.<br><br>
+        The checklists could be: programmatic (this problem is occuring and to fix it you need to click this link and do this thing, this problem is occuring so we analyzed it and here are some options (a, b, ...n), this problem is occuring and we need to investigate it more together to see what you think the primary cause is and address it).<br><br>
+        We should have concepts for the ai generated options with "helpful/not helpful" which could be represented a number of different ways.<br><br>
+        The idea is that lots of enterprise software is hard to reason about and frequently problems on one-page are really cuased by configs, rules, states on other pages and there isn't always a clear path to remediation.<br><br>
+        Consider this from both a mobile &amp; web perspective BUT also important consider this from multiple user personas.<br><br>
+        1. Consider all the permutations that would be interesting. Not just what I listed.<br>
+        2. Build the prompt for each of those versions.<br>
+        3. Then spawn of sub-agents to build each of those versions.<br>
+        4. Then update the changelog (with this origination prompt) and each version that gets added.<br>
+        5. Then update the experiments.html.
+      </div>
+
+      <h3>Research Domains</h3>
+      <div class="research-domains">
+        <div class="research-domain">
+          <h4>Enterprise UX Patterns</h4>
+          <p>Error states, configuration wizards, help systems, tooltips, guided tours, in-app messaging &mdash; how enterprise software currently handles complexity.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Cross-Page Dependencies</h4>
+          <p>Settings inheritance, rule cascades, permission hierarchies, feature flags, integration configs &mdash; the hidden connections that cause "spooky action at a distance."</p>
+        </div>
+        <div class="research-domain">
+          <h4>Mobile Enterprise Patterns</h4>
+          <p>Bottom sheets, action sheets, thumb zones, swipe gestures, notification badges &mdash; touch-friendly patterns for complex workflows.</p>
+        </div>
+        <div class="research-domain">
+          <h4>AI/ML Feedback Loops</h4>
+          <p>Helpful/not helpful, confidence scores, explanation traces, correction mechanisms &mdash; how to make AI suggestions improvable.</p>
+        </div>
+        <div class="research-domain">
+          <h4>User Persona Spectrum</h4>
+          <p>Power admins, new users, executives, support agents, mobile field workers &mdash; different mental models and interaction preferences.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Intervention Timing</h4>
+          <p>Proactive vs reactive, predictive warnings, auto-remediation, investigation collaboration &mdash; when and how to surface issues.</p>
+        </div>
+      </div>
+
+      <h3>The 10 Variants</h3>
+      <div class="variant-grid">
+        <a href="guided-checklists-v1.html" class="variant-row">
+          <span class="variant-num">01</span>
+          <div class="variant-info">
+            <div class="variant-name">Command Center</div>
+            <div class="variant-desc">Side panel with keyboard shortcuts &mdash; power admin interface for batch issue management</div>
+            <div class="variant-tagline">"j/k to navigate, x to resolve, / to filter."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">power user</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v2.html" class="variant-row">
+          <span class="variant-num">02</span>
+          <div class="variant-info">
+            <div class="variant-name">Gentle Guide</div>
+            <div class="variant-desc">Stepped modal wizard &mdash; educational onboarding with celebration states</div>
+            <div class="variant-tagline">"Let me show you why this matters."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">new user</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v3.html" class="variant-row">
+          <span class="variant-num">03</span>
+          <div class="variant-info">
+            <div class="variant-name">Mobile Fixer</div>
+            <div class="variant-desc">Bottom sheet with one-tap fixes &mdash; thumb-zone optimized for field workers</div>
+            <div class="variant-tagline">"Fix it now, you're in the field."</div>
+            <div class="variant-meta">
+              <span class="tag mobile">mobile</span>
+              <span class="tag">casual user</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v4.html" class="variant-row">
+          <span class="variant-num">04</span>
+          <div class="variant-info">
+            <div class="variant-name">AI Collaborator</div>
+            <div class="variant-desc">Conversational chat drawer &mdash; collaborative diagnosis with reasoning traces</div>
+            <div class="variant-tagline">"Let's figure this out together."</div>
+            <div class="variant-meta">
+              <span class="tag">both</span>
+              <span class="tag ai">ai feedback</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v5.html" class="variant-row">
+          <span class="variant-num">05</span>
+          <div class="variant-info">
+            <div class="variant-name">Executive Dashboard</div>
+            <div class="variant-desc">Full-page health view &mdash; strategic overview with delegation and confidence scores</div>
+            <div class="variant-tagline">"Your system health at a glance."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">executive</span>
+              <span class="tag ai">ai feedback</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v6.html" class="variant-row">
+          <span class="variant-num">06</span>
+          <div class="variant-info">
+            <div class="variant-name">Contextual Whisper</div>
+            <div class="variant-desc">Inline indicators with popovers &mdash; non-intrusive hints discovered while working</div>
+            <div class="variant-tagline">"This field is affected by settings elsewhere."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">in-flow</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v7.html" class="variant-row">
+          <span class="variant-num">07</span>
+          <div class="variant-info">
+            <div class="variant-name">Support Toolkit</div>
+            <div class="variant-desc">Split-pane with customer context &mdash; support agent view with history and scripts</div>
+            <div class="variant-tagline">"Here's what's wrong with their account."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">support agent</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v8.html" class="variant-row">
+          <span class="variant-num">08</span>
+          <div class="variant-info">
+            <div class="variant-name">Proactive Monitor</div>
+            <div class="variant-desc">Notification drawer with predictions &mdash; early warnings before problems occur</div>
+            <div class="variant-tagline">"This will become a problem in 3 days."</div>
+            <div class="variant-meta">
+              <span class="tag">web</span>
+              <span class="tag">ops admin</span>
+              <span class="tag ai">ai feedback</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v9.html" class="variant-row">
+          <span class="variant-num">09</span>
+          <div class="variant-info">
+            <div class="variant-name">Task Triage</div>
+            <div class="variant-desc">Swipeable card stack &mdash; gamified batch processing with streak indicators</div>
+            <div class="variant-tagline">"Swipe right to fix, left to defer."</div>
+            <div class="variant-meta">
+              <span class="tag mobile">mobile</span>
+              <span class="tag">power user</span>
+            </div>
+          </div>
+        </a>
+        <a href="guided-checklists-v10.html" class="variant-row">
+          <span class="variant-num">10</span>
+          <div class="variant-info">
+            <div class="variant-name">Ambient Intelligence</div>
+            <div class="variant-desc">Auto-remediation with undo toasts &mdash; minimal friction for interruption-averse users</div>
+            <div class="variant-tagline">"We fixed it. Undo if we got it wrong."</div>
+            <div class="variant-meta">
+              <span class="tag">both</span>
+              <span class="tag ai">ai feedback</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <h3>Coverage Matrix</h3>
+      <div class="coverage-matrix">
+        <table>
+          <tr>
+            <th>Dimension</th>
+            <th>Coverage</th>
+          </tr>
+          <tr>
+            <td><strong>Exposure</strong></td>
+            <td>FAB (v1), beacon widgets (v2), tab bar (v3), chat bubble (v4), main menu (v5), inline indicators (v6), toolbar (v7), notification bell (v8), card stack (v9), status bar (v10)</td>
+          </tr>
+          <tr>
+            <td><strong>Presentation</strong></td>
+            <td>Side panel (v1), modal wizard (v2), bottom sheet (v3), chat drawer (v4), full-page (v5), popover (v6), split-pane (v7), notification drawer (v8), card stack (v9), toast/snackbar (v10)</td>
+          </tr>
+          <tr>
+            <td><strong>Problem Type</strong></td>
+            <td>Batch actions (v1), educational (v2), one-tap fix (v3), investigation (v4), delegation (v5), contextual hints (v6), customer-specific (v7), predictive (v8), triage queue (v9), auto-fix (v10)</td>
+          </tr>
+          <tr>
+            <td><strong>Persona</strong></td>
+            <td>Power admin (v1), new user (v2), mobile field worker (v3), any/complex (v4), executive (v5), regular user (v6), support agent (v7), ops admin (v8), mobile power (v9), interruption-averse (v10)</td>
+          </tr>
+          <tr>
+            <td><strong>AI Feedback</strong></td>
+            <td>Heavy (v4, v10), Medium (v5, v8), None (v1, v2, v3, v6, v7, v9)</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Execution Model</h3>
+      <div class="execution-model">
+        <div class="step">
+          <span class="step-num">1</span>
+          Research Agent &mdash; Analyzes exposure methods, presentations, problem types, personas, platforms
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">2</span>
+          10 Build Agents (parallel) &mdash; Each agent receives a detailed prompt and builds one variant autonomously
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">3</span>
+          Validation Agent &mdash; Updates experiments.html, changelog.html, verifies all links and patterns
+        </div>
+      </div>
+
+      <h3>Design Constraints</h3>
+      <p>Every variant follows the UI Explorations framework rules: pure HTML/CSS, no JavaScript, no external dependencies beyond Google Fonts. Each includes the standard experiment sidebar with origination context, a device preview switcher for desktop/mobile/fullscreen views, and realistic enterprise sample data.</p>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

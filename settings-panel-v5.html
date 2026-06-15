@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings Panel — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+
+/* ─── Device Preview ─── */
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f5f4f1; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Settings Panel v5 — Production Quality ─── */
+.settings { font-family: 'Inter', -apple-system, sans-serif; height: 100%; display: flex; flex-direction: column; background: #f2f2f7; color: #1d1d1f; -webkit-font-smoothing: antialiased; }
+
+/* Profile */
+.profile-header { display: flex; align-items: center; gap: 16px; padding: 24px 32px 0; }
+.profile-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 700; flex-shrink: 0; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+.profile-info h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.profile-info p { font-size: 12px; color: #86868b; margin-top: 1px; }
+.profile-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: rgba(52, 199, 89, 0.12); color: #28a745; margin-top: 4px; }
+
+/* Search */
+.search-bar { margin: 16px 32px 0; position: relative; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #999; }
+.search-input { width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid #e0e0e5; border-radius: 12px; font-size: 13px; font-family: inherit; background: #fff; color: #1d1d1f; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.search-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12); }
+.search-input::placeholder { color: #b0b0b5; }
+
+.settings-header { padding: 16px 32px 0; display: flex; align-items: baseline; gap: 10px; }
+.settings-header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.settings-count { font-size: 12px; color: #86868b; font-weight: 400; }
+.settings-body { flex: 1; overflow: auto; padding: 16px 32px 40px; }
+
+/* Grid */
+.cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 720px; }
+.cat-item { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 12px; background: #fff; border-radius: 18px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02); }
+.cat-item:hover { background: #f0f0ff; box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 0 0 1px rgba(102,126,234,0.15); transform: translateY(-2px); }
+.cat-item:active { transform: translateY(0); }
+.cat-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 23px; color: #fff; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.cat-icon.blue { background: linear-gradient(135deg, #4A90D9, #357ABD); }
+.cat-icon.green { background: linear-gradient(135deg, #34C759, #28A745); }
+.cat-icon.orange { background: linear-gradient(135deg, #FF9500, #E8860C); }
+.cat-icon.purple { background: linear-gradient(135deg, #AF52DE, #9B36CC); }
+.cat-icon.red { background: linear-gradient(135deg, #FF3B30, #D92B20); }
+.cat-icon.teal { background: linear-gradient(135deg, #5AC8FA, #32ADE6); }
+.cat-icon.pink { background: linear-gradient(135deg, #FF2D55, #E0264B); }
+.cat-icon.gray { background: linear-gradient(135deg, #8E8E93, #636366); }
+.cat-name { font-size: 12px; font-weight: 500; color: #3c3c43; text-align: center; letter-spacing: -0.01em; }
+
+/* Navigation */
+.detail-panel { display: none; max-width: 720px; }
+#cat-general:checked ~ .settings-body .detail-general,
+#cat-appearance:checked ~ .settings-body .detail-appearance,
+#cat-notifications:checked ~ .settings-body .detail-notifications,
+#cat-privacy:checked ~ .settings-body .detail-privacy,
+#cat-sound:checked ~ .settings-body .detail-sound,
+#cat-network:checked ~ .settings-body .detail-network,
+#cat-battery:checked ~ .settings-body .detail-battery,
+#cat-storage:checked ~ .settings-body .detail-storage { display: block; }
+#cat-general:checked ~ .settings-body .cat-grid,
+#cat-appearance:checked ~ .settings-body .cat-grid,
+#cat-notifications:checked ~ .settings-body .cat-grid,
+#cat-privacy:checked ~ .settings-body .cat-grid,
+#cat-sound:checked ~ .settings-body .cat-grid,
+#cat-network:checked ~ .settings-body .cat-grid,
+#cat-battery:checked ~ .settings-body .cat-grid,
+#cat-storage:checked ~ .settings-body .cat-grid { display: none; }
+#cat-general:checked ~ .search-bar,
+#cat-appearance:checked ~ .search-bar,
+#cat-notifications:checked ~ .search-bar,
+#cat-privacy:checked ~ .search-bar,
+#cat-sound:checked ~ .search-bar,
+#cat-network:checked ~ .search-bar,
+#cat-battery:checked ~ .search-bar,
+#cat-storage:checked ~ .search-bar { display: none; }
+
+/* Breadcrumbs */
+.breadcrumb { display: none; align-items: center; gap: 8px; font-size: 12px; color: #86868b; margin-bottom: 16px; }
+.breadcrumb-link { color: #667eea; cursor: pointer; font-weight: 500; transition: color 0.15s; }
+.breadcrumb-link:hover { color: #4A5DD9; text-decoration: underline; }
+.breadcrumb-sep { color: #c7c7cc; font-size: 10px; }
+.breadcrumb-current { color: #3c3c43; font-weight: 500; }
+#cat-general:checked ~ .settings-body .bc-general,
+#cat-appearance:checked ~ .settings-body .bc-appearance,
+#cat-notifications:checked ~ .settings-body .bc-notifications,
+#cat-privacy:checked ~ .settings-body .bc-privacy,
+#cat-sound:checked ~ .settings-body .bc-sound,
+#cat-network:checked ~ .settings-body .bc-network,
+#cat-battery:checked ~ .settings-body .bc-battery,
+#cat-storage:checked ~ .settings-body .bc-storage { display: flex; }
+
+.detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.detail-header .cat-icon { width: 42px; height: 42px; font-size: 19px; border-radius: 11px; }
+.detail-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.detail-desc { font-size: 13px; color: #86868b; margin-bottom: 24px; line-height: 1.55; }
+
+/* Form */
+.form-group { background: #fff; border-radius: 14px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02); }
+.form-group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #86868b; padding: 0 4px 8px; }
+.form-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 0.5px solid #ececee; gap: 12px; }
+.form-row:last-child { border-bottom: none; }
+.form-row-label { font-size: 14px; font-weight: 400; letter-spacing: -0.01em; }
+.form-row-desc { font-size: 11px; color: #86868b; margin-top: 2px; line-height: 1.4; }
+.form-row-value { font-size: 13px; color: #86868b; white-space: nowrap; }
+.sub-section { margin-top: 28px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 0.5px solid #d8d8dc; }
+.sub-section h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.sub-section p { font-size: 12px; color: #86868b; margin-top: 3px; line-height: 1.4; }
+
+/* Toggle — refined */
+.toggle { width: 50px; height: 30px; background: #e5e5ea; border-radius: 15px; position: relative; cursor: pointer; transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; background: #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.15), 0 0 0 0.5px rgba(0,0,0,0.04); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+input:checked + .toggle { background: #34C759; }
+input:checked + .toggle::after { transform: translateX(20px); }
+
+/* Segmented — refined */
+.segmented { display: inline-flex; background: #e5e5ea; border-radius: 9px; padding: 2px; gap: 0; }
+.seg-option { padding: 6px 18px; font-size: 12px; font-weight: 500; border-radius: 7px; cursor: pointer; color: #555; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.seg-option:hover { color: #333; }
+#seg-light:checked ~ .settings-body .seg-label-light,
+#seg-dark:checked ~ .settings-body .seg-label-dark,
+#seg-auto:checked ~ .settings-body .seg-label-auto { background: #fff; color: #1d1d1f; box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04); font-weight: 600; }
+
+/* Danger Zone — refined */
+.danger-zone { margin-top: 36px; }
+.danger-zone .form-group-title { color: #d93025; letter-spacing: 0.06em; }
+.danger-zone .form-group { border: 1.5px solid rgba(217, 48, 37, 0.12); background: linear-gradient(to bottom, #fff8f7, #fff5f4); }
+.danger-zone .form-row-label { color: #c4271b; font-weight: 500; }
+.danger-zone .form-row-desc { color: #d9534f; }
+.danger-btn { display: inline-block; padding: 7px 16px; font-size: 12px; font-weight: 600; color: #fff; background: linear-gradient(to bottom, #e74c3c, #c0392b); border-radius: 8px; cursor: pointer; box-shadow: 0 1px 3px rgba(217,48,37,0.3); transition: opacity 0.15s; letter-spacing: 0.01em; }
+.danger-btn:hover { opacity: 0.9; }
+
+/* Status indicator */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+.status-dot.green { background: #34C759; box-shadow: 0 0 4px rgba(52, 199, 89, 0.4); }
+.status-dot.gray { background: #c7c7cc; }
+.status-dot.red { background: #FF3B30; box-shadow: 0 0 4px rgba(255, 59, 48, 0.4); }
+
+/* Storage bar */
+.storage-bar { height: 8px; border-radius: 4px; background: #e5e5ea; overflow: hidden; margin: 8px 0 4px; }
+.storage-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #667eea, #764ba2, #FF9500); width: 63%; }
+.storage-legend { display: flex; gap: 16px; font-size: 11px; color: #86868b; }
+.storage-legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .profile-header { padding: 16px 16px 0; gap: 12px; }
+#preview-mobile:checked ~ .window .profile-avatar { width: 46px; height: 46px; font-size: 18px; }
+#preview-mobile:checked ~ .window .profile-info h2 { font-size: 15px; }
+#preview-mobile:checked ~ .window .search-bar { margin: 12px 16px 0; }
+#preview-mobile:checked ~ .window .settings-header { padding: 12px 16px 0; }
+#preview-mobile:checked ~ .window .settings-header h1 { font-size: 20px; }
+#preview-mobile:checked ~ .window .settings-body { padding: 12px 16px 24px; }
+#preview-mobile:checked ~ .window .cat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+#preview-mobile:checked ~ .window .cat-item { padding: 18px 8px; border-radius: 14px; }
+#preview-mobile:checked ~ .window .cat-icon { width: 42px; height: 42px; font-size: 19px; border-radius: 11px; }
+#preview-mobile:checked ~ .window .cat-name { font-size: 11px; }
+#preview-mobile:checked ~ .window .detail-header h2 { font-size: 18px; }
+#preview-mobile:checked ~ .window .detail-header .cat-icon { width: 36px; height: 36px; font-size: 16px; }
+#preview-mobile:checked ~ .window .form-row { padding: 11px 14px; }
+#preview-mobile:checked ~ .window .form-row-label { font-size: 13px; }
+#preview-mobile:checked ~ .window .form-group { border-radius: 12px; }
+#preview-mobile:checked ~ .window .segmented { flex-wrap: wrap; }
+#preview-mobile:checked ~ .window .seg-option { padding: 5px 14px; font-size: 11px; }
+#preview-mobile:checked ~ .window .sub-section { margin-top: 20px; }
+#preview-mobile:checked ~ .window .sub-section h3 { font-size: 14px; }
+#preview-mobile:checked ~ .window .toggle { width: 46px; height: 28px; }
+#preview-mobile:checked ~ .window .toggle::after { width: 24px; height: 24px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Settings Panel</h1>
+      <span class="exp-version">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality refinement with improved animations, pixel-perfect form styling, refined color palette, status indicators, a visual storage bar, and polished micro-interactions throughout.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v5: Refined animations, perfect form styling, production quality. Polish all transitions with cubic-bezier curves. Improve toggle, segmented control, and danger zone visuals. Add status dots for connection indicators, a gradient storage usage bar, and a profile badge. Refine spacing, shadows, border-radius, and typography for production-level quality. Improve mobile preview with tighter, more considered responsive overrides.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="settings-panel-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Storage bar & animations</span>
+        </a>
+        <a href="settings-panel-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">User profile header</span>
+        </a>
+        <a href="settings-panel-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Nested sub-sections</span>
+        </a>
+        <a href="settings-panel-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Segmented controls</span>
+        </a>
+        <a href="settings-panel-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <div class="settings">
+        <input type="radio" name="cat" id="cat-home" checked>
+        <input type="radio" name="cat" id="cat-general">
+        <input type="radio" name="cat" id="cat-appearance">
+        <input type="radio" name="cat" id="cat-notifications">
+        <input type="radio" name="cat" id="cat-privacy">
+        <input type="radio" name="cat" id="cat-sound">
+        <input type="radio" name="cat" id="cat-network">
+        <input type="radio" name="cat" id="cat-battery">
+        <input type="radio" name="cat" id="cat-storage">
+        <input type="radio" name="theme" id="seg-light">
+        <input type="radio" name="theme" id="seg-dark">
+        <input type="radio" name="theme" id="seg-auto" checked>
+
+        <!-- Profile -->
+        <div class="profile-header">
+          <div class="profile-avatar">JD</div>
+          <div class="profile-info">
+            <h2>Jane Doe</h2>
+            <p>jane.doe@example.com</p>
+            <span class="profile-badge">Pro Plan</span>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" placeholder="Search settings...">
+        </div>
+
+        <div class="settings-header">
+          <h1>Settings</h1>
+          <span class="settings-count">8 categories</span>
+        </div>
+        <div class="settings-body">
+          <!-- Breadcrumbs -->
+          <div class="breadcrumb bc-general"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">General</span></div>
+          <div class="breadcrumb bc-appearance"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Appearance</span></div>
+          <div class="breadcrumb bc-notifications"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Notifications</span></div>
+          <div class="breadcrumb bc-privacy"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Privacy &amp; Security</span></div>
+          <div class="breadcrumb bc-sound"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Sound</span></div>
+          <div class="breadcrumb bc-network"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Network</span></div>
+          <div class="breadcrumb bc-battery"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Battery</span></div>
+          <div class="breadcrumb bc-storage"><label for="cat-home" class="breadcrumb-link">Settings</label><span class="breadcrumb-sep">&#8250;</span><span class="breadcrumb-current">Storage</span></div>
+
+          <!-- Grid -->
+          <div class="cat-grid">
+            <label for="cat-general" class="cat-item"><div class="cat-icon gray">&#9881;</div><span class="cat-name">General</span></label>
+            <label for="cat-appearance" class="cat-item"><div class="cat-icon purple">&#9728;</div><span class="cat-name">Appearance</span></label>
+            <label for="cat-notifications" class="cat-item"><div class="cat-icon red">&#128276;</div><span class="cat-name">Notifications</span></label>
+            <label for="cat-privacy" class="cat-item"><div class="cat-icon blue">&#128274;</div><span class="cat-name">Privacy</span></label>
+            <label for="cat-sound" class="cat-item"><div class="cat-icon pink">&#9835;</div><span class="cat-name">Sound</span></label>
+            <label for="cat-network" class="cat-item"><div class="cat-icon teal">&#127760;</div><span class="cat-name">Network</span></label>
+            <label for="cat-battery" class="cat-item"><div class="cat-icon green">&#128267;</div><span class="cat-name">Battery</span></label>
+            <label for="cat-storage" class="cat-item"><div class="cat-icon orange">&#128451;</div><span class="cat-name">Storage</span></label>
+          </div>
+
+          <!-- General -->
+          <div class="detail-panel detail-general">
+            <div class="detail-header"><div class="cat-icon gray">&#9881;</div><h2>General</h2></div>
+            <p class="detail-desc">Configure system-wide preferences including language, region, and automatic updates.</p>
+            <div class="sub-section"><h3>Software Updates</h3><p>Keep your system current with the latest features and security patches.</p></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label">Automatic Updates</div><div class="form-row-desc">Download and install updates automatically</div></div><input type="checkbox" id="t1" checked><label for="t1" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Beta Updates</div><div class="form-row-desc">Receive pre-release software updates</div></div><input type="checkbox" id="t2"><label for="t2" class="toggle"></label></div>
+            </div>
+            <div class="sub-section"><h3>Language &amp; Region</h3><p>Set your preferred language and formatting conventions.</p></div>
+            <div class="form-group">
+              <div class="form-row"><div class="form-row-label">Language</div><span class="form-row-value">English</span></div>
+              <div class="form-row"><div class="form-row-label">Region</div><span class="form-row-value">United States</span></div>
+              <div class="form-row"><div><div class="form-row-label">24-hour time</div></div><input type="checkbox" id="t3"><label for="t3" class="toggle"></label></div>
+            </div>
+            <div class="sub-section"><h3>Login</h3></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label">Open at login</div></div><input type="checkbox" id="t4"><label for="t4" class="toggle"></label></div>
+            </div>
+            <div class="danger-zone">
+              <div class="form-group-title">Danger Zone</div>
+              <div class="form-group">
+                <div class="form-row"><div><div class="form-row-label">Reset All Settings</div><div class="form-row-desc">Restore all preferences to factory defaults. This action cannot be undone.</div></div><span class="danger-btn">Reset</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Appearance -->
+          <div class="detail-panel detail-appearance">
+            <div class="detail-header"><div class="cat-icon purple">&#9728;</div><h2>Appearance</h2></div>
+            <p class="detail-desc">Customize the visual style of your system including theme, accent colors, and accessibility options.</p>
+            <div class="sub-section"><h3>Theme</h3><p>Choose between light, dark, or automatic appearance.</p></div>
+            <div class="form-group">
+              <div class="form-row"><div class="form-row-label">Mode</div><div class="segmented"><label for="seg-light" class="seg-option seg-label-light">Light</label><label for="seg-dark" class="seg-option seg-label-dark">Dark</label><label for="seg-auto" class="seg-option seg-label-auto">Auto</label></div></div>
+              <div class="form-row"><div class="form-row-label">Accent Color</div><span class="form-row-value">Blue</span></div>
+              <div class="form-row"><div class="form-row-label">Highlight Color</div><span class="form-row-value">Blue</span></div>
+            </div>
+            <div class="sub-section"><h3>Accessibility</h3><p>Options to make the interface easier to use.</p></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label">Reduce motion</div><div class="form-row-desc">Minimize animations and auto-play</div></div><input type="checkbox" id="t5"><label for="t5" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Increase contrast</div><div class="form-row-desc">Enhance UI element boundaries</div></div><input type="checkbox" id="t6"><label for="t6" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Reduce transparency</div></div><input type="checkbox" id="t7"><label for="t7" class="toggle"></label></div>
+            </div>
+            <div class="sub-section"><h3>Text</h3></div>
+            <div class="form-group">
+              <div class="form-row"><div class="form-row-label">Sidebar icon size</div><span class="form-row-value">Medium</span></div>
+              <div class="form-row"><div><div class="form-row-label">Font smoothing</div></div><input type="checkbox" id="t8" checked><label for="t8" class="toggle"></label></div>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="detail-panel detail-notifications">
+            <div class="detail-header"><div class="cat-icon red">&#128276;</div><h2>Notifications</h2></div>
+            <p class="detail-desc">Control how and when notifications appear, including style, sounds, and per-app settings.</p>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label">Allow Notifications</div><div class="form-row-desc">Show alerts on screen</div></div><input type="checkbox" id="t9" checked><label for="t9" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Show previews</div><div class="form-row-desc">Display message content in notifications</div></div><input type="checkbox" id="t10" checked><label for="t10" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Sound alerts</div></div><input type="checkbox" id="t11" checked><label for="t11" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Badge app icons</div></div><input type="checkbox" id="t12" checked><label for="t12" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Show on lock screen</div></div><input type="checkbox" id="t13" checked><label for="t13" class="toggle"></label></div>
+            </div>
+          </div>
+
+          <!-- Privacy -->
+          <div class="detail-panel detail-privacy">
+            <div class="detail-header"><div class="cat-icon blue">&#128274;</div><h2>Privacy &amp; Security</h2></div>
+            <p class="detail-desc">Manage encryption, firewall, and data access to keep your information safe.</p>
+            <div class="sub-section"><h3>Protection</h3></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>FileVault</div><div class="form-row-desc">Full-disk encryption is on</div></div><input type="checkbox" id="t14" checked><label for="t14" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Firewall</div><div class="form-row-desc">Active and blocking unauthorized connections</div></div><input type="checkbox" id="t15" checked><label for="t15" class="toggle"></label></div>
+            </div>
+            <div class="sub-section"><h3>App Permissions</h3></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot gray"></span>Location Services</div></div><input type="checkbox" id="t16"><label for="t16" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Camera</div></div><input type="checkbox" id="t17" checked><label for="t17" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Microphone</div></div><input type="checkbox" id="t18" checked><label for="t18" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot gray"></span>Analytics sharing</div></div><input type="checkbox" id="t19"><label for="t19" class="toggle"></label></div>
+            </div>
+            <div class="danger-zone">
+              <div class="form-group-title">Danger Zone</div>
+              <div class="form-group">
+                <div class="form-row"><div><div class="form-row-label">Erase All Data</div><div class="form-row-desc">Permanently delete all personal data and settings.</div></div><span class="danger-btn">Erase</span></div>
+                <div class="form-row"><div><div class="form-row-label">Revoke All Permissions</div><div class="form-row-desc">Remove all app permissions immediately.</div></div><span class="danger-btn">Revoke</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sound -->
+          <div class="detail-panel detail-sound">
+            <div class="detail-header"><div class="cat-icon pink">&#9835;</div><h2>Sound</h2></div>
+            <p class="detail-desc">Configure audio output, input devices, and system sound effects.</p>
+            <div class="form-group">
+              <div class="form-row"><div class="form-row-label">Output Device</div><span class="form-row-value">MacBook Pro Speakers</span></div>
+              <div class="form-row"><div class="form-row-label">Input Device</div><span class="form-row-value">Internal Microphone</span></div>
+              <div class="form-row"><div><div class="form-row-label">Play feedback sounds</div></div><input type="checkbox" id="t20" checked><label for="t20" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Play startup sound</div></div><input type="checkbox" id="t21"><label for="t21" class="toggle"></label></div>
+            </div>
+          </div>
+
+          <!-- Network -->
+          <div class="detail-panel detail-network">
+            <div class="detail-header"><div class="cat-icon teal">&#127760;</div><h2>Network</h2></div>
+            <p class="detail-desc">Manage Wi-Fi, Bluetooth, and VPN connections.</p>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Wi-Fi</div><div class="form-row-desc">Connected to HomeNetwork</div></div><input type="checkbox" id="t22" checked><label for="t22" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Bluetooth</div><div class="form-row-desc">3 devices connected</div></div><input type="checkbox" id="t23" checked><label for="t23" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot gray"></span>VPN</div><div class="form-row-desc">Not connected</div></div><input type="checkbox" id="t24"><label for="t24" class="toggle"></label></div>
+            </div>
+          </div>
+
+          <!-- Battery -->
+          <div class="detail-panel detail-battery">
+            <div class="detail-header"><div class="cat-icon green">&#128267;</div><h2>Battery</h2></div>
+            <p class="detail-desc">Monitor battery health and configure power-saving preferences.</p>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label"><span class="status-dot green"></span>Low Power Mode</div><div class="form-row-desc">Reduces energy usage to extend battery life</div></div><input type="checkbox" id="t25"><label for="t25" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Optimized Charging</div><div class="form-row-desc">Learns your charging routine to reduce battery aging</div></div><input type="checkbox" id="t26" checked><label for="t26" class="toggle"></label></div>
+              <div class="form-row"><div class="form-row-label">Battery Health</div><span class="form-row-value" style="color: #34C759; font-weight: 600;">98% Excellent</span></div>
+              <div class="form-row"><div class="form-row-label">Cycle Count</div><span class="form-row-value">247</span></div>
+            </div>
+          </div>
+
+          <!-- Storage -->
+          <div class="detail-panel detail-storage">
+            <div class="detail-header"><div class="cat-icon orange">&#128451;</div><h2>Storage</h2></div>
+            <p class="detail-desc">View disk usage and manage automatic storage optimization.</p>
+            <div class="form-group">
+              <div class="form-row" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <div class="form-row-label">Disk Usage</div>
+                  <span class="form-row-value">325 GB of 512 GB used</span>
+                </div>
+                <div class="storage-bar"><div class="storage-fill"></div></div>
+                <div class="storage-legend">
+                  <span>Apps: 89 GB</span>
+                  <span>Documents: 134 GB</span>
+                  <span>System: 52 GB</span>
+                  <span>Other: 50 GB</span>
+                </div>
+              </div>
+            </div>
+            <div class="sub-section"><h3>Optimization</h3></div>
+            <div class="form-group">
+              <div class="form-row"><div><div class="form-row-label">Optimize Storage</div><div class="form-row-desc">Automatically remove watched content</div></div><input type="checkbox" id="t27" checked><label for="t27" class="toggle"></label></div>
+              <div class="form-row"><div><div class="form-row-label">Empty Trash automatically</div><div class="form-row-desc">Remove items after 30 days</div></div><input type="checkbox" id="t28"><label for="t28" class="toggle"></label></div>
+            </div>
+            <div class="danger-zone">
+              <div class="form-group-title">Danger Zone</div>
+              <div class="form-group">
+                <div class="form-row"><div><div class="form-row-label">Clear Cache</div><div class="form-row-desc">Remove all cached data. Apps may take longer to load initially.</div></div><span class="danger-btn">Clear</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

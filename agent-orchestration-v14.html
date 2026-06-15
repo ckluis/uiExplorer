@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v14: Mission Control (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555;
+  padding: 8px 10px 2px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+input[name="preview"] { display: none; }
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #0a0e14;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Mission Control Content ─── */
+.mc-inner {
+  height: 100%;
+  overflow: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #c8d0d8;
+  position: relative;
+}
+
+/* Hide radio/checkbox inputs */
+input[name="station"], input[id="capcom-toggle"] { display: none; }
+
+/* Scanline overlay */
+.mc-inner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0, 255, 100, 0.008) 2px,
+    rgba(0, 255, 100, 0.008) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mission-control {
+  padding: 20px 24px 40px;
+  min-height: 100%;
+  background-image:
+    linear-gradient(rgba(32, 58, 80, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(32, 58, 80, 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ─── Main Display Board ─── */
+.main-display {
+  background: linear-gradient(180deg, #0d1520 0%, #0f1a28 100%);
+  border: 1px solid #1a2a3a;
+  border-radius: 8px;
+  padding: 16px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 0 30px rgba(0, 180, 100, 0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.main-display .mission-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #5a7a9a;
+}
+
+.main-display .mission-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #e8eff5;
+  margin-top: 2px;
+}
+
+.mission-clock { text-align: center; }
+.mission-clock .label {
+  font-size: 9px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #4a6a8a;
+}
+.mission-clock .time {
+  font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700;
+  color: #3ae880; text-shadow: 0 0 12px rgba(58, 232, 128, 0.3);
+  letter-spacing: 0.05em;
+}
+
+.mission-status { text-align: center; }
+.mission-status .status-word {
+  font-size: 18px; font-weight: 800; color: #3ae880;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  text-shadow: 0 0 10px rgba(58, 232, 128, 0.25);
+}
+.mission-status .label, .mission-phase .label {
+  font-size: 9px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #4a6a8a;
+}
+
+.mission-phase { text-align: right; }
+.mission-phase .phase {
+  font-size: 13px; font-weight: 600; color: #8ab4d8; margin-top: 2px;
+}
+
+.phase-bar { display: flex; gap: 4px; margin-top: 6px; }
+.phase-bar .pip { width: 24px; height: 4px; border-radius: 2px; background: #1a2a3a; }
+.phase-bar .pip.done { background: #3ae880; box-shadow: 0 0 4px rgba(58, 232, 128, 0.4); }
+.phase-bar .pip.active { background: #f0c040; box-shadow: 0 0 4px rgba(240, 192, 64, 0.4); }
+
+/* ─── Station Selection Bar ─── */
+.station-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.station-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(13, 21, 32, 0.8);
+  border: 1px solid #1a2a3a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #4a6a8a;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.station-label:hover {
+  border-color: #2a4a6a;
+  color: #6a8aa0;
+}
+
+.station-label .sdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #3ae880;
+}
+
+.station-label .sdot.warn { background: #f0c040; }
+.station-label .sdot.pulse { background: #f0a030; animation: amber-glow 1.5s ease-in-out infinite; }
+
+/* Active station highlighting */
+#station-all:checked ~ .mission-control .station-label[for="station-all"],
+#station-flight:checked ~ .mission-control .station-label[for="station-flight"],
+#station-guidance:checked ~ .mission-control .station-label[for="station-guidance"],
+#station-telemetry:checked ~ .mission-control .station-label[for="station-telemetry"],
+#station-retro:checked ~ .mission-control .station-label[for="station-retro"],
+#station-eecom:checked ~ .mission-control .station-label[for="station-eecom"],
+#station-gnc:checked ~ .mission-control .station-label[for="station-gnc"],
+#station-fao:checked ~ .mission-control .station-label[for="station-fao"],
+#station-capcom:checked ~ .mission-control .station-label[for="station-capcom"] {
+  border-color: #3ae880;
+  color: #3ae880;
+  background: rgba(58, 232, 128, 0.08);
+}
+
+/* Dim non-selected consoles */
+#station-flight:checked ~ .mission-control .console-wrap:not(.cw-flight),
+#station-guidance:checked ~ .mission-control .console-wrap:not(.cw-guidance),
+#station-telemetry:checked ~ .mission-control .console-wrap:not(.cw-telemetry),
+#station-retro:checked ~ .mission-control .console-wrap:not(.cw-retro),
+#station-eecom:checked ~ .mission-control .console-wrap:not(.cw-eecom),
+#station-gnc:checked ~ .mission-control .console-wrap:not(.cw-gnc),
+#station-fao:checked ~ .mission-control .console-wrap:not(.cw-fao),
+#station-capcom:checked ~ .mission-control .console-wrap:not(.cw-capcom) {
+  opacity: 0.25;
+  transition: opacity 0.3s;
+}
+
+#station-all:checked ~ .mission-control .console-wrap {
+  opacity: 1;
+}
+
+/* ─── Row Labels ─── */
+.row-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.14em; color: #2a4a6a; margin: 16px 0 8px; padding-left: 4px;
+}
+
+/* ─── Console Card Base ─── */
+.console-wrap { transition: opacity 0.3s; }
+
+.console {
+  background: linear-gradient(180deg, #0d1520 0%, #0b1018 100%);
+  border: 1px solid #1a2a3a;
+  border-radius: 6px;
+  padding: 14px 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.console::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(100, 160, 220, 0.15), transparent);
+}
+
+.console-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+
+.console-id {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.12em; color: #5a8ab0;
+}
+
+.console-agent {
+  font-size: 10px; font-weight: 400; color: #4a6a8a; margin-left: 8px;
+}
+
+/* Status dots */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+.status-dot.green {
+  background: #3ae880; box-shadow: 0 0 6px rgba(58, 232, 128, 0.5), 0 0 12px rgba(58, 232, 128, 0.2);
+}
+.status-dot.yellow {
+  background: #f0c040; box-shadow: 0 0 6px rgba(240, 192, 64, 0.5), 0 0 12px rgba(240, 192, 64, 0.2);
+}
+.status-dot.red {
+  background: #e84040; box-shadow: 0 0 6px rgba(232, 64, 64, 0.5), 0 0 12px rgba(232, 64, 64, 0.2);
+}
+.status-dot.amber-pulse {
+  background: #f0a030;
+  box-shadow: 0 0 6px rgba(240, 160, 48, 0.5), 0 0 12px rgba(240, 160, 48, 0.2);
+  animation: amber-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes amber-glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(240, 160, 48, 0.5), 0 0 12px rgba(240, 160, 48, 0.2); }
+  50% { box-shadow: 0 0 10px rgba(240, 160, 48, 0.8), 0 0 24px rgba(240, 160, 48, 0.4); }
+}
+
+.console-metric {
+  font-family: 'Courier New', monospace; font-size: 12px;
+  color: #a0c0d8; margin-bottom: 10px; line-height: 1.5;
+}
+.metric-highlight { color: #3ae880; font-weight: 700; }
+.metric-warn { color: #f0c040; font-weight: 700; }
+
+/* Mini log */
+.console-log {
+  background: rgba(0,0,0,0.3); border-radius: 4px; padding: 8px 10px;
+  font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.7; color: #5a7a90;
+}
+.console-log .log-time { color: #3a5a70; margin-right: 6px; }
+.console-log .log-ok { color: #3ae880; }
+.console-log .log-warn { color: #f0c040; }
+
+/* ─── Hover Telemetry Panels ─── */
+.telemetry-panel {
+  display: none;
+  background: rgba(0, 20, 40, 0.95);
+  border: 1px solid #2a4a6a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #6a9ab8;
+}
+
+.telemetry-panel .tp-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #3ae880; margin-bottom: 6px;
+}
+
+.telemetry-panel .tp-row {
+  display: flex; justify-content: space-between;
+}
+
+.telemetry-panel .tp-val { color: #a0c0d8; }
+.telemetry-panel .tp-val.good { color: #3ae880; }
+.telemetry-panel .tp-val.warn { color: #f0c040; }
+
+.console:hover .telemetry-panel {
+  display: block;
+}
+
+/* ─── ROW 1: Flight Director ─── */
+.row-flight { margin-bottom: 16px; }
+
+.console-flight { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+
+.flight-left { padding-right: 16px; border-right: 1px solid #1a2a3a; }
+.flight-right { padding-left: 16px; }
+
+.flight-status-text {
+  font-size: 13px; color: #8ab4d8; margin-bottom: 12px; font-weight: 500;
+}
+
+.subsystem-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.subsystem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.subsystem .status-dot { width: 10px; height: 10px; }
+.subsystem .sub-label {
+  font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: #4a6a8a;
+}
+
+.flight-log {
+  font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.8;
+  color: #5a7a90; background: rgba(0,0,0,0.3); border-radius: 4px;
+  padding: 10px 12px; height: 100%;
+}
+.flight-log .log-time { color: #3a5a70; margin-right: 6px; }
+
+/* ─── ROW 2: Specialists ─── */
+.row-specialists {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+
+/* ─── ROW 3: Sub-Specialists ─── */
+.row-sub {
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px;
+}
+
+/* ─── CAPCOM Toggle ─── */
+.capcom-toggle-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer; padding: 4px 10px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #f0a030;
+  background: rgba(240, 160, 48, 0.08);
+  border: 1px solid rgba(240, 160, 48, 0.2);
+  margin-bottom: 10px;
+  transition: background 0.2s;
+}
+
+.capcom-toggle-label:hover {
+  background: rgba(240, 160, 48, 0.15);
+}
+
+.capcom-toggle-label .toggle-indicator {
+  width: 28px; height: 14px; border-radius: 7px;
+  background: #1a2a3a; position: relative; transition: background 0.2s;
+}
+
+.capcom-toggle-label .toggle-indicator::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #4a6a8a; transition: transform 0.2s, background 0.2s;
+}
+
+#capcom-toggle:checked ~ .mission-control .capcom-toggle-label .toggle-indicator {
+  background: rgba(240, 160, 48, 0.3);
+}
+
+#capcom-toggle:checked ~ .mission-control .capcom-toggle-label .toggle-indicator::after {
+  transform: translateX(14px);
+  background: #f0a030;
+}
+
+.capcom-relay-panel {
+  display: none;
+  background: rgba(0, 15, 30, 0.95);
+  border: 1px solid rgba(240, 160, 48, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+#capcom-toggle:checked ~ .mission-control .capcom-relay-panel {
+  display: block;
+}
+
+.capcom-relay-panel .relay-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #f0a030; margin-bottom: 8px;
+}
+
+.relay-entry {
+  display: flex; gap: 8px; padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 10px;
+}
+
+.relay-entry:last-child { border-bottom: none; }
+
+.relay-time { font-family: 'Courier New', monospace; color: #3a5a70; min-width: 40px; }
+.relay-from { font-weight: 700; color: #5a8ab0; min-width: 60px; }
+.relay-msg { color: #8a9ab0; }
+.relay-msg.question { color: #f0a030; }
+
+/* ─── CAPCOM special styling ─── */
+.console-capcom {
+  border-color: rgba(240, 160, 48, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(240, 160, 48, 0.08), 0 2px 8px rgba(0,0,0,0.3);
+  animation: capcom-border 2s ease-in-out infinite;
+}
+
+@keyframes capcom-border {
+  0%, 100% { border-color: rgba(240, 160, 48, 0.35); }
+  50% { border-color: rgba(240, 160, 48, 0.55); }
+}
+
+.capcom-incoming {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #f0a030; margin-bottom: 6px;
+}
+.capcom-query {
+  font-size: 11px; color: #c8d0d8; margin-bottom: 10px; line-height: 1.5;
+}
+.capcom-options { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.capcom-option {
+  font-family: 'Courier New', monospace; font-size: 10px; color: #6a8aa0;
+  padding: 5px 8px; background: rgba(0,0,0,0.3);
+  border: 1px solid #1a2a3a; border-radius: 4px;
+}
+.capcom-awaiting {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #f0a030;
+  animation: blink-text 1.5s step-end infinite;
+}
+
+@keyframes blink-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Mobile: Single station view with tab switching ─── */
+#preview-mobile:checked ~ .window .main-display {
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+#preview-mobile:checked ~ .window .main-display .mission-phase,
+#preview-mobile:checked ~ .window .main-display .mission-status {
+  text-align: center;
+}
+
+#preview-mobile:checked ~ .window .mission-clock .time {
+  font-size: 20px;
+}
+
+#preview-mobile:checked ~ .window .station-bar {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+#preview-mobile:checked ~ .window .station-label {
+  font-size: 8px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+/* Mobile: hide all console rows by default, show only selected */
+#preview-mobile:checked ~ .window .row-label { display: none; }
+#preview-mobile:checked ~ .window .row-flight,
+#preview-mobile:checked ~ .window .row-specialists,
+#preview-mobile:checked ~ .window .row-sub {
+  display: none;
+}
+
+/* Show rows based on station selection in mobile */
+#station-all:checked ~ .window .row-flight,
+#station-all:checked ~ .window .row-specialists,
+#station-all:checked ~ .window .row-sub { display: grid; }
+
+#preview-mobile:checked ~ .window .row-specialists {
+  grid-template-columns: 1fr;
+}
+
+#preview-mobile:checked ~ .window .row-sub {
+  grid-template-columns: 1fr;
+}
+
+#preview-mobile:checked ~ .window .console-flight {
+  grid-template-columns: 1fr;
+}
+
+#preview-mobile:checked ~ .window .flight-left {
+  border-right: none;
+  padding-right: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1a2a3a;
+}
+
+#preview-mobile:checked ~ .window .flight-right {
+  padding-left: 0;
+  padding-top: 12px;
+}
+
+/* In mobile, when specific station is selected show only that row/console */
+#station-flight:checked ~ .window .row-flight { display: block !important; }
+#station-guidance:checked ~ .window .row-specialists,
+#station-telemetry:checked ~ .window .row-specialists,
+#station-retro:checked ~ .window .row-specialists,
+#station-eecom:checked ~ .window .row-specialists {
+  display: grid !important;
+  grid-template-columns: 1fr;
+}
+#station-gnc:checked ~ .window .row-sub,
+#station-fao:checked ~ .window .row-sub,
+#station-capcom:checked ~ .window .row-sub {
+  display: grid !important;
+  grid-template-columns: 1fr;
+}
+
+#preview-mobile:checked ~ .window .mission-control {
+  padding: 12px 12px 24px;
+}
+
+#preview-mobile:checked ~ .window .subsystem-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v14</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Mission Control (v4) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + radio station selection, hover telemetry panels, CAPCOM toggle</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v14.html as an enhanced iteration of v4 (Mission Control). Take the existing Mission Control dashboard and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: radio buttons to select console station (highlights active, dims others), :hover on consoles reveals telemetry data panels, checkbox toggle for CAPCOM relay panel showing question log. Mobile: single-station view with radio tab switching. Preserve dark dense dashboard aesthetic.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Terrarium (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Weaving Loom (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Particle Chamber (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Cartographic Expedition (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Kitchen Brigade (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Tidal Pool (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Mission Control (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Orchestra Score (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Geological Strata (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Mycelium Network (Enhanced)</span>
+        </a>
+        <div class="exp-vc-group">Original Metaphors (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Station selection radios -->
+    <input type="radio" name="station" id="station-all" checked>
+    <input type="radio" name="station" id="station-flight">
+    <input type="radio" name="station" id="station-guidance">
+    <input type="radio" name="station" id="station-telemetry">
+    <input type="radio" name="station" id="station-retro">
+    <input type="radio" name="station" id="station-eecom">
+    <input type="radio" name="station" id="station-gnc">
+    <input type="radio" name="station" id="station-fao">
+    <input type="radio" name="station" id="station-capcom">
+
+    <!-- CAPCOM relay toggle -->
+    <input type="checkbox" id="capcom-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="mc-inner">
+        <div class="mission-control">
+
+          <!-- MAIN DISPLAY BOARD -->
+          <div class="main-display">
+            <div>
+              <div class="mission-name">Mission</div>
+              <div class="mission-title">Deploy Production Release v2.4</div>
+            </div>
+            <div class="mission-clock">
+              <div class="label">Mission Elapsed Time</div>
+              <div class="time">T+ 00:14:32</div>
+            </div>
+            <div class="mission-status">
+              <div class="label">System Status</div>
+              <div class="status-word">NOMINAL</div>
+            </div>
+            <div class="mission-phase">
+              <div class="label">Current Phase</div>
+              <div class="phase">Phase 3 of 5: Integration Testing</div>
+              <div class="phase-bar">
+                <div class="pip done"></div>
+                <div class="pip done"></div>
+                <div class="pip active"></div>
+                <div class="pip"></div>
+                <div class="pip"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATION SELECTION BAR -->
+          <div class="station-bar">
+            <label for="station-all" class="station-label"><span class="sdot"></span> All</label>
+            <label for="station-flight" class="station-label"><span class="sdot"></span> Flight</label>
+            <label for="station-guidance" class="station-label"><span class="sdot"></span> Guidance</label>
+            <label for="station-telemetry" class="station-label"><span class="sdot warn"></span> Telemetry</label>
+            <label for="station-retro" class="station-label"><span class="sdot"></span> Retro</label>
+            <label for="station-eecom" class="station-label"><span class="sdot"></span> EECOM</label>
+            <label for="station-gnc" class="station-label"><span class="sdot"></span> GNC</label>
+            <label for="station-fao" class="station-label"><span class="sdot"></span> FAO</label>
+            <label for="station-capcom" class="station-label"><span class="sdot pulse"></span> CAPCOM</label>
+          </div>
+
+          <!-- ROW 1: FLIGHT DIRECTOR -->
+          <div class="row-label">Row 1 &mdash; Flight Director</div>
+          <div class="row-flight">
+            <div class="console-wrap cw-flight">
+              <div class="console">
+                <div class="console-header">
+                  <div>
+                    <span class="console-id">FLIGHT</span>
+                    <span class="console-agent">&mdash; Orchestrator Agent</span>
+                  </div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-flight">
+                  <div class="flight-left">
+                    <div class="flight-status-text">All systems nominal. 3 of 5 phases complete.</div>
+                    <div class="subsystem-grid">
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">GDC</span></div>
+                      <div class="subsystem"><span class="status-dot yellow"></span><span class="sub-label">TLM</span></div>
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">RTO</span></div>
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">ECM</span></div>
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">GNC</span></div>
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">FAO</span></div>
+                      <div class="subsystem"><span class="status-dot green"></span><span class="sub-label">CPM</span></div>
+                      <div class="subsystem"><span class="status-dot amber-pulse"></span><span class="sub-label">CAP</span></div>
+                    </div>
+                  </div>
+                  <div class="flight-right">
+                    <div class="flight-log">
+                      <div><span class="log-time">14:28</span> Phase 2 complete. All unit tests passed.</div>
+                      <div><span class="log-time">14:29</span> Initiating Phase 3: Integration Testing.</div>
+                      <div><span class="log-time">14:30</span> TELEMETRY reports 5 auth test failures.</div>
+                      <div><span class="log-time">14:31</span> Routing decision to CAPCOM for astronaut input.</div>
+                      <div><span class="log-time">14:32</span> Awaiting human response via CAPCOM relay.</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">Flight Director Telemetry</div>
+                  <div class="tp-row"><span>Active agents</span><span class="tp-val good">7 / 7</span></div>
+                  <div class="tp-row"><span>Decision queue</span><span class="tp-val warn">1 pending</span></div>
+                  <div class="tp-row"><span>Phase velocity</span><span class="tp-val good">1.2x nominal</span></div>
+                  <div class="tp-row"><span>Resource util</span><span class="tp-val good">68%</span></div>
+                  <div class="tp-row"><span>Error budget</span><span class="tp-val good">94% remaining</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 2: SPECIALIST CONSOLES -->
+          <div class="row-label">Row 2 &mdash; Specialist Consoles</div>
+          <div class="row-specialists">
+
+            <div class="console-wrap cw-guidance">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">GUIDANCE</span><span class="console-agent">&mdash; Build Agent</span></div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-metric">Compilation <span class="metric-highlight">successful</span><br>Bundle size: <span class="metric-highlight">245KB</span></div>
+                <div class="console-log">
+                  <div><span class="log-time">14:30</span> Webpack build started</div>
+                  <div><span class="log-time">14:31</span> <span class="log-ok">0 errors</span>, <span class="log-warn">2 warnings</span></div>
+                  <div><span class="log-time">14:32</span> <span class="log-ok">Bundle optimized</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">Guidance Telemetry</div>
+                  <div class="tp-row"><span>Build time</span><span class="tp-val good">4.2s</span></div>
+                  <div class="tp-row"><span>Tree-shaken</span><span class="tp-val good">62KB removed</span></div>
+                  <div class="tp-row"><span>Chunks</span><span class="tp-val">8 generated</span></div>
+                  <div class="tp-row"><span>Cache hit</span><span class="tp-val good">87%</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-wrap cw-telemetry">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">TELEMETRY</span><span class="console-agent">&mdash; Test Agent</span></div>
+                  <span class="status-dot yellow"></span>
+                </div>
+                <div class="console-metric">Integration tests: <span class="metric-warn">47/52</span> passing</div>
+                <div class="console-log">
+                  <div><span class="log-time">14:28</span> Unit tests: <span class="log-ok">100%</span></div>
+                  <div><span class="log-time">14:30</span> Integration: <span class="log-warn">90%</span></div>
+                  <div><span class="log-time">14:31</span> <span class="log-warn">5 tests pending</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">Telemetry Readings</div>
+                  <div class="tp-row"><span>Unit tests</span><span class="tp-val good">312 / 312</span></div>
+                  <div class="tp-row"><span>Integration</span><span class="tp-val warn">47 / 52</span></div>
+                  <div class="tp-row"><span>Coverage</span><span class="tp-val good">89.3%</span></div>
+                  <div class="tp-row"><span>Flaky tests</span><span class="tp-val">0 detected</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-wrap cw-retro">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">RETRO</span><span class="console-agent">&mdash; Code Review Agent</span></div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-metric">All PRs reviewed. <span class="metric-highlight">2</span> minor suggestions.</div>
+                <div class="console-log">
+                  <div><span class="log-time">14:29</span> <span class="log-ok">PR #142 approved</span></div>
+                  <div><span class="log-time">14:30</span> <span class="log-warn">PR #143 style nit</span></div>
+                  <div><span class="log-time">14:31</span> <span class="log-ok">PR #144 approved</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">Retro Analysis</div>
+                  <div class="tp-row"><span>PRs reviewed</span><span class="tp-val good">3 / 3</span></div>
+                  <div class="tp-row"><span>Avg review time</span><span class="tp-val good">42s</span></div>
+                  <div class="tp-row"><span>Blocking issues</span><span class="tp-val good">0</span></div>
+                  <div class="tp-row"><span>Style violations</span><span class="tp-val warn">1 minor</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-wrap cw-eecom">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">EECOM</span><span class="console-agent">&mdash; Monitoring Agent</span></div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-metric">CPU: <span class="metric-highlight">23%</span> | Memory: <span class="metric-highlight">1.2GB</span> | Latency: <span class="metric-highlight">45ms</span></div>
+                <div class="console-log">
+                  <div><span class="log-time">14:28</span> <span class="log-ok">Health check OK</span></div>
+                  <div><span class="log-time">14:30</span> No anomalies</div>
+                  <div><span class="log-time">14:32</span> <span class="log-ok">All metrics nominal</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">EECOM Readings</div>
+                  <div class="tp-row"><span>CPU load</span><span class="tp-val good">23%</span></div>
+                  <div class="tp-row"><span>Memory</span><span class="tp-val good">1.2 / 4.0 GB</span></div>
+                  <div class="tp-row"><span>Disk I/O</span><span class="tp-val good">12 MB/s</span></div>
+                  <div class="tp-row"><span>p99 latency</span><span class="tp-val good">45ms</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 3: SUB-SPECIALIST CONSOLES -->
+          <div class="row-label">Row 3 &mdash; Sub-Specialist Consoles</div>
+          <div class="row-sub">
+
+            <div class="console-wrap cw-capcom">
+              <div class="console console-capcom">
+                <div class="console-header">
+                  <div><span class="console-id" style="color: #f0a030;">CAPCOM</span><span class="console-agent">&mdash; Communication Agent</span></div>
+                  <span class="status-dot amber-pulse"></span>
+                </div>
+                <label for="capcom-toggle" class="capcom-toggle-label">
+                  <span class="toggle-indicator"></span>
+                  Relay Log
+                </label>
+                <div class="capcom-incoming">&#9650; Incoming Query from TELEMETRY</div>
+                <div class="capcom-query">5 integration tests failing on auth module. Astronaut decision needed:</div>
+                <div class="capcom-options">
+                  <div class="capcom-option">A &mdash; Skip auth tests, deploy without</div>
+                  <div class="capcom-option">B &mdash; Fix auth module, delay 15min</div>
+                  <div class="capcom-option">C &mdash; Roll back to v2.3</div>
+                </div>
+                <div class="capcom-awaiting">
+                  <span class="status-dot amber-pulse"></span>
+                  Awaiting Astronaut Response
+                </div>
+                <div class="capcom-relay-panel">
+                  <div class="relay-title">CAPCOM Relay Log</div>
+                  <div class="relay-entry">
+                    <span class="relay-time">14:26</span>
+                    <span class="relay-from">FLIGHT</span>
+                    <span class="relay-msg">Mission go for Phase 2. All agents cleared.</span>
+                  </div>
+                  <div class="relay-entry">
+                    <span class="relay-time">14:28</span>
+                    <span class="relay-from">HUMAN</span>
+                    <span class="relay-msg">Copy. Proceeding with integration suite.</span>
+                  </div>
+                  <div class="relay-entry">
+                    <span class="relay-time">14:30</span>
+                    <span class="relay-from">TELEMETRY</span>
+                    <span class="relay-msg question">5 auth failures detected. Requesting guidance.</span>
+                  </div>
+                  <div class="relay-entry">
+                    <span class="relay-time">14:31</span>
+                    <span class="relay-from">FLIGHT</span>
+                    <span class="relay-msg">Routing to CAPCOM. Astronaut input required.</span>
+                  </div>
+                  <div class="relay-entry">
+                    <span class="relay-time">14:32</span>
+                    <span class="relay-from">CAPCOM</span>
+                    <span class="relay-msg question">Awaiting astronaut decision on auth module...</span>
+                  </div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">CAPCOM Telemetry</div>
+                  <div class="tp-row"><span>Messages relayed</span><span class="tp-val">14</span></div>
+                  <div class="tp-row"><span>Pending decisions</span><span class="tp-val warn">1</span></div>
+                  <div class="tp-row"><span>Avg response time</span><span class="tp-val good">18s</span></div>
+                  <div class="tp-row"><span>Escalations</span><span class="tp-val">0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-wrap cw-gnc">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">GNC</span><span class="console-agent">&mdash; DB Migration Agent</span></div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-metric">Schema <span class="metric-highlight">v24</span> applied. <span class="metric-highlight">0</span> conflicts.</div>
+                <div class="console-log">
+                  <div><span class="log-time">14:26</span> Migration started</div>
+                  <div><span class="log-time">14:27</span> <span class="log-ok">Schema applied</span></div>
+                  <div><span class="log-time">14:28</span> <span class="log-ok">Integrity check passed</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">GNC Telemetry</div>
+                  <div class="tp-row"><span>Schema version</span><span class="tp-val good">v24</span></div>
+                  <div class="tp-row"><span>Migration time</span><span class="tp-val good">1.8s</span></div>
+                  <div class="tp-row"><span>Rollback ready</span><span class="tp-val good">Yes</span></div>
+                  <div class="tp-row"><span>Index rebuilds</span><span class="tp-val">2 queued</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="console-wrap cw-fao">
+              <div class="console">
+                <div class="console-header">
+                  <div><span class="console-id">FAO</span><span class="console-agent">&mdash; Security Scan Agent</span></div>
+                  <span class="status-dot green"></span>
+                </div>
+                <div class="console-metric">No vulnerabilities found. <span class="metric-highlight">OWASP scan clean.</span></div>
+                <div class="console-log">
+                  <div><span class="log-time">14:27</span> Dependency audit clean</div>
+                  <div><span class="log-time">14:29</span> <span class="log-ok">OWASP Top 10: pass</span></div>
+                  <div><span class="log-time">14:31</span> <span class="log-ok">No CVEs detected</span></div>
+                </div>
+                <div class="telemetry-panel">
+                  <div class="tp-title">FAO Telemetry</div>
+                  <div class="tp-row"><span>CVEs scanned</span><span class="tp-val good">0 found</span></div>
+                  <div class="tp-row"><span>Dependencies</span><span class="tp-val good">142 audited</span></div>
+                  <div class="tp-row"><span>OWASP score</span><span class="tp-val good">A+</span></div>
+                  <div class="tp-row"><span>Last scan</span><span class="tp-val">32s ago</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

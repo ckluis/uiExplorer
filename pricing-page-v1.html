@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Page — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-autonomous {
+  display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow-y: auto; overflow-x: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Pricing Page Styles ─── */
+.pricing {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 60px 40px;
+  text-align: center;
+  color: #1a1a2e;
+}
+.pricing h2 {
+  font-size: 36px; font-weight: 800; margin-bottom: 12px;
+}
+.pricing .subtitle {
+  font-size: 18px; color: #666; margin-bottom: 32px;
+}
+
+/* Toggle */
+.toggle-wrap {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin-bottom: 48px; font-size: 14px; font-weight: 500; color: #555;
+}
+.toggle-track {
+  width: 48px; height: 26px; background: #ddd; border-radius: 13px;
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.toggle-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+}
+#billing-toggle:checked ~ .window .toggle-track { background: #6c5ce7; }
+#billing-toggle:checked ~ .window .toggle-track::after { transform: translateX(22px); }
+.save-badge {
+  background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px;
+}
+
+/* Cards */
+.cards {
+  display: flex; gap: 24px; justify-content: center; max-width: 1000px; margin: 0 auto;
+}
+.card {
+  flex: 1; max-width: 320px; background: #fff; border: 1px solid #e8e8e8;
+  border-radius: 16px; padding: 36px 28px; text-align: left;
+  transition: transform 0.2s, box-shadow 0.2s; position: relative;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+}
+.card.popular {
+  border: 2px solid #6c5ce7;
+  box-shadow: 0 8px 30px rgba(108,92,231,0.15);
+}
+.popular-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: #6c5ce7; color: #fff; font-size: 11px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px; white-space: nowrap;
+}
+.card-tier {
+  font-size: 14px; font-weight: 600; color: #888; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.card-price {
+  font-size: 48px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px;
+}
+.card-price span { font-size: 16px; font-weight: 500; color: #999; }
+.card-desc {
+  font-size: 14px; color: #777; margin-bottom: 24px; line-height: 1.5;
+}
+
+/* Monthly prices shown by default, annual hidden */
+.price-annual { display: none; }
+#billing-toggle:checked ~ .window .price-monthly { display: none; }
+#billing-toggle:checked ~ .window .price-annual { display: block; }
+
+.card-features {
+  list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px;
+}
+.card-features li {
+  font-size: 14px; color: #555; padding-left: 24px; position: relative;
+}
+.card-features li::before {
+  content: ''; position: absolute; left: 0; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #e8f5e9;
+}
+.card-features li::after {
+  content: ''; position: absolute; left: 4px; top: 8px;
+  width: 8px; height: 5px; border-left: 2px solid #2e7d32;
+  border-bottom: 2px solid #2e7d32; transform: rotate(-45deg);
+}
+.card-cta {
+  display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: background 0.2s, transform 0.1s; text-decoration: none;
+}
+.card-cta:hover { transform: translateY(-1px); }
+.cta-primary { background: #6c5ce7; color: #fff; }
+.cta-primary:hover { background: #5a4bd1; }
+.cta-outline { background: #fff; color: #6c5ce7; border: 2px solid #6c5ce7; }
+.cta-outline:hover { background: #f0eeff; }
+.cta-dark { background: #1a1a2e; color: #fff; }
+.cta-dark:hover { background: #2a2a4e; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .pricing { padding: 32px 16px; }
+#preview-mobile:checked ~ .window .pricing h2 { font-size: 24px; }
+#preview-mobile:checked ~ .window .pricing .subtitle { font-size: 14px; }
+#preview-mobile:checked ~ .window .cards { flex-direction: column; align-items: center; }
+#preview-mobile:checked ~ .window .card { max-width: 100%; }
+#preview-mobile:checked ~ .window .card-price { font-size: 36px; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Pricing Page</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explores a SaaS pricing page with 3-tier cards, monthly/annual billing toggle, and a "Most Popular" badge. Foundational layout for iterating on pricing UI patterns.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v1: Basic 3-tier cards (Starter, Pro, Enterprise) with features list, monthly/annual toggle via CSS checkbox, "Most Popular" badge on Pro tier, hover effects, and CTA buttons. Enterprise tier uses "Contact Sales" instead of a price.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="pricing-page-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Gradient accents & CTA</span>
+        </a>
+        <a href="pricing-page-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Testimonials & FAQ</span>
+        </a>
+        <a href="pricing-page-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Add-on checkboxes</span>
+        </a>
+        <a href="pricing-page-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Feature matrix</span>
+        </a>
+        <a href="pricing-page-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 3-tier pricing</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <!-- Billing toggle (must be sibling of .window for CSS to work) -->
+    <input type="checkbox" id="billing-toggle">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="pricing">
+        <h2>Simple, transparent pricing</h2>
+        <p class="subtitle">Choose the plan that fits your team. Upgrade or downgrade anytime.</p>
+
+        <div class="toggle-wrap">
+          <span>Monthly</span>
+          <label for="billing-toggle" class="toggle-track"></label>
+          <span>Annual</span>
+          <span class="save-badge">Save 20%</span>
+        </div>
+
+        <div class="cards">
+          <!-- Starter -->
+          <div class="card">
+            <div class="card-tier">Starter</div>
+            <div class="price-monthly"><div class="card-price">$19<span>/mo</span></div></div>
+            <div class="price-annual"><div class="card-price">$15<span>/mo</span></div></div>
+            <p class="card-desc">Perfect for individuals and small projects getting started.</p>
+            <ul class="card-features">
+              <li>Up to 3 projects</li>
+              <li>5 GB storage</li>
+              <li>Basic analytics</li>
+              <li>Email support</li>
+              <li>API access</li>
+            </ul>
+            <a href="#" class="card-cta cta-outline">Get Started</a>
+          </div>
+
+          <!-- Pro -->
+          <div class="card popular">
+            <div class="popular-badge">Most Popular</div>
+            <div class="card-tier">Pro</div>
+            <div class="price-monthly"><div class="card-price">$49<span>/mo</span></div></div>
+            <div class="price-annual"><div class="card-price">$39<span>/mo</span></div></div>
+            <p class="card-desc">For growing teams that need more power and collaboration.</p>
+            <ul class="card-features">
+              <li>Unlimited projects</li>
+              <li>50 GB storage</li>
+              <li>Advanced analytics</li>
+              <li>Priority support</li>
+              <li>API access</li>
+              <li>Team collaboration</li>
+              <li>Custom integrations</li>
+            </ul>
+            <a href="#" class="card-cta cta-primary">Get Started</a>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="card">
+            <div class="card-tier">Enterprise</div>
+            <div class="card-price">Custom</div>
+            <p class="card-desc">For large organizations with advanced security and compliance needs.</p>
+            <ul class="card-features">
+              <li>Everything in Pro</li>
+              <li>Unlimited storage</li>
+              <li>SSO &amp; SAML</li>
+              <li>Dedicated account manager</li>
+              <li>Custom SLA</li>
+              <li>Audit logs</li>
+              <li>On-premise option</li>
+            </ul>
+            <a href="#" class="card-cta cta-dark">Contact Sales</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

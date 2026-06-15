@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v19: Weaving Loom (Enhanced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  padding: 8px 10px 2px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #8b6b3a 0%, #5a3d1e 50%, #4a3520 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+input[name="preview"] { display: none; }
+input[name="pattern"] { display: none; }
+input[name="weft-filter"] { display: none; }
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #f7f0e3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Loom Content ─── */
+.loom-scroll {
+  flex: 1;
+  overflow: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.loom-container {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  padding: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(139,100,60,0.03) 0px, rgba(139,100,60,0.03) 1px, transparent 1px, transparent 40px),
+    linear-gradient(180deg, #ede4d3 0%, #f7f0e3 10%, #f7f0e3 90%, #ede4d3 100%);
+}
+
+/* ─── Loom Frame ─── */
+.loom-frame {
+  position: relative;
+  margin: 0 40px;
+  min-height: 100%;
+  border-left: 12px solid #6b4c2a;
+  border-right: 12px solid #6b4c2a;
+  background: rgba(107,76,42,0.02);
+  box-shadow: inset 4px 0 8px rgba(107,76,42,0.1), inset -4px 0 8px rgba(107,76,42,0.1);
+}
+
+.loom-frame::before,
+.loom-frame::after {
+  content: '';
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  height: 20px;
+  background: linear-gradient(90deg, #5a3d1e, #8b6b3a, #6b4c2a, #8b6b3a, #5a3d1e);
+  z-index: 5;
+}
+
+.loom-frame::before { top: 0; border-radius: 4px 4px 0 0; }
+.loom-frame::after { bottom: 0; border-radius: 0 0 4px 4px; }
+
+.loom-frame-grain-left,
+.loom-frame-grain-right {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  width: 12px;
+  z-index: 4;
+  background:
+    repeating-linear-gradient(180deg, transparent, transparent 8px, rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.06) 10px);
+}
+.loom-frame-grain-left { left: -12px; }
+.loom-frame-grain-right { right: -12px; }
+
+/* ─── Pattern Card Radio Selector ─── */
+.pattern-selector {
+  position: relative;
+  margin: 40px 30px 0;
+  display: flex;
+  gap: 10px;
+  z-index: 6;
+}
+
+.pattern-selector label {
+  flex: 1;
+  cursor: pointer;
+}
+
+.pattern-card {
+  position: relative;
+  padding: 14px 16px;
+  background: #f5ecd6;
+  border: 2px solid #c4a870;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(107,76,42,0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  opacity: 0.55;
+}
+
+.pattern-card::before {
+  content: 'PATTERN CARD';
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  background: #f5ecd6;
+  padding: 0 6px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8b6b3a;
+}
+
+/* Active pattern card */
+#pattern-collab:checked ~ .window .pattern-selector label[for="pattern-collab"] .pattern-card,
+#pattern-analytics:checked ~ .window .pattern-selector label[for="pattern-analytics"] .pattern-card,
+#pattern-messaging:checked ~ .window .pattern-selector label[for="pattern-messaging"] .pattern-card {
+  opacity: 1;
+  border-color: #8b6b3a;
+  box-shadow: 0 4px 16px rgba(107,76,42,0.25);
+}
+
+.pattern-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a3520;
+  margin-bottom: 4px;
+}
+
+.pattern-card-desc {
+  font-size: 10px;
+  color: #7a6040;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.punch-holes {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.punch-hole {
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid #c4a870;
+  position: relative;
+}
+
+.punch-hole.punched {
+  background: #4a3520;
+  border-color: #4a3520;
+}
+
+.punch-hole.punched::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #f5ecd6;
+  border-radius: 1px;
+}
+
+.punch-hole.empty {
+  background: transparent;
+}
+
+/* ─── Weft Checkbox Filters ─── */
+.weft-controls {
+  margin: 12px 30px 0;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 6;
+}
+
+.weft-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(196,168,112,0.4);
+  background: rgba(245,236,214,0.5);
+  transition: border-color 0.2s, background 0.2s;
+  font-size: 10px;
+  font-weight: 600;
+  color: #7a6040;
+}
+
+.weft-toggle .swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.weft-toggle-ui .swatch-dot { background: #8b3a3a; }
+.weft-toggle-api .swatch-dot { background: #3a5c8b; }
+.weft-toggle-data .swatch-dot { background: #3a7a4a; }
+.weft-toggle-auth .swatch-dot { background: #7a5a2a; }
+
+/* Highlight active filters */
+#weft-ui:checked ~ .window .weft-toggle-ui,
+#weft-api:checked ~ .window .weft-toggle-api,
+#weft-data:checked ~ .window .weft-toggle-data,
+#weft-auth:checked ~ .window .weft-toggle-auth {
+  border-color: #8b6b3a;
+  background: rgba(245,236,214,0.9);
+}
+
+/* Dim non-matching rows when filter active */
+#weft-ui:checked ~ .window .weft-row:not(.agent-ui) { opacity: 0.2; }
+#weft-api:checked ~ .window .weft-row:not(.agent-api) { opacity: 0.2; }
+#weft-data:checked ~ .window .weft-row:not(.agent-data) { opacity: 0.2; }
+#weft-auth:checked ~ .window .weft-row:not(.agent-auth) { opacity: 0.2; }
+
+/* Multiple filters: restore rows matching ANY checked filter */
+#weft-ui:checked ~ .window .weft-row.agent-ui { opacity: 1 !important; }
+#weft-api:checked ~ .window .weft-row.agent-api { opacity: 1 !important; }
+#weft-data:checked ~ .window .weft-row.agent-data { opacity: 1 !important; }
+#weft-auth:checked ~ .window .weft-row.agent-auth { opacity: 1 !important; }
+
+/* ─── Warp Threads (vertical) ─── */
+.weave-area {
+  position: relative;
+  margin: 0 30px;
+  padding: 20px 0;
+  min-height: 500px;
+}
+
+.warp-threads {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  z-index: 1;
+}
+
+.warp-thread {
+  width: 2px;
+  background: repeating-linear-gradient(180deg,
+    #c4a870 0px, #c4a870 6px,
+    #d4bc8a 6px, #d4bc8a 8px
+  );
+  opacity: 0.6;
+}
+
+.warp-thread:nth-child(3n) { opacity: 0.8; background: repeating-linear-gradient(180deg, #b89a5e 0px, #b89a5e 6px, #cbb27a 6px, #cbb27a 8px); }
+.warp-thread:nth-child(5n) { opacity: 0.5; }
+
+/* ─── Weft Rows (horizontal agent work) ─── */
+.weft-rows {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.weft-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 28px;
+  position: relative;
+  transition: opacity 0.3s;
+}
+
+/* Hover: show thread detail tooltip */
+.weft-row .thread-detail {
+  position: absolute;
+  top: -30px;
+  left: 140px;
+  background: #4a3520;
+  color: #f5ecd6;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+
+.weft-row .thread-detail::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  background: #4a3520;
+  transform: rotate(45deg);
+}
+
+.weft-row:hover .thread-detail {
+  opacity: 1;
+}
+
+.weft-row:hover .thread-fill {
+  filter: brightness(1.2) saturate(1.3);
+}
+
+.weft-row:hover .shuttle-icon {
+  transform: scale(1.3);
+}
+
+.weft-complete {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.weft-complete .thread-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: filter 0.2s;
+}
+
+/* Agent thread colors */
+.agent-ui .thread-fill { background: linear-gradient(90deg, #8b3a3a, #a04545, #c05555, #a04545, #8b3a3a); }
+.agent-api .thread-fill { background: linear-gradient(90deg, #3a5c8b, #456ba0, #5580c0, #456ba0, #3a5c8b); }
+.agent-data .thread-fill { background: linear-gradient(90deg, #3a7a4a, #458a55, #55a068, #458a55, #3a7a4a); }
+.agent-auth .thread-fill { background: linear-gradient(90deg, #7a5a2a, #8b6b3a, #a07a45, #8b6b3a, #7a5a2a); }
+
+/* Weave over/under pattern */
+.weft-row:nth-child(odd) .thread-fill {
+  mask-image: repeating-linear-gradient(90deg, black 0px, black 16px, transparent 16px, transparent 18px);
+  -webkit-mask-image: repeating-linear-gradient(90deg, black 0px, black 16px, transparent 16px, transparent 18px);
+}
+
+.weft-row:nth-child(even) .thread-fill {
+  mask-image: repeating-linear-gradient(90deg, transparent 0px, transparent 8px, black 8px, black 26px, transparent 26px, transparent 28px);
+  -webkit-mask-image: repeating-linear-gradient(90deg, transparent 0px, transparent 8px, black 8px, black 26px, transparent 26px, transparent 28px);
+}
+
+.weft-label {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #7a6040;
+  text-align: right;
+  justify-content: flex-end;
+  letter-spacing: 0.03em;
+}
+
+.weft-shuttle {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shuttle-icon {
+  width: 24px;
+  height: 10px;
+  border-radius: 10px 4px 4px 10px;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.agent-ui .shuttle-icon { background: #8b3a3a; }
+.agent-api .shuttle-icon { background: #3a5c8b; }
+.agent-data .shuttle-icon { background: #3a7a4a; }
+.agent-auth .shuttle-icon { background: #7a5a2a; }
+
+.shuttle-icon::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 2px;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.agent-ui .shuttle-icon::after { border-left: 6px solid #8b3a3a; }
+.agent-api .shuttle-icon::after { border-left: 6px solid #3a5c8b; }
+.agent-data .shuttle-icon::after { border-left: 6px solid #3a7a4a; }
+.agent-auth .shuttle-icon::after { border-left: 6px solid #7a5a2a; }
+
+.weave-section-label {
+  padding: 12px 0 6px 132px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #a08660;
+  position: relative;
+  z-index: 2;
+}
+
+.weave-section-label::after {
+  content: '';
+  display: inline-block;
+  width: 60px;
+  height: 1px;
+  background: #c4a870;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+/* ─── The Gap ─── */
+.weave-gap {
+  position: relative;
+  margin: 8px 0;
+  z-index: 10;
+}
+
+.gap-area {
+  display: flex;
+  align-items: stretch;
+  min-height: 80px;
+}
+
+.gap-label {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  justify-content: flex-end;
+}
+
+.gap-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gap-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c0392b;
+  animation: gapPulse 2s ease-in-out infinite;
+}
+
+.gap-indicator-dot:nth-child(2) { animation-delay: 0.3s; }
+.gap-indicator-dot:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes gapPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.gap-content {
+  flex: 1;
+  position: relative;
+  border: 2px dashed #c0392b;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(192,57,43,0.04) 0px, rgba(192,57,43,0.04) 16px,
+      transparent 16px, transparent 18px
+    ),
+    rgba(192,57,43,0.03);
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.gap-content::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 100%;
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 38px,
+    rgba(196,168,112,0.2) 38px, rgba(196,168,112,0.2) 40px
+  );
+  z-index: 0;
+}
+
+.gap-content::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 20px; right: 20px;
+  height: 12px;
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 14px,
+    #c4a870 14px, #c4a870 16px,
+    transparent 16px, transparent 20px
+  );
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+  z-index: 0;
+}
+
+.gap-shuttle {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shuttle-stopped {
+  width: 28px;
+  height: 12px;
+  border-radius: 10px 4px 4px 10px;
+  background: #8b3a3a;
+  position: relative;
+  opacity: 0.5;
+  animation: shuttleWobble 3s ease-in-out infinite;
+}
+
+@keyframes shuttleWobble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(2px) rotate(2deg); }
+  75% { transform: translateX(-2px) rotate(-2deg); }
+}
+
+.pattern-error { position: relative; z-index: 1; }
+
+.pattern-error-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(192,57,43,0.12);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+
+.pattern-error-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c0392b;
+  animation: errorBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes errorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pattern-error-text {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c0392b;
+}
+
+.gap-question {
+  font-size: 12px;
+  color: #6b3030;
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.gap-options {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.gap-option {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px dashed #a08660;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6b5030;
+  text-align: center;
+  background: rgba(244,228,193,0.6);
+  line-height: 1.4;
+}
+
+.gap-option strong {
+  display: block;
+  font-size: 11px;
+  color: #4a3520;
+  margin-bottom: 2px;
+}
+
+.gap-waiting {
+  font-size: 10px;
+  color: #c0392b;
+  font-style: italic;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Unwoven rows */
+.weft-row.unwoven {
+  opacity: 0.25;
+}
+
+.weft-row.unwoven .weft-complete {
+  background: repeating-linear-gradient(90deg,
+    transparent 0px, transparent 38px,
+    rgba(196,168,112,0.3) 38px, rgba(196,168,112,0.3) 40px
+  );
+}
+
+/* ─── Progress ─── */
+.loom-progress {
+  margin: 0 30px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 3;
+}
+
+.progress-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b6b3a;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(196,168,112,0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 62%;
+  background: linear-gradient(90deg, #3a7a4a, #7a5a2a, #8b3a3a, #3a5c8b);
+  border-radius: 3px;
+  animation: progressShimmer 3s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.progress-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a3520;
+}
+
+/* ─── Legend ─── */
+.loom-legend {
+  margin: 20px 30px 30px;
+  padding: 14px 18px;
+  border: 1.5px solid #c4a870;
+  border-radius: 6px;
+  background: rgba(245,236,214,0.6);
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 3;
+}
+
+.loom-legend h4 {
+  width: 100%;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8b6b3a;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(196,168,112,0.4);
+  padding-bottom: 6px;
+}
+
+.legend-swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #6b5030;
+}
+
+.swatch-color {
+  width: 20px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.swatch-ui { background: linear-gradient(90deg, #8b3a3a, #c05555, #8b3a3a); }
+.swatch-api { background: linear-gradient(90deg, #3a5c8b, #5580c0, #3a5c8b); }
+.swatch-data { background: linear-gradient(90deg, #3a7a4a, #55a068, #3a7a4a); }
+.swatch-auth { background: linear-gradient(90deg, #7a5a2a, #a07a45, #7a5a2a); }
+.swatch-warp { background: repeating-linear-gradient(90deg, #c4a870 0px, #c4a870 3px, transparent 3px, transparent 5px); }
+.swatch-gap { background: repeating-linear-gradient(90deg, rgba(192,57,43,0.3) 0px, rgba(192,57,43,0.3) 3px, transparent 3px, transparent 5px); border: 1px dashed #c0392b; }
+
+/* Shuttle animations */
+@keyframes shuttlePass {
+  0% { transform: translateX(-10px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(10px); opacity: 0; }
+}
+
+.active-shuttle { animation: shuttlePass 4s ease-in-out infinite; }
+.active-shuttle-reverse { animation: shuttlePass 4s ease-in-out infinite reverse; }
+
+@keyframes threadTension {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(1.002); }
+}
+
+.weft-complete .thread-fill { animation: threadTension 6s ease-in-out infinite; }
+
+/* ─── Pattern card switching content ─── */
+.pattern-content { display: none; }
+.pattern-content-collab { display: block; }
+
+#pattern-analytics:checked ~ .window .pattern-content-collab { display: none; }
+#pattern-analytics:checked ~ .window .pattern-content-analytics { display: block; }
+#pattern-messaging:checked ~ .window .pattern-content-collab { display: none; }
+#pattern-messaging:checked ~ .window .pattern-content-messaging { display: block; }
+
+/* ─── Mobile Adaptations ─── */
+#preview-mobile:checked ~ .window .loom-frame {
+  margin: 0 10px;
+  border-left-width: 6px;
+  border-right-width: 6px;
+}
+
+#preview-mobile:checked ~ .window .pattern-selector {
+  flex-direction: column;
+  margin: 20px 12px 0;
+  gap: 6px;
+}
+
+#preview-mobile:checked ~ .window .pattern-card {
+  padding: 10px 12px;
+}
+
+#preview-mobile:checked ~ .window .pattern-card-desc {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .punch-holes {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .weft-controls {
+  margin: 8px 12px 0;
+  gap: 6px;
+}
+
+#preview-mobile:checked ~ .window .weft-toggle {
+  padding: 3px 6px;
+  font-size: 9px;
+}
+
+#preview-mobile:checked ~ .window .weave-area {
+  margin: 0 12px;
+}
+
+#preview-mobile:checked ~ .window .weft-label {
+  width: 70px;
+  min-width: 70px;
+  font-size: 8px;
+}
+
+#preview-mobile:checked ~ .window .weave-section-label {
+  padding-left: 82px;
+  font-size: 8px;
+}
+
+#preview-mobile:checked ~ .window .gap-options {
+  flex-direction: column;
+}
+
+#preview-mobile:checked ~ .window .loom-legend {
+  margin: 12px 12px 20px;
+  gap: 10px;
+}
+
+#preview-mobile:checked ~ .window .loom-progress {
+  margin: 0 12px;
+}
+
+#preview-mobile:checked ~ .window .loom-frame::before,
+#preview-mobile:checked ~ .window .loom-frame::after {
+  left: -6px;
+  right: -6px;
+  height: 12px;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v19</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Weaving Loom (v9) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + pattern card radios, hover thread paths, weft checkboxes</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v19.html as an enhanced iteration of v9 (Weaving Loom). Take the existing Weaving Loom and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: radio buttons for pattern cards (switches which pattern agents weave), :hover on threads shows agent path and contribution, checkbox toggles for weft threads to highlight specific agent types. Mobile: close-up loom section view, radio switching between pattern cards. Preserve textile/fiber palette.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt #2 &rarr;</a>
+        <div class="exp-vc-group">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Terrarium (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Weaving Loom (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Particle Chamber (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Cartographic Expedition (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Kitchen Brigade (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Tidal Pool (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Mission Control (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Orchestra Score (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Geological Strata (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Mycelium Network (Enhanced)</span>
+        </a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt #1 &rarr;</a>
+        <div class="exp-vc-group">Original Series (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Pattern card radios -->
+    <input type="radio" name="pattern" id="pattern-collab" checked>
+    <input type="radio" name="pattern" id="pattern-analytics">
+    <input type="radio" name="pattern" id="pattern-messaging">
+
+    <!-- Weft filter checkboxes -->
+    <input type="checkbox" name="weft-filter" id="weft-ui">
+    <input type="checkbox" name="weft-filter" id="weft-api">
+    <input type="checkbox" name="weft-filter" id="weft-data">
+    <input type="checkbox" name="weft-filter" id="weft-auth">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="loom-scroll">
+        <div class="loom-container">
+          <div class="loom-frame">
+            <div class="loom-frame-grain-left"></div>
+            <div class="loom-frame-grain-right"></div>
+
+            <!-- Pattern Card Radio Selector -->
+            <div class="pattern-selector">
+              <label for="pattern-collab">
+                <div class="pattern-card">
+                  <div class="pattern-card-title">Collaboration Tool</div>
+                  <div class="pattern-card-desc">Real-time document editing with presence indicators, commenting threads, permission layers.</div>
+                  <div class="punch-holes">
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                  </div>
+                </div>
+              </label>
+              <label for="pattern-analytics">
+                <div class="pattern-card">
+                  <div class="pattern-card-title">Analytics Dashboard</div>
+                  <div class="pattern-card-desc">Metrics pipeline, chart rendering, data aggregation, alerting rules.</div>
+                  <div class="punch-holes">
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                  </div>
+                </div>
+              </label>
+              <label for="pattern-messaging">
+                <div class="pattern-card">
+                  <div class="pattern-card-title">Messaging Platform</div>
+                  <div class="pattern-card-desc">Channels, DMs, thread replies, file sharing, search indexing.</div>
+                  <div class="punch-holes">
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole punched"></div>
+                    <div class="punch-hole empty"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Weft Checkbox Controls -->
+            <div class="weft-controls">
+              <label for="weft-ui" class="weft-toggle weft-toggle-ui">
+                <span class="swatch-dot"></span> UI Agent
+              </label>
+              <label for="weft-api" class="weft-toggle weft-toggle-api">
+                <span class="swatch-dot"></span> API Agent
+              </label>
+              <label for="weft-data" class="weft-toggle weft-toggle-data">
+                <span class="swatch-dot"></span> Data Agent
+              </label>
+              <label for="weft-auth" class="weft-toggle weft-toggle-auth">
+                <span class="swatch-dot"></span> Auth Agent
+              </label>
+            </div>
+
+            <!-- Loom Progress -->
+            <div class="loom-progress">
+              <span class="progress-label">Tapestry</span>
+              <div class="progress-bar"><div class="progress-fill"></div></div>
+              <span class="progress-pct">62%</span>
+            </div>
+
+            <!-- ========== COLLABORATION TOOL PATTERN ========== -->
+            <div class="pattern-content pattern-content-collab">
+              <div class="weave-area">
+                <div class="warp-threads">
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div>
+                </div>
+
+                <div class="weft-rows">
+                  <div class="weave-section-label">Authentication Layer</div>
+
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">OAuth setup</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; OAuth 2.0 flow with PKCE &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">Session tokens</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; JWT with refresh rotation &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">Role middleware</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; RBAC middleware chain &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">Permission gates</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; Resource-level access control &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">Data Layer</div>
+
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Document schema</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Versioned document model &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">CRDT engine</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Yjs-based conflict-free sync &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Sync protocol</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; WebSocket binary protocol &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Conflict resolve</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Last-writer-wins merge &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Version history</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Snapshot + incremental diffs &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">API Surface</div>
+
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">REST endpoints</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">API Agent &bull; 24 endpoints, OpenAPI spec &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">WebSocket layer</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">API Agent &bull; Presence + document channels &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">Rate limiting</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">API Agent &bull; Token bucket per-user &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">UI Components</div>
+
+                  <div class="weft-row agent-ui">
+                    <div class="weft-label">Editor canvas</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle"></div></div>
+                    <div class="thread-detail">UI Agent &bull; ProseMirror-based editor &bull; 95%</div>
+                  </div>
+                  <div class="weft-row agent-ui">
+                    <div class="weft-label">Cursor presence</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle-reverse"></div></div>
+                    <div class="thread-detail">UI Agent &bull; Live cursor + selection overlays &bull; 88%</div>
+                  </div>
+
+                  <!-- THE GAP -->
+                  <div class="weave-gap">
+                    <div class="gap-area">
+                      <div class="gap-label">
+                        <div class="gap-indicator">
+                          <div class="gap-indicator-dot"></div>
+                          <div class="gap-indicator-dot"></div>
+                          <div class="gap-indicator-dot"></div>
+                        </div>
+                      </div>
+                      <div class="gap-content">
+                        <div class="pattern-error">
+                          <div class="pattern-error-badge">
+                            <div class="pattern-error-dot"></div>
+                            <span class="pattern-error-text">Pattern Card Error &mdash; Awaiting Weaver</span>
+                          </div>
+                        </div>
+                        <div class="gap-question">The comment threading system needs a decision: should replies be nested infinitely or capped at a fixed depth?</div>
+                        <div class="gap-options">
+                          <div class="gap-option">
+                            <strong>Flat + Mentions</strong>
+                            Single-level replies with @mentions
+                          </div>
+                          <div class="gap-option">
+                            <strong>Nested (3 deep)</strong>
+                            Three levels then collapse to flat
+                          </div>
+                          <div class="gap-option">
+                            <strong>Infinite Nesting</strong>
+                            Reddit-style unlimited depth
+                          </div>
+                        </div>
+                        <div class="gap-waiting">Shuttle paused. Loom idle until the weaver provides new instructions&hellip;</div>
+                      </div>
+                      <div class="gap-shuttle">
+                        <div class="shuttle-stopped"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="weave-section-label">Comment Threads (blocked)</div>
+
+                  <div class="weft-row unwoven agent-ui">
+                    <div class="weft-label">Thread UI</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-ui">
+                    <div class="weft-label">Reply nesting</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-api">
+                    <div class="weft-label">Thread API</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+
+                  <div class="weave-section-label">Activity Feed (queued)</div>
+
+                  <div class="weft-row unwoven agent-ui">
+                    <div class="weft-label">Feed layout</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-api">
+                    <div class="weft-label">Event stream</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-data">
+                    <div class="weft-label">Activity store</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========== ANALYTICS DASHBOARD PATTERN ========== -->
+            <div class="pattern-content pattern-content-analytics">
+              <div class="weave-area">
+                <div class="warp-threads">
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div>
+                </div>
+
+                <div class="weft-rows">
+                  <div class="weave-section-label">Ingestion Pipeline</div>
+
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Event collector</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Kafka topic ingestion &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Stream processor</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Flink windowed aggregation &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Time-series store</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; ClickHouse columnar storage &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">API Layer</div>
+
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">Query engine</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">API Agent &bull; SQL-to-chart query builder &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">Cache layer</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle"></div></div>
+                    <div class="thread-detail">API Agent &bull; Redis materialized views &bull; 80%</div>
+                  </div>
+
+                  <div class="weave-section-label">Visualization</div>
+
+                  <div class="weft-row agent-ui">
+                    <div class="weft-label">Chart renderer</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle-reverse"></div></div>
+                    <div class="thread-detail">UI Agent &bull; D3-based chart components &bull; 70%</div>
+                  </div>
+                  <div class="weft-row unwoven agent-ui">
+                    <div class="weft-label">Dashboard grid</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-auth">
+                    <div class="weft-label">Team access</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========== MESSAGING PLATFORM PATTERN ========== -->
+            <div class="pattern-content pattern-content-messaging">
+              <div class="weave-area">
+                <div class="warp-threads">
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div><div class="warp-thread"></div>
+                  <div class="warp-thread"></div><div class="warp-thread"></div>
+                </div>
+
+                <div class="weft-rows">
+                  <div class="weave-section-label">Authentication</div>
+
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">SSO integration</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; SAML + OIDC federation &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-auth">
+                    <div class="weft-label">Workspace auth</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Auth Agent &bull; Multi-tenant workspace isolation &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">Real-time Layer</div>
+
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">Message bus</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">API Agent &bull; Redis pub/sub channels &bull; 100%</div>
+                  </div>
+                  <div class="weft-row agent-api">
+                    <div class="weft-label">Presence service</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle"></div></div>
+                    <div class="thread-detail">API Agent &bull; Online/typing indicators &bull; 85%</div>
+                  </div>
+                  <div class="weft-row agent-data">
+                    <div class="weft-label">Message store</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon"></div></div>
+                    <div class="thread-detail">Data Agent &bull; Partitioned message history &bull; 100%</div>
+                  </div>
+
+                  <div class="weave-section-label">Interface</div>
+
+                  <div class="weft-row agent-ui">
+                    <div class="weft-label">Channel list</div>
+                    <div class="weft-complete"><div class="thread-fill"></div></div>
+                    <div class="weft-shuttle"><div class="shuttle-icon active-shuttle-reverse"></div></div>
+                    <div class="thread-detail">UI Agent &bull; Sidebar with unread badges &bull; 90%</div>
+                  </div>
+                  <div class="weft-row unwoven agent-ui">
+                    <div class="weft-label">Message thread</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                  <div class="weft-row unwoven agent-data">
+                    <div class="weft-label">Search index</div>
+                    <div class="weft-complete"></div>
+                    <div class="weft-shuttle"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="loom-legend">
+              <h4>Loom Legend</h4>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-auth"></div>
+                <span>Auth Agent</span>
+              </div>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-data"></div>
+                <span>Data Agent</span>
+              </div>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-api"></div>
+                <span>API Agent</span>
+              </div>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-ui"></div>
+                <span>UI Agent</span>
+              </div>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-warp"></div>
+                <span>Warp (Timeline)</span>
+              </div>
+              <div class="legend-swatch">
+                <div class="swatch-color swatch-gap"></div>
+                <span>Gap (Awaiting Weaver)</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

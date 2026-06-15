@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TUI ERP — v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+
+  :root {
+    --bg: #0a0a0a;
+    --fg: #c8c8c8;
+    --fg-bright: #ffffff;
+    --fg-dim: #555;
+    --border: #333;
+    --border-bright: #555;
+    --cyan: #00d4d4;
+    --green: #00cc66;
+    --red: #ff4444;
+    --yellow: #ddaa00;
+    --magenta: #cc66ff;
+    --blue: #5599ff;
+    --bg-highlight: rgba(255,255,255,0.04);
+    --bg-active: rgba(0,212,212,0.08);
+  }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-frame {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .experiment-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 24px 20px;
+    overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #888; margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+    font-size: 12px; color: #bbb; font-style: italic;
+  }
+
+  /* ─── Device Preview Switcher ─── */
+  .experiment-content {
+    flex: 1;
+    background: linear-gradient(135deg, #1a1a2e 0%, #0a0a14 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .preview-bar {
+    display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px;
+  }
+  .preview-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+  }
+  .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+  .preview-btn svg { width: 20px; height: 20px; }
+
+  #preview-web:checked ~ .preview-bar label[for="preview-web"],
+  #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+  #preview-full:checked ~ .preview-bar label[for="preview-full"] {
+    background: rgba(255,255,255,0.2); color: white;
+  }
+
+  .window {
+    width: 1360px; height: 820px; background: var(--bg);
+    border-radius: 4px; overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    position: relative;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--fg);
+  }
+
+  #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+  #preview-full:checked ~ .preview-bar {
+    position: absolute; top: 8px; z-index: 100;
+    background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+  }
+  #preview-full:checked ~ .window {
+    width: 100%; height: 100%; border-radius: 0; box-shadow: none;
+  }
+
+  /* ─── TUI: Status Bar ─── */
+  .tui-statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; height: 24px; min-height: 24px;
+    background: #1a1a1a; border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--fg-dim);
+  }
+  .tui-statusbar .app-name { color: var(--cyan); font-weight: 700; }
+  .tui-statusbar .module-indicator { color: var(--cyan); }
+  .tui-statusbar .status-metric { margin-left: 16px; }
+  .tui-statusbar .bar-fill { color: var(--green); }
+  .tui-statusbar .bar-empty { color: #222; }
+  .tui-statusbar .user-info { color: var(--fg-dim); }
+  .tui-statusbar .help-hint { color: var(--yellow); }
+
+  /* ─── TUI: Tab Bar ─── */
+  .tui-tabs {
+    display: flex; align-items: center; height: 26px; min-height: 26px;
+    background: #111; border-bottom: 1px solid var(--border);
+    font-size: 12px; padding: 0;
+  }
+  .tui-tab {
+    padding: 0 14px; height: 100%; display: flex; align-items: center; gap: 6px;
+    border-right: 1px solid var(--border); color: var(--fg-dim); cursor: default;
+  }
+  .tui-tab .key { color: var(--yellow); font-size: 10px; }
+  .tui-tab.active { background: var(--bg); color: var(--cyan); border-bottom: 1px solid var(--cyan); }
+  .tui-tabs .tab-right { margin-left: auto; padding: 0 12px; color: var(--fg-dim); font-size: 11px; }
+  .tui-tabs .tab-right .cmd { color: var(--magenta); }
+
+  /* ─── TUI: Main Area ─── */
+  .tui-main {
+    flex: 1; display: flex; overflow: hidden; min-height: 0;
+  }
+
+  /* ─── TUI: Panels ─── */
+  .tui-panel {
+    display: flex; flex-direction: column; overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+  .tui-panel:last-child { border-right: none; }
+
+  .panel-left { width: 28%; min-width: 200px; }
+  .panel-center { flex: 1; }
+  .panel-right { width: 24%; min-width: 180px; }
+
+  .panel-header {
+    display: flex; align-items: center; padding: 4px 10px;
+    background: #141414; border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--border-bright); min-height: 22px;
+  }
+  .panel-header .ph-title { color: var(--cyan); }
+  .panel-header .ph-key { color: var(--yellow); margin-left: auto; font-weight: 400; font-size: 10px; }
+
+  .panel-body {
+    flex: 1; overflow-y: auto; padding: 6px 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+
+  /* ─── TUI: Sections inside panels ─── */
+  .tui-section {
+    border: 1px solid var(--border); display: flex; flex-direction: column;
+  }
+  .tui-section-header {
+    display: flex; align-items: center; padding: 3px 8px;
+    background: #141414; border-bottom: 1px solid var(--border);
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--fg-dim);
+  }
+  .tui-section-header .sh-title { color: var(--cyan); }
+  .tui-section-header .sh-badge {
+    margin-left: auto; font-size: 9px; padding: 0 5px;
+    border: 1px solid var(--border); color: var(--fg-dim);
+  }
+  .tui-section-body { padding: 6px 8px; font-size: 12px; }
+
+  /* ─── TUI: Metric rows ─── */
+  .metric-row {
+    display: flex; align-items: center; padding: 2px 0; gap: 6px;
+  }
+  .metric-label { flex: 1; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .metric-value { font-weight: 700; color: var(--fg-bright); min-width: 64px; text-align: right; }
+  .metric-trend { font-size: 11px; min-width: 50px; text-align: right; }
+  .trend-up { color: var(--green); }
+  .trend-down { color: var(--red); }
+  .trend-flat { color: var(--yellow); }
+
+  /* ─── TUI: Alert rows ─── */
+  .alert-row { display: flex; gap: 6px; padding: 2px 0; font-size: 12px; }
+  .alert-icon { flex-shrink: 0; }
+  .alert-warn { color: var(--yellow); }
+  .alert-ok { color: var(--green); }
+  .alert-crit { color: var(--red); }
+  .alert-text { color: var(--fg); }
+
+  /* ─── TUI: Action rows ─── */
+  .action-row { display: flex; gap: 6px; padding: 2px 0; font-size: 12px; }
+  .action-key { color: var(--yellow); font-weight: 700; }
+  .action-text { color: var(--fg-dim); }
+
+  /* ─── TUI: ASCII Tables ─── */
+  .tui-table { font-size: 12px; width: 100%; }
+  .tui-table-header {
+    display: flex; padding: 2px 0;
+    border-bottom: 1px solid var(--border-bright);
+    font-weight: 700; color: var(--fg-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 0.04em;
+  }
+  .tui-table-sep {
+    border-bottom: 1px solid var(--border); margin: 0;
+  }
+  .tui-table-row {
+    display: flex; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .tui-table-row:hover { background: var(--bg-highlight); }
+  .tui-table-row.row-crit { background: rgba(255,68,68,0.06); }
+  .tui-table-row.row-crit:hover { background: rgba(255,68,68,0.1); }
+
+  .tcol { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+  .tcol-month { width: 22%; color: var(--fg); }
+  .tcol-mrr { width: 20%; color: var(--fg-bright); font-weight: 600; text-align: right; }
+  .tcol-change { width: 16%; text-align: right; }
+  .tcol-trend { flex: 1; color: var(--cyan); }
+
+  .tcol-age { width: 18%; color: var(--fg); }
+  .tcol-count { width: 14%; text-align: right; color: var(--fg); }
+  .tcol-amount { width: 18%; text-align: right; color: var(--fg-bright); font-weight: 600; }
+  .tcol-bar { flex: 1; }
+  .tcol-status { width: 20%; text-align: right; font-size: 11px; }
+
+  .bar-green { color: var(--green); }
+  .bar-yellow { color: var(--yellow); }
+  .bar-red { color: var(--red); }
+  .bar-dim { color: #222; }
+
+  /* ─── TUI: Activity Log ─── */
+  .log-entry { display: flex; gap: 6px; padding: 2px 0; font-size: 11px; }
+  .log-time { color: var(--fg-dim); min-width: 38px; flex-shrink: 0; }
+  .log-prompt { color: var(--green); flex-shrink: 0; }
+  .log-text { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ─── TUI: Todo ─── */
+  .todo-item { display: flex; gap: 6px; padding: 2px 0; font-size: 12px; }
+  .todo-check { flex-shrink: 0; }
+  .todo-done { color: var(--green); }
+  .todo-open { color: var(--fg-dim); }
+  .todo-text-done { color: var(--fg-dim); text-decoration: line-through; }
+  .todo-text { color: var(--fg); }
+
+  /* ─── TUI: Bottom Bar ─── */
+  .tui-bottombar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; height: 22px; min-height: 22px;
+    background: #1a1a1a; border-top: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .tui-mode {
+    font-weight: 800; padding: 1px 8px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em;
+  }
+  .mode-normal { background: var(--cyan); color: #000; }
+  .mode-visual { background: var(--magenta); color: #000; }
+  .tui-cmdline { color: var(--fg-dim); flex: 1; margin-left: 10px; }
+  .tui-cmdline .cursor { color: var(--fg-bright); animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .tui-hints { color: var(--fg-dim); font-size: 10px; }
+  .tui-hints .hint-key { color: var(--yellow); }
+  .tui-hints .hint-sep { color: #222; margin: 0 6px; }
+
+  /* ─── TUI: Sparkline section ─── */
+  .sparkline { letter-spacing: 1px; }
+  .spark-cyan { color: var(--cyan); }
+  .spark-green { color: var(--green); }
+
+  /* ─── TUI: Inline progress bars ─── */
+  .pbar { letter-spacing: 0; }
+
+  /* ─── TUI: Panel nav hints ─── */
+  .panel-hints {
+    padding: 4px 8px; border-top: 1px solid var(--border);
+    font-size: 10px; color: var(--fg-dim); background: #0e0e0e;
+  }
+  .panel-hints .hint-key { color: var(--yellow); }
+
+  /* ─── TUI: Quick stats inline ─── */
+  .qstat { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+  .qstat-label { color: var(--fg-dim); }
+  .qstat-value { color: var(--fg); }
+  .qstat-live { color: var(--green); }
+
+  /* ─── TUI: Section total ─── */
+  .section-total {
+    display: flex; justify-content: space-between; padding: 4px 0 0;
+    border-top: 1px solid var(--border); font-size: 12px; margin-top: 4px;
+  }
+  .total-label { color: var(--fg-dim); }
+  .total-value { color: var(--fg-bright); font-weight: 700; }
+
+  /* ─── Mobile adjustments ─── */
+  #preview-mobile:checked ~ .window { font-size: 10px; }
+  #preview-mobile:checked ~ .window .tui-main { flex-direction: column; }
+  #preview-mobile:checked ~ .window .tui-panel { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
+  #preview-mobile:checked ~ .window .panel-right { display: none; }
+  #preview-mobile:checked ~ .window .panel-left { max-height: 35%; }
+  #preview-mobile:checked ~ .window .tui-tab { padding: 0 8px; font-size: 10px; }
+  #preview-mobile:checked ~ .window .tui-tabs .tab-right { display: none; }
+
+  /* ─── Sidebar Versions Card ─── */
+  .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+  .experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 6px 10px; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.15); border-radius: 6px; margin-bottom: 6px; }
+  .experiment-sidebar .exp-vc-origin:hover { background: rgba(46, 204, 113, 0.15); text-decoration: none; }
+  .experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+  .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+  .experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+  .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+  .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+</style>
+</head>
+<body>
+
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>TUI ERP</h1>
+      <span class="exp-version">v1</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Reimagines the platform-dashboard ERP as a terminal user interface — monospace type, box-drawing borders, ANSI colors, ASCII data viz, and keyboard shortcuts everywhere. A brutal rejection of modern UI polish in favor of density and muscle memory.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        Let's build a new experiment. Let's build an interface reminscent of a TUI, but with slightly more polish.<br><br>Specifically re-imaging the erp from the platform-dashboard series of experiments, but now inside a TUI experiment. This means many of the patterns we used need to be completely rethought.<br><br>This should be a no holds bar attack on modern design and eschew modern niceties. It needs to be brutally focused on muscle memory and keyboard commands (although they can be non-operational since we will not use js). Go hard.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="tui-erp-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Tab switching & help overlay</span>
+        </a>
+        <a href="tui-erp-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial TUI ERP</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+
+      <!-- ═══ STATUS BAR ═══ -->
+      <div class="tui-statusbar">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span class="app-name">NOVACORP ERP v2.4.1</span>
+          <span class="module-indicator">◉ FINANCE</span>
+          <span class="status-metric"><span class="bar-fill">Load </span><span class="bar-fill">███▓</span><span class="bar-empty">░░</span> 68%</span>
+          <span class="status-metric"><span class="bar-fill">Mem </span><span class="bar-fill">██████▓</span><span class="bar-empty">░</span> 82%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span class="user-info">casey@novacorp</span>
+          <span class="user-info">Session 4h 23m</span>
+          <span style="color:var(--fg)">22:34:18</span>
+          <span class="help-hint">[Ctrl+?]</span>
+        </div>
+      </div>
+
+      <!-- ═══ TAB BAR ═══ -->
+      <div class="tui-tabs">
+        <div class="tui-tab active"><span class="key">F1</span> FINANCE</div>
+        <div class="tui-tab"><span class="key">F2</span> SUPPLY</div>
+        <div class="tui-tab"><span class="key">F3</span> HR</div>
+        <div class="tui-tab"><span class="key">F4</span> SALES</div>
+        <div class="tui-tab"><span class="key">F5</span> INSIGHTS</div>
+        <div class="tab-right"><span class="cmd">:q</span> quit <span style="color:#333;margin:0 6px;">│</span> <span class="cmd">:w</span> save <span style="color:#333;margin:0 6px;">│</span> <span class="cmd">/</span> search</div>
+      </div>
+
+      <!-- ═══ MAIN 3-PANEL LAYOUT ═══ -->
+      <div class="tui-main">
+
+        <!-- ─── LEFT PANEL ─── -->
+        <div class="tui-panel panel-left">
+          <div class="panel-header">
+            <span class="ph-title">Finance Overview</span>
+            <span class="ph-key">[1]</span>
+          </div>
+          <div class="panel-body">
+
+            <!-- Metrics -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Metrics</span>
+                <span class="sh-badge">LIVE</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="metric-row">
+                  <span class="metric-label">Revenue</span>
+                  <span class="metric-value">$12.8M</span>
+                  <span class="metric-trend trend-up">▲ 8.2%</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Accts Recv</span>
+                  <span class="metric-value">$3.1M</span>
+                  <span class="metric-trend trend-down">▲18.4%</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Cash Flow</span>
+                  <span class="metric-value">$1.4M</span>
+                  <span class="metric-trend trend-up">▲12.1%</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Budget Var</span>
+                  <span class="metric-value">-4.2%</span>
+                  <span class="metric-trend trend-flat">→ OK</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Burn Rate</span>
+                  <span class="metric-value">$890K</span>
+                  <span class="metric-trend trend-flat">→</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Runway</span>
+                  <span class="metric-value">14.3mo</span>
+                  <span class="metric-trend trend-up">▲ 2.1</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Alerts</span>
+                <span class="sh-badge">3</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="alert-row">
+                  <span class="alert-icon alert-crit">✗</span>
+                  <span class="alert-text">12 invoices &gt;90d ($800K)</span>
+                </div>
+                <div class="alert-row">
+                  <span class="alert-icon alert-warn">⚠</span>
+                  <span class="alert-text">38 overdue invoices total</span>
+                </div>
+                <div class="alert-row">
+                  <span class="alert-icon alert-warn">⚠</span>
+                  <span class="alert-text">$2.4M cash at risk</span>
+                </div>
+                <div class="alert-row">
+                  <span class="alert-icon alert-ok">✓</span>
+                  <span class="alert-text">January books closed</span>
+                </div>
+                <div class="alert-row">
+                  <span class="alert-icon alert-ok">✓</span>
+                  <span class="alert-text">Tax filing on track</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Actions</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="action-row"><span class="action-key">[r]</span> <span class="action-text">Review accounts receivable</span></div>
+                <div class="action-row"><span class="action-key">[c]</span> <span class="action-text">Cash flow forecast</span></div>
+                <div class="action-row"><span class="action-key">[b]</span> <span class="action-text">Budget variance report</span></div>
+                <div class="action-row"><span class="action-key">[t]</span> <span class="action-text">Open todo list</span></div>
+                <div class="action-row"><span class="action-key">[g]</span> <span class="action-text">General ledger</span></div>
+                <div class="action-row"><span class="action-key">[i]</span> <span class="action-text">Invoice manager</span></div>
+              </div>
+            </div>
+
+            <!-- Sparkline -->
+            <div class="tui-section">
+              <div class="tui-section-header"><span class="sh-title">Revenue 12mo</span></div>
+              <div class="tui-section-body">
+                <div style="font-size:11px;color:var(--fg-dim);margin-bottom:2px;">Feb → Jan</div>
+                <div class="sparkline spark-cyan" style="font-size:16px;letter-spacing:2px;">▁▂▂▃▃▄▅▅▆▆▇█</div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fg-dim);margin-top:2px;">
+                  <span>$9.2M</span><span style="color:var(--green);">$12.8M</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-hints">
+            <span class="hint-key">/</span> search <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">Tab</span> cycle <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">?</span> help
+          </div>
+        </div>
+
+        <!-- ─── CENTER PANEL ─── -->
+        <div class="tui-panel panel-center">
+          <div class="panel-header">
+            <span class="ph-title">Finance Detail</span>
+            <span class="ph-key">[2]</span>
+          </div>
+          <div class="panel-body">
+
+            <!-- Revenue Table -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Revenue Breakdown</span>
+                <span class="sh-badge">MRR</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="tui-table">
+                  <div class="tui-table-header">
+                    <span class="tcol tcol-month">Month</span>
+                    <span class="tcol tcol-mrr">MRR</span>
+                    <span class="tcol tcol-change">Change</span>
+                    <span class="tcol tcol-trend">Trend</span>
+                  </div>
+                  <div class="tui-table-sep"></div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Jan 2026</span>
+                    <span class="tcol tcol-mrr">$12.8M</span>
+                    <span class="tcol tcol-change trend-up">+8.2%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃▄▅▆▇█ ████████</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Dec 2025</span>
+                    <span class="tcol tcol-mrr">$11.8M</span>
+                    <span class="tcol tcol-change trend-up">+6.1%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃▄▅▆▇░ █████▓░░</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Nov 2025</span>
+                    <span class="tcol tcol-mrr">$11.1M</span>
+                    <span class="tcol tcol-change trend-up">+4.8%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃▄▅▆░░ ████▓░░░</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Oct 2025</span>
+                    <span class="tcol tcol-mrr">$10.6M</span>
+                    <span class="tcol tcol-change trend-up">+3.2%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃▄▅░░░ ████░░░░</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Sep 2025</span>
+                    <span class="tcol tcol-mrr">$10.3M</span>
+                    <span class="tcol tcol-change trend-up">+2.8%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃▄░░░░ ███▓░░░░</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-month">Aug 2025</span>
+                    <span class="tcol tcol-mrr">$10.0M</span>
+                    <span class="tcol tcol-change trend-up">+1.4%</span>
+                    <span class="tcol tcol-trend spark-cyan">▁▂▃░░░░░ ███░░░░░</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AR Aging Table -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Accounts Receivable Aging</span>
+                <span class="sh-badge" style="color:var(--red);border-color:var(--red);">ATTN</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="tui-table">
+                  <div class="tui-table-header">
+                    <span class="tcol tcol-age">Age</span>
+                    <span class="tcol tcol-count">Count</span>
+                    <span class="tcol tcol-amount">Amount</span>
+                    <span class="tcol tcol-bar">Collection %</span>
+                    <span class="tcol tcol-status">Status</span>
+                  </div>
+                  <div class="tui-table-sep"></div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-age">0–30 days</span>
+                    <span class="tcol tcol-count">124</span>
+                    <span class="tcol tcol-amount">$1.2M</span>
+                    <span class="tcol tcol-bar"><span class="bar-green">████████████████</span><span class="bar-dim">░░░░</span> 82%</span>
+                    <span class="tcol tcol-status" style="color:var(--green);">OK</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-age">31–60 days</span>
+                    <span class="tcol tcol-count">38</span>
+                    <span class="tcol tcol-amount">$680K</span>
+                    <span class="tcol tcol-bar"><span class="bar-yellow">████████</span><span class="bar-dim">░░░░░░░░░░░░</span> 42%</span>
+                    <span class="tcol tcol-status" style="color:var(--yellow);">WATCH</span>
+                  </div>
+                  <div class="tui-table-row">
+                    <span class="tcol tcol-age">61–90 days</span>
+                    <span class="tcol tcol-count">18</span>
+                    <span class="tcol tcol-amount">$420K</span>
+                    <span class="tcol tcol-bar"><span class="bar-yellow">████</span><span class="bar-dim">░░░░░░░░░░░░░░░░</span> 18%</span>
+                    <span class="tcol tcol-status" style="color:var(--yellow);">WARN</span>
+                  </div>
+                  <div class="tui-table-row row-crit">
+                    <span class="tcol tcol-age" style="color:var(--red);">90+ days ✗</span>
+                    <span class="tcol tcol-count">12</span>
+                    <span class="tcol tcol-amount" style="color:var(--red);">$800K</span>
+                    <span class="tcol tcol-bar"><span class="bar-red">██████████</span><span class="bar-dim">░░░░░░░░░░</span> 52%</span>
+                    <span class="tcol tcol-status" style="color:var(--red);">CRITICAL</span>
+                  </div>
+                </div>
+                <div class="section-total">
+                  <span class="total-label">Total Outstanding</span>
+                  <span class="total-value">$3.1M</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Budget Utilization -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Budget Utilization by Dept</span>
+              </div>
+              <div class="tui-section-body" style="font-size:11px;">
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                  <span style="width:80px;color:var(--fg-dim);">Engineering</span>
+                  <span class="bar-green">████████████████████████████████████</span><span class="bar-dim">░░░░</span>
+                  <span style="color:var(--fg);min-width:32px;text-align:right;">92%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                  <span style="width:80px;color:var(--fg-dim);">Marketing</span>
+                  <span class="bar-yellow">██████████████████████████████</span><span class="bar-dim">░░░░░░░░░░</span>
+                  <span style="color:var(--fg);min-width:32px;text-align:right;">76%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                  <span style="width:80px;color:var(--fg-dim);">Sales</span>
+                  <span class="bar-green">████████████████████████████████████████</span>
+                  <span style="color:var(--fg);min-width:32px;text-align:right;">100%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                  <span style="width:80px;color:var(--fg-dim);">Operations</span>
+                  <span class="bar-green">██████████████████████████████████</span><span class="bar-dim">░░░░░░</span>
+                  <span style="color:var(--fg);min-width:32px;text-align:right;">85%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                  <span style="width:80px;color:var(--fg-dim);">Support</span>
+                  <span class="bar-red">████████████████████████████████████████████</span><span class="bar-dim">░</span>
+                  <span style="color:var(--red);min-width:32px;text-align:right;">108%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="panel-hints">
+            <span class="hint-key">j/k</span> scroll <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">/</span> filter <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">Enter</span> drill-down <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">o</span> open <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">x</span> export
+          </div>
+        </div>
+
+        <!-- ─── RIGHT PANEL ─── -->
+        <div class="tui-panel panel-right">
+          <div class="panel-header">
+            <span class="ph-title">Activity</span>
+            <span class="ph-key">[3]</span>
+          </div>
+          <div class="panel-body">
+
+            <!-- Activity Log -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Recent Log</span>
+                <span class="sh-badge">TAIL</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="log-entry"><span class="log-time">22:31</span><span class="log-prompt">&gt;</span><span class="log-text">Approved inv #4421</span></div>
+                <div class="log-entry"><span class="log-time">22:18</span><span class="log-prompt">&gt;</span><span class="log-text">Budget report gen'd</span></div>
+                <div class="log-entry"><span class="log-time">21:45</span><span class="log-prompt">&gt;</span><span class="log-text">Payment recv $180K</span></div>
+                <div class="log-entry"><span class="log-time">21:12</span><span class="log-prompt">&gt;</span><span class="log-text">AR reminder sent (38)</span></div>
+                <div class="log-entry"><span class="log-time">20:54</span><span class="log-prompt">&gt;</span><span class="log-text">Month-end close init</span></div>
+                <div class="log-entry"><span class="log-time">20:32</span><span class="log-prompt">&gt;</span><span class="log-text">Cash forecast updated</span></div>
+                <div class="log-entry"><span class="log-time">20:01</span><span class="log-prompt">&gt;</span><span class="log-text">Vendor payment batch</span></div>
+                <div class="log-entry"><span class="log-time">19:44</span><span class="log-prompt">&gt;</span><span class="log-text">GL reconciliation OK</span></div>
+              </div>
+            </div>
+
+            <!-- Todo -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">Todo</span>
+                <span class="sh-badge">1/5</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="todo-item"><span class="todo-check todo-done">[✓]</span><span class="todo-text-done">Close January books</span></div>
+                <div class="todo-item"><span class="todo-check todo-open">[ ]</span><span class="todo-text">Approve 12 invoices ($420K)</span></div>
+                <div class="todo-item"><span class="todo-check todo-open">[ ]</span><span class="todo-text">Review Q1 budget</span></div>
+                <div class="todo-item"><span class="todo-check todo-open">[ ]</span><span class="todo-text">Submit tax docs</span></div>
+                <div class="todo-item"><span class="todo-check todo-open">[ ]</span><span class="todo-text">Follow up 90+ day AR</span></div>
+              </div>
+            </div>
+
+            <!-- System -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title">System</span>
+              </div>
+              <div class="tui-section-body">
+                <div class="qstat"><span class="qstat-label">Sessions today</span><span class="qstat-value">24</span></div>
+                <div class="qstat"><span class="qstat-label">Avg response</span><span class="qstat-value">1.2s</span></div>
+                <div class="qstat"><span class="qstat-label">Uptime</span><span class="qstat-value">99.98%</span></div>
+                <div class="qstat"><span class="qstat-label">DB connections</span><span class="qstat-value">48/100</span></div>
+                <div class="qstat"><span class="qstat-label">Cache hit rate</span><span class="qstat-value">94.2%</span></div>
+                <div class="qstat"><span class="qstat-label">Last sync</span><span class="qstat-value qstat-live">● 2s ago</span></div>
+              </div>
+            </div>
+
+            <!-- Cross-module insight -->
+            <div class="tui-section">
+              <div class="tui-section-header">
+                <span class="sh-title" style="color:var(--magenta);">AI Insight</span>
+                <span class="sh-badge" style="color:var(--magenta);border-color:var(--magenta);">NEW</span>
+              </div>
+              <div class="tui-section-body" style="font-size:11px;">
+                <div style="color:var(--fg-dim);margin-bottom:4px;">
+                  <span style="color:var(--cyan);">[FIN]</span>
+                  <span style="color:var(--green);">[SUP]</span>
+                </div>
+                <div style="color:var(--fg);">$2.4M cash at risk tied to 3 suppliers with delayed shipments. 12 invoices &gt;90d correlate with fulfillment drops.</div>
+                <div style="margin-top:6px;">
+                  <span class="action-key">[↑]</span> <span style="color:var(--fg-dim);">useful</span>
+                  <span style="margin-left:8px;"><span class="action-key">[↓]</span> <span style="color:var(--fg-dim);">dismiss</span></span>
+                  <span style="margin-left:8px;"><span class="action-key">[~]</span> <span style="color:var(--fg-dim);">later</span></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="panel-hints">
+            <span class="hint-key">Ctrl+L</span> clear <span style="color:#222;margin:0 4px;">│</span>
+            <span class="hint-key">Space</span> toggle
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ BOTTOM BAR ═══ -->
+      <div class="tui-bottombar">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="tui-mode mode-normal">NORMAL</span>
+          <span class="tui-cmdline">:<span class="cursor">█</span></span>
+        </div>
+        <div class="tui-hints">
+          <span class="hint-key">F1-F5</span> modules
+          <span class="hint-sep">│</span>
+          <span class="hint-key">1-3</span> panels
+          <span class="hint-sep">│</span>
+          <span class="hint-key">Tab</span> cycle
+          <span class="hint-sep">│</span>
+          <span class="hint-key">:</span> command
+          <span class="hint-sep">│</span>
+          <span class="hint-key">/</span> search
+          <span class="hint-sep">│</span>
+          <span class="hint-key">?</span> help
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

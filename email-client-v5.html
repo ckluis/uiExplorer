@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Client — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version { display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Email Client v5 — Production Quality ─── */
+.email-app {
+  display: flex;
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  position: relative;
+  background: #fff;
+}
+
+/* ── Folder Pane ── */
+.folder-pane {
+  width: 220px;
+  min-width: 220px;
+  background: #fafafb;
+  border-right: 1px solid #e8e8eb;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 16px;
+}
+
+.app-logo {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #5b6abf, #8b9cf7);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-logo svg { width: 16px; height: 16px; color: #fff; }
+
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+}
+
+.compose-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 14px 16px;
+  padding: 10px 16px;
+  background: #5b6abf;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(91,106,191,0.3);
+}
+.compose-btn:hover { background: #4a59ae; transform: translateY(-1px); }
+.compose-btn svg { width: 16px; height: 16px; }
+
+.folder-group-label {
+  padding: 16px 20px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 20px;
+  cursor: pointer;
+  color: #666;
+  font-size: 13px;
+  transition: all 0.15s;
+  border-radius: 0;
+  margin: 0;
+}
+.folder-item:hover { background: #ededf0; color: #333; }
+.folder-item .folder-icon { width: 18px; height: 18px; margin-right: 10px; opacity: 0.5; }
+.folder-item .folder-name { flex: 1; }
+.folder-item .folder-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #5b6abf;
+  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+input[name="folder"]:checked + .folder-item {
+  background: #e6e7f0;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+input[name="folder"]:checked + .folder-item .folder-icon { opacity: 1; }
+
+.label-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 20px;
+  font-size: 12px;
+  color: #777;
+  cursor: pointer;
+}
+.label-item:hover { background: #ededf0; }
+.label-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; }
+.label-dot.red { background: #e74c3c; }
+.label-dot.blue { background: #3498db; }
+.label-dot.green { background: #2ecc71; }
+.label-dot.orange { background: #f39c12; }
+
+/* ── Message List ── */
+.message-list-pane {
+  width: 360px;
+  min-width: 360px;
+  border-right: 1px solid #e8e8eb;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.search-bar { padding: 12px 14px; border-bottom: 1px solid #e8e8eb; }
+.search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1px solid #e0e0e3;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+  background: #f5f5f7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 12px center no-repeat;
+  transition: all 0.2s;
+}
+.search-input:focus { outline: none; border-color: #5b6abf; background-color: #fff; box-shadow: 0 0 0 3px rgba(91,106,191,0.1); }
+
+.list-toolbar {
+  padding: 6px 14px;
+  border-bottom: 1px solid #e8e8eb;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #888;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.toolbar-btn:hover { background: #f0f0f2; color: #555; }
+.toolbar-btn svg { width: 14px; height: 14px; }
+.toolbar-sep { width: 1px; height: 16px; background: #e8e8eb; }
+
+#compact-mode:checked ~ .email-app .message-item { padding: 5px 14px; }
+#compact-mode:checked ~ .email-app .msg-avatar { width: 26px; height: 26px; font-size: 10px; }
+#compact-mode:checked ~ .email-app .msg-preview { display: none; }
+#compact-mode:checked ~ .email-app .msg-tags { display: none; }
+#compact-mode:checked ~ .email-app .msg-sender { font-size: 12px; }
+#compact-mode:checked ~ .email-app .msg-subject { font-size: 12px; }
+
+#split-horizontal:checked ~ .email-app { flex-direction: column; }
+#split-horizontal:checked ~ .email-app .folder-pane { display: none; }
+#split-horizontal:checked ~ .email-app .message-list-pane { width: 100%; min-width: 100%; max-height: 42%; border-right: none; border-bottom: 1px solid #e8e8eb; }
+#split-horizontal:checked ~ .email-app .message-list { display: flex; flex-wrap: wrap; }
+#split-horizontal:checked ~ .email-app .message-item { width: 50%; }
+
+.message-list-header {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+.msg-count { font-size: 11px; color: #aaa; font-weight: 400; }
+.message-list { flex: 1; overflow-y: auto; }
+
+.message-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-bottom: 1px solid #f2f2f4;
+  cursor: pointer;
+  transition: background 0.12s;
+  gap: 10px;
+}
+.message-item:hover { background: #f8f8fa; }
+
+.msg-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  transition: all 0.2s;
+}
+.avatar-sc { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.avatar-ar { background: linear-gradient(135deg, #3498db, #2980b9); }
+.avatar-jl { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+.avatar-mt { background: linear-gradient(135deg, #f39c12, #e67e22); }
+.avatar-ck { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+.avatar-pj { background: linear-gradient(135deg, #1abc9c, #16a085); }
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1px; }
+.msg-sender { font-weight: 600; font-size: 13px; color: #333; letter-spacing: -0.01em; }
+.msg-time { font-size: 11px; color: #bbb; flex-shrink: 0; font-weight: 400; }
+.msg-subject-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.msg-subject { font-size: 13px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+.msg-preview { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+.msg-unread .msg-sender { color: #000; font-weight: 700; }
+.msg-unread .msg-subject { font-weight: 600; color: #1a1a1a; }
+.msg-unread .msg-time { color: #5b6abf; font-weight: 500; }
+.msg-thread { display: inline-flex; align-items: center; font-size: 10px; color: #5b6abf; background: rgba(91,106,191,0.08); padding: 1px 6px; border-radius: 3px; font-weight: 600; flex-shrink: 0; }
+.msg-tags { display: flex; gap: 4px; margin-top: 4px; }
+.msg-tag { font-size: 10px; padding: 1px 7px; border-radius: 4px; font-weight: 500; letter-spacing: 0.01em; }
+.msg-tag.tag-urgent { background: rgba(231,76,60,0.08); color: #c0392b; }
+.msg-tag.tag-project { background: rgba(52,152,219,0.08); color: #2980b9; }
+.msg-tag.tag-review { background: rgba(46,204,113,0.08); color: #27ae60; }
+.msg-tag.tag-finance { background: rgba(243,156,18,0.08); color: #d35400; }
+
+.star-label { flex-shrink: 0; cursor: pointer; color: #ddd; margin-top: 3px; transition: color 0.15s; }
+.star-label:hover { color: #f1c40f; }
+.star-label svg { width: 16px; height: 16px; }
+input[id^="star-"]:checked + .message-item .star-label { color: #f1c40f; }
+input[id^="star-"]:checked + .message-item .star-label svg { fill: #f1c40f; }
+input[name="message"]:checked + input[id^="star-"] + .message-item { background: #eef0ff; border-left: 3px solid #5b6abf; padding-left: 11px; }
+
+/* ── Reading Pane ── */
+.reading-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fdfdfe;
+}
+
+.reading-header {
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid #e8e8eb;
+  background: #fff;
+}
+.reading-subject {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 8px;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+.reading-tags { display: flex; gap: 6px; margin-bottom: 14px; }
+.reading-tag { font-size: 11px; padding: 3px 10px; border-radius: 5px; font-weight: 500; }
+.reading-tag.tag-urgent { background: rgba(231,76,60,0.08); color: #c0392b; }
+.reading-tag.tag-project { background: rgba(52,152,219,0.08); color: #2980b9; }
+.reading-tag.tag-review { background: rgba(46,204,113,0.08); color: #27ae60; }
+.reading-tag.tag-finance { background: rgba(243,156,18,0.08); color: #d35400; }
+
+.reading-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #888;
+}
+.reading-meta-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.reading-sender-name { font-weight: 600; color: #1a1a1a; }
+.reading-email { color: #aaa; font-size: 12px; }
+.reading-date { color: #bbb; font-size: 12px; margin-left: auto; }
+
+.reading-actions {
+  display: flex;
+  gap: 6px;
+  padding: 12px 32px;
+  border-bottom: 1px solid #f0f0f2;
+  background: #fff;
+}
+.reading-action-btn {
+  padding: 6px 14px;
+  border: 1px solid #e5e5e7;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+.reading-action-btn:hover { background: #f5f5f7; border-color: #ccc; color: #333; }
+.reading-action-btn svg { width: 14px; height: 14px; }
+
+.reading-body {
+  padding: 28px 32px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #333;
+  max-width: 680px;
+}
+.reading-body p { margin-bottom: 16px; }
+
+.thread-msg { border-top: 1px solid #e8e8eb; padding: 24px 32px; }
+.thread-msg .thread-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 13px; }
+.thread-msg .thread-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; }
+.thread-msg .thread-sender { font-weight: 600; color: #1a1a1a; }
+.thread-msg .thread-date { font-size: 12px; color: #bbb; }
+.thread-msg .thread-body { font-size: 14px; line-height: 1.75; color: #555; padding-left: 38px; max-width: 640px; }
+.thread-msg .thread-body p { margin-bottom: 12px; }
+
+.reading-content { display: none; }
+#msg-1:checked ~ .reading-pane .reading-content.rc-1 { display: block; }
+#msg-2:checked ~ .reading-pane .reading-content.rc-2 { display: block; }
+#msg-3:checked ~ .reading-pane .reading-content.rc-3 { display: block; }
+#msg-4:checked ~ .reading-pane .reading-content.rc-4 { display: block; }
+#msg-5:checked ~ .reading-pane .reading-content.rc-5 { display: block; }
+#msg-6:checked ~ .reading-pane .reading-content.rc-6 { display: block; }
+.reading-content.rc-1 { display: block; }
+
+input[name="message"], input[name="folder"], input[id^="star-"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ── Compose Overlay — Rich ── */
+#compose-toggle { position: absolute; opacity: 0; pointer-events: none; }
+.compose-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 520px;
+  height: 480px;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
+  display: none;
+  flex-direction: column;
+  z-index: 50;
+}
+#compose-toggle:checked ~ .compose-overlay { display: flex; }
+
+.compose-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #2c2c3a;
+  color: #fff;
+  border-radius: 12px 12px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.compose-close { cursor: pointer; color: rgba(255,255,255,0.6); font-size: 20px; line-height: 1; transition: color 0.15s; }
+.compose-close:hover { color: #fff; }
+
+.compose-fields {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid #f0f0f2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.compose-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f5f5f7;
+}
+.compose-field span { color: #aaa; min-width: 50px; font-size: 12px; font-weight: 500; }
+.compose-field .field-value { flex: 1; color: #333; }
+
+/* Rich formatting toolbar */
+.compose-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 18px;
+  border-bottom: 1px solid #f0f0f2;
+  background: #fafafb;
+}
+.compose-tool {
+  width: 30px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #888;
+  transition: all 0.15s;
+}
+.compose-tool:hover { background: #e8e8f0; color: #555; }
+.compose-tool svg { width: 15px; height: 15px; }
+.compose-tool-sep { width: 1px; height: 18px; background: #e5e5e7; margin: 0 4px; }
+
+.compose-body-area {
+  flex: 1;
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #888;
+  font-style: italic;
+}
+
+.compose-footer {
+  padding: 12px 18px;
+  border-top: 1px solid #f0f0f2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.send-btn {
+  padding: 9px 28px;
+  background: #5b6abf;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 6px rgba(91,106,191,0.25);
+}
+.send-btn:hover { background: #4a59ae; transform: translateY(-1px); }
+.compose-footer-actions { display: flex; gap: 8px; margin-left: auto; }
+.compose-footer-btn { color: #aaa; cursor: pointer; padding: 4px; transition: color 0.15s; }
+.compose-footer-btn:hover { color: #666; }
+.compose-footer-btn svg { width: 18px; height: 18px; }
+
+/* ─── Mobile ─── */
+#preview-mobile:checked ~ .window .folder-pane { display: none; }
+#preview-mobile:checked ~ .window .message-list-pane { width: 100%; min-width: 100%; }
+#preview-mobile:checked ~ .window .reading-pane { display: none; }
+#preview-mobile:checked ~ .window .compose-overlay { width: 100%; height: 100%; border-radius: 0; }
+#preview-mobile:checked ~ .window .message-item { padding: 10px 12px; }
+#preview-mobile:checked ~ .window .search-input { font-size: 15px; padding: 10px 12px 10px 36px; }
+</style>
+</head>
+<body>
+
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Email Client</h1>
+      <span class="exp-version">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality refinement: rich formatting toolbar in compose, polished typography with tighter letter-spacing, gradient avatars, action buttons in reading pane (Reply, Forward, Archive), improved visual hierarchy and spacing throughout.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v5: Add a rich formatting toolbar to the compose overlay (bold, italic, underline, lists, link, attach). Refine typography across the entire app with tighter letter-spacing, improved font weights, and better visual hierarchy. Add gradient backgrounds to avatars. Add action buttons (Reply, Forward, Archive) below the reading pane header. Add an app logo next to the title. Polish all spacing, borders, and shadow values to production quality.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="email-client-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Formatting toolbar</span>
+        </a>
+        <a href="email-client-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Compact mode</span>
+        </a>
+        <a href="email-client-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Conversation threading</span>
+        </a>
+        <a href="email-client-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Star/flag checkboxes</span>
+        </a>
+        <a href="email-client-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 3-pane layout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <div class="window">
+      <input type="checkbox" id="compact-mode">
+      <input type="checkbox" id="split-horizontal">
+
+      <div class="email-app">
+        <input type="radio" name="message" id="msg-1" checked>
+        <input type="checkbox" id="star-1">
+        <input type="radio" name="message" id="msg-2">
+        <input type="checkbox" id="star-2">
+        <input type="radio" name="message" id="msg-3">
+        <input type="checkbox" id="star-3">
+        <input type="radio" name="message" id="msg-4">
+        <input type="checkbox" id="star-4">
+        <input type="radio" name="message" id="msg-5">
+        <input type="checkbox" id="star-5">
+        <input type="radio" name="message" id="msg-6">
+        <input type="checkbox" id="star-6">
+        <input type="checkbox" id="compose-toggle">
+
+        <!-- Folder Pane -->
+        <div class="folder-pane">
+          <div class="app-header">
+            <div class="app-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 8 12 14 22 8"/></svg></div>
+            <div class="app-title">Mail</div>
+          </div>
+          <label for="compose-toggle" class="compose-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Compose
+          </label>
+
+          <input type="radio" name="folder" id="folder-inbox" checked>
+          <label for="folder-inbox" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2 8 12 14 22 8"/></svg><span class="folder-name">Inbox</span><span class="folder-count">3</span></label>
+          <input type="radio" name="folder" id="folder-starred">
+          <label for="folder-starred" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="folder-name">Starred</span></label>
+          <input type="radio" name="folder" id="folder-sent">
+          <label for="folder-sent" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span class="folder-name">Sent</span></label>
+          <input type="radio" name="folder" id="folder-drafts">
+          <label for="folder-drafts" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="folder-name">Drafts</span><span class="folder-count">1</span></label>
+          <input type="radio" name="folder" id="folder-trash">
+          <label for="folder-trash" class="folder-item"><svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="folder-name">Trash</span></label>
+
+          <div class="folder-group-label">Labels</div>
+          <div class="label-item"><span class="label-dot red"></span>Urgent</div>
+          <div class="label-item"><span class="label-dot blue"></span>Project</div>
+          <div class="label-item"><span class="label-dot green"></span>Review</div>
+          <div class="label-item"><span class="label-dot orange"></span>Finance</div>
+        </div>
+
+        <!-- Message List -->
+        <div class="message-list-pane">
+          <div class="search-bar">
+            <div class="search-input">Search mail...</div>
+          </div>
+          <div class="list-toolbar">
+            <label for="compact-mode" class="toolbar-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              Compact
+            </label>
+            <span class="toolbar-sep"></span>
+            <label for="split-horizontal" class="toolbar-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+              Split
+            </label>
+          </div>
+          <div class="message-list-header"><span>Inbox</span><span class="msg-count">6 messages</span></div>
+          <div class="message-list">
+            <label for="msg-1" class="message-item msg-unread">
+              <div class="msg-avatar avatar-sc">SC</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Sarah Chen</span><span class="msg-time">10:23 AM</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Q4 Product Roadmap Review</span><span class="msg-thread">3</span></div>
+                <div class="msg-preview">Hi team, I've attached the updated roadmap for Q4. Please review before...</div>
+                <div class="msg-tags"><span class="msg-tag tag-urgent">Urgent</span><span class="msg-tag tag-project">Project</span></div>
+              </div>
+              <label for="star-1" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-2" class="message-item msg-unread">
+              <div class="msg-avatar avatar-ar">AR</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Alex Rivera</span><span class="msg-time">9:45 AM</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Design System Updates</span></div>
+                <div class="msg-preview">The new component library is ready for review. I've pushed the changes...</div>
+                <div class="msg-tags"><span class="msg-tag tag-review">Review</span></div>
+              </div>
+              <label for="star-2" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-3" class="message-item msg-unread">
+              <div class="msg-avatar avatar-jl">JL</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Jordan Lee</span><span class="msg-time">9:12 AM</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Re: Sprint Planning Notes</span><span class="msg-thread">2</span></div>
+                <div class="msg-preview">Sounds good! I'll prepare the backlog items and have them ready by...</div>
+                <div class="msg-tags"><span class="msg-tag tag-project">Project</span></div>
+              </div>
+              <label for="star-3" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-4" class="message-item">
+              <div class="msg-avatar avatar-mt">MT</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Morgan Taylor</span><span class="msg-time">Yesterday</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Weekly Team Sync Agenda</span></div>
+                <div class="msg-preview">Here's the agenda for tomorrow's sync. Let me know if you'd like to add...</div>
+              </div>
+              <label for="star-4" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-5" class="message-item">
+              <div class="msg-avatar avatar-ck">CK</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Casey Kim</span><span class="msg-time">Yesterday</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Client Feedback Summary</span></div>
+                <div class="msg-preview">I've compiled the feedback from last week's client demos. Overall positive...</div>
+                <div class="msg-tags"><span class="msg-tag tag-review">Review</span></div>
+              </div>
+              <label for="star-5" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+            <label for="msg-6" class="message-item">
+              <div class="msg-avatar avatar-pj">PJ</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-sender">Pat Johnson</span><span class="msg-time">Mon</span></div>
+                <div class="msg-subject-row"><span class="msg-subject">Infrastructure Cost Report</span></div>
+                <div class="msg-preview">Attached is the monthly infrastructure cost breakdown. Cloud costs are...</div>
+                <div class="msg-tags"><span class="msg-tag tag-finance">Finance</span></div>
+              </div>
+              <label for="star-6" class="star-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></label>
+            </label>
+          </div>
+        </div>
+
+        <!-- Reading Pane -->
+        <div class="reading-pane">
+          <div class="reading-content rc-1">
+            <div class="reading-header">
+              <div class="reading-subject">Q4 Product Roadmap Review</div>
+              <div class="reading-tags"><span class="reading-tag tag-urgent">Urgent</span><span class="reading-tag tag-project">Project</span></div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-sc">SC</div>
+                <div>
+                  <div class="reading-sender-name">Sarah Chen</div>
+                  <div class="reading-email">sarah.chen@company.com</div>
+                </div>
+                <span class="reading-date">Today at 10:23 AM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Hi team,</p>
+              <p>I've attached the updated roadmap for Q4. There are a few key changes from our last planning session that I wanted to highlight:</p>
+              <p>1. The search feature has been moved up to Sprint 3 based on customer feedback priority.<br>
+              2. We're adding a new onboarding flow initiative starting in October.<br>
+              3. The API v2 migration timeline has been extended by two weeks.</p>
+              <p>Please review the document before our Thursday meeting so we can finalize priorities. I'd especially like input on the resource allocation for the onboarding project.</p>
+              <p>Best,<br>Sarah</p>
+            </div>
+            <div class="thread-msg">
+              <div class="thread-meta">
+                <div class="thread-avatar avatar-jl">JL</div>
+                <span class="thread-sender">Jordan Lee</span>
+                <span class="thread-date">Today at 10:45 AM</span>
+              </div>
+              <div class="thread-body">
+                <p>Thanks Sarah. The Sprint 3 move for search makes sense given the customer data. I'll adjust the engineering estimates accordingly.</p>
+                <p>One concern: the onboarding flow might conflict with the auth refactor we planned. Can we discuss?</p>
+              </div>
+            </div>
+            <div class="thread-msg">
+              <div class="thread-meta">
+                <div class="thread-avatar avatar-ar">AR</div>
+                <span class="thread-sender">Alex Rivera</span>
+                <span class="thread-date">Today at 11:02 AM</span>
+              </div>
+              <div class="thread-body">
+                <p>+1 on Jordan's point about the auth refactor. I'd also suggest we scope the onboarding flow more tightly for the first iteration. Happy to help with the design spec.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="reading-content rc-2">
+            <div class="reading-header">
+              <div class="reading-subject">Design System Updates</div>
+              <div class="reading-tags"><span class="reading-tag tag-review">Review</span></div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-ar">AR</div>
+                <div><div class="reading-sender-name">Alex Rivera</div><div class="reading-email">alex.rivera@company.com</div></div>
+                <span class="reading-date">Today at 9:45 AM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Hey,</p>
+              <p>The new component library is ready for review. I've pushed the changes to the staging environment and here's what's new:</p>
+              <p>- Updated button styles with better contrast ratios (WCAG AA compliant)<br>- New modal component with focus trap support<br>- Revised color tokens for dark mode compatibility<br>- Added 12 new icons to the icon set</p>
+              <p>You can preview everything at staging.designsystem.internal. Let me know if you spot any issues!</p>
+              <p>Cheers,<br>Alex</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-3">
+            <div class="reading-header">
+              <div class="reading-subject">Re: Sprint Planning Notes</div>
+              <div class="reading-tags"><span class="reading-tag tag-project">Project</span></div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-jl">JL</div>
+                <div><div class="reading-sender-name">Jordan Lee</div><div class="reading-email">jordan.lee@company.com</div></div>
+                <span class="reading-date">Today at 9:12 AM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Sounds good! I'll prepare the backlog items and have them ready by Thursday.</p>
+              <p>A couple of things to consider for the sprint:</p>
+              <p>- We still have 3 carry-over items from last sprint that need to be re-estimated<br>- The QA team requested we allocate more time for regression testing<br>- I think we should discuss the tech debt items during planning</p>
+              <p>See you Thursday!<br>Jordan</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-4">
+            <div class="reading-header">
+              <div class="reading-subject">Weekly Team Sync Agenda</div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-mt">MT</div>
+                <div><div class="reading-sender-name">Morgan Taylor</div><div class="reading-email">morgan.taylor@company.com</div></div>
+                <span class="reading-date">Yesterday at 4:30 PM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Hi everyone,</p>
+              <p>Here's the agenda for tomorrow's sync:</p>
+              <p>1. Sprint progress check-in (10 min)<br>2. Blocker discussion (15 min)<br>3. Demo: new search feature prototype (10 min)<br>4. Open floor (10 min)</p>
+              <p>Let me know if you'd like to add anything. See you all at 2pm!</p>
+              <p>Morgan</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-5">
+            <div class="reading-header">
+              <div class="reading-subject">Client Feedback Summary</div>
+              <div class="reading-tags"><span class="reading-tag tag-review">Review</span></div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-ck">CK</div>
+                <div><div class="reading-sender-name">Casey Kim</div><div class="reading-email">casey.kim@company.com</div></div>
+                <span class="reading-date">Yesterday at 2:15 PM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Hey team,</p>
+              <p>I've compiled the feedback from last week's client demos. Overall positive reception with a few recurring themes:</p>
+              <p><strong>What they loved:</strong><br>- The new dashboard layout<br>- Export functionality<br>- Improved loading performance</p>
+              <p><strong>Requested improvements:</strong><br>- More granular date range filters<br>- Bulk action support<br>- Mobile responsiveness</p>
+              <p>I'll create tickets for the improvement items. Let's discuss priority in our next planning session.</p>
+              <p>Casey</p>
+            </div>
+          </div>
+
+          <div class="reading-content rc-6">
+            <div class="reading-header">
+              <div class="reading-subject">Infrastructure Cost Report</div>
+              <div class="reading-tags"><span class="reading-tag tag-finance">Finance</span></div>
+              <div class="reading-meta">
+                <div class="reading-meta-avatar avatar-pj">PJ</div>
+                <div><div class="reading-sender-name">Pat Johnson</div><div class="reading-email">pat.johnson@company.com</div></div>
+                <span class="reading-date">Monday at 11:00 AM</span>
+              </div>
+            </div>
+            <div class="reading-actions">
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg> Forward</div>
+              <div class="reading-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg> Archive</div>
+            </div>
+            <div class="reading-body">
+              <p>Hi all,</p>
+              <p>Attached is the monthly infrastructure cost breakdown. Here are the highlights:</p>
+              <p>- Total cloud spend: $42,300 (down 8% from last month)<br>- The database optimization work saved us ~$3,200/month<br>- CDN costs increased slightly due to higher traffic<br>- We're on track to hit our annual budget target</p>
+              <p>The reserved instance purchases we made last quarter are paying off. I recommend we continue with the same strategy for Q4.</p>
+              <p>Let me know if you have questions.</p>
+              <p>Pat</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compose Overlay with Rich Toolbar -->
+        <div class="compose-overlay">
+          <div class="compose-header"><span>New Message</span><label for="compose-toggle" class="compose-close">&times;</label></div>
+          <div class="compose-fields">
+            <div class="compose-field"><span>To</span><div class="field-value"></div></div>
+            <div class="compose-field"><span>Cc</span><div class="field-value"></div></div>
+            <div class="compose-field"><span>Subject</span><div class="field-value"></div></div>
+          </div>
+          <div class="compose-toolbar">
+            <!-- Bold -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></div>
+            <!-- Italic -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></div>
+            <!-- Underline -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></div>
+            <div class="compose-tool-sep"></div>
+            <!-- Bullet list -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+            <!-- Numbered list -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></div>
+            <div class="compose-tool-sep"></div>
+            <!-- Link -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            <!-- Attach -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
+            <!-- Image -->
+            <div class="compose-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+          <div class="compose-body-area">Compose your message...</div>
+          <div class="compose-footer">
+            <label for="compose-toggle" class="send-btn">Send</label>
+            <div class="compose-footer-actions">
+              <div class="compose-footer-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

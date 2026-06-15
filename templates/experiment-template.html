@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{EXPERIMENT_NAME}} — {{VERSION}} · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:#0a0c10; --surface-1:#0f1217; --surface-2:#141821; --surface-3:#1a1f2a;
+  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.13);
+  --ink:#e6e9ef; --ink-dim:#9aa4b2; --ink-faint:#6b7480;
+  --accent:#2ee6c6; --accent-2:#38bdf8; --accent-dim:rgba(46,230,198,0.12); --accent-line:rgba(46,230,198,0.30);
+  --opus:#e5a63b; --sonnet:#8b9cf7; --haiku:#5ec4d4; --auto:#f5a623; --orig:#2ecc71;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+
+/* ─── Frame ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Experiment Info Sidebar — Lab Instrument ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--surface-1);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+.experiment-sidebar a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: rgba(245,166,35,0.12);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Model Badge ─── */
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku);  }
+
+/* ─── Run-metadata row (effort + harness chips) ─── */
+.experiment-sidebar .exp-runmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.experiment-sidebar .exp-effort,
+.experiment-sidebar .exp-harness {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  background: rgba(255,255,255,0.03);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-effort::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-faint); }
+
+/* ─── Sections ─── */
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0 0 10px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-family: var(--sans);
+}
+
+.experiment-sidebar .exp-prompt {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── AskUserQuestion Visualization — Lab Instrument ─── */
+.experiment-sidebar .exp-ask {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.experiment-sidebar .exp-ask-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: var(--ink);
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px;
+  color: var(--ink-dim);
+  padding: 6px 8px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
+
+/* ─── Agent Trace — Lab Instrument ─── */
+.experiment-sidebar .exp-at-workflow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.experiment-sidebar .exp-agent-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.experiment-sidebar .exp-at-entry {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--line-strong);
+}
+.experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
+.experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
+.experiment-sidebar .exp-at-entry.haiku  { border-left-color: var(--haiku); }
+
+.experiment-sidebar .exp-at-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.experiment-sidebar .exp-at-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.experiment-sidebar .exp-at-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-at-model.opus   { background: rgba(229,166,59,0.15);  color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: rgba(94,196,212,0.15);  color: var(--haiku); }
+
+.experiment-sidebar .exp-at-action {
+  font-size: 11px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+}
+
+.experiment-sidebar .exp-at-arrow {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Agent Trace: Duration Badge ─── */
+.experiment-sidebar .exp-at-duration {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.05);
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Agent Trace: Effort chip ─── */
+.experiment-sidebar .exp-at-effort {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  background: rgba(255,255,255,0.03);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-at-effort::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-faint); }
+
+/* ─── Agent Trace: Hover Timestamps ─── */
+.experiment-sidebar .exp-at-times {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.experiment-sidebar .exp-at-entry:hover .exp-at-times {
+  max-height: 40px;
+  opacity: 1;
+  margin-top: 4px;
+}
+.experiment-sidebar .exp-at-time-row {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  padding: 3px 0;
+}
+.experiment-sidebar .exp-at-time-label { color: var(--ink-faint); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-dim); }
+
+/* ─── Agent Trace: Full Prompt Toggle ─── */
+.experiment-sidebar input[id^="at-prompt-"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle:hover {
+  background: rgba(46,230,198,0.2);
+  color: var(--ink);
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
+  background: rgba(46,230,198,0.25);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+.experiment-sidebar .exp-at-prompt-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  padding: 0;
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
+  max-height: 800px;
+  opacity: 1;
+  padding-top: 6px;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar { width: 4px; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb { background: var(--accent-line); border-radius: 2px; }
+.experiment-sidebar .exp-at-prompt-panel-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* ─── Sidebar Versions Card — Lab Instrument ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46,204,113,0.15); text-decoration: none; }
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+}
+.experiment-sidebar .exp-vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 26px;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-dim); }
+
+/* Model indicator in versions card */
+.experiment-sidebar .exp-vc-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-vc-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku); }
+
+/* ─── Experiment Content + Device Preview Switcher — Lab Instrument ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg,#0d1016,#121722);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink-faint);
+  transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: var(--ink-dim); background: rgba(255,255,255,0.06); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(0,0,0,0.5);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px;
+}
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* hide preview radios */
+input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ EXPERIMENT INFO SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>{{EXPERIMENT_NAME}}</h1>
+      <span class="exp-version">{{VERSION}}</span>
+      <span class="exp-model {{MODEL_CLASS}}">{{MODEL}}</span>
+      <!-- Add only if fully autonomous: -->
+      <!-- <span class="exp-autonomous">Fully Autonomous</span> -->
+
+      <!-- Run metadata: effort dot (high/medium/low) + harness chip -->
+      <div class="exp-runmeta">
+        <span class="exp-effort {{EFFORT_CLASS}}">{{EFFORT}}</span>
+        <span class="exp-harness">Claude Code</span>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>{{PURPOSE}}</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        {{PROMPT}}
+
+        <!-- ── AskUserQuestion interaction block — uncomment one per interaction ──
+        <div class="exp-ask">
+          <div class="exp-ask-label">AskUserQuestion</div>
+          <div class="exp-ask-question">{{QUESTION}}</div>
+          <div class="exp-ask-options">
+            <div class="exp-ask-option">{{OPTION_1}} — description</div>
+            <div class="exp-ask-option">{{OPTION_2}} — description</div>
+            <div class="exp-ask-option selected">{{SELECTED_OPTION}}</div>
+          </div>
+          <div class="exp-ask-answer"><strong>Answer:</strong> {{ANSWER_TEXT}}</div>
+        </div>
+        ── end AskUserQuestion block ── -->
+      </div>
+    </div>
+
+    <!-- Agent Trace — always include; documents all agents used during creation -->
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">{{WORKFLOW}}</div>
+      <div class="exp-agent-trace">
+
+        <div class="exp-at-entry {{AT_MODEL_CLASS}}">
+          <div class="exp-at-header">
+            <span class="exp-at-role">{{AT_ROLE}}</span>
+            <span class="exp-at-duration">{{AT_DURATION}}</span>
+            <span class="exp-at-effort {{AT_EFFORT_CLASS}}">{{AT_EFFORT}}</span>
+            <span class="exp-at-model {{AT_MODEL_CLASS}}">{{AT_MODEL}}</span>
+          </div>
+          <div class="exp-at-action">{{AT_ACTION}}</div>
+          <div class="exp-at-times">
+            <div class="exp-at-time-row">
+              <span class="exp-at-time-label">Start</span>
+              <span class="exp-at-time-value">{{AT_START}}</span>
+              <span class="exp-at-time-label">End</span>
+              <span class="exp-at-time-value">{{AT_END}}</span>
+            </div>
+          </div>
+          <!-- Full prompt toggle: checkbox ID must be unique within the file -->
+          <input type="checkbox" id="at-prompt-1">
+          <label for="at-prompt-1" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel">
+            <div class="exp-at-prompt-panel-inner">
+              <div class="exp-at-prompt-panel-label">Full Prompt</div>
+              {{AT_FULL_PROMPT}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Repeat for each agent, separated by: <div class="exp-at-arrow">↓</div> -->
+
+      </div>
+    </div>
+
+    <!-- Versions card — always include -->
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <!-- For origination series only: -->
+        <!-- <a href="{{FAMILY}}.html" class="exp-vc-origin">Origination Prompt →</a> -->
+        <!-- Most recent first; current version has class="current" -->
+        <a href="{{CURRENT_FILE}}" class="exp-vc-entry current">
+          <span class="exp-vc-v">{{VERSION}}</span>
+          <span class="exp-vc-desc">{{VERSION_DESC}}</span>
+          <span class="exp-vc-model {{MODEL_CLASS}}">{{MODEL_SHORT}}</span>
+        </a>
+        <!-- Add prior versions below, e.g.:
+        <a href="experiment-name-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial version</span>
+          <span class="exp-vc-model sonnet">Sonnet</span>
+        </a>
+        -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ EXPERIMENT CONTENT (device preview) ════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- {{EXPERIMENT_CONTENT}} -->
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing Page — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-autonomous {
+  display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fafafe; border-radius: 12px; overflow-y: auto; overflow-x: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Pricing Page v5 — Production Quality ─── */
+.pricing {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1a1a2e;
+}
+
+/* Hero Section */
+.pricing-hero {
+  text-align: center;
+  padding: 72px 40px 48px;
+  background: linear-gradient(180deg, #f0eeff 0%, #fafafe 100%);
+  position: relative;
+  overflow: hidden;
+}
+.pricing-hero::before {
+  content: '';
+  position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(108,92,231,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.pricing-hero h2 {
+  font-size: 44px; font-weight: 800; margin-bottom: 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #6c5ce7 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.pricing-hero .subtitle {
+  font-size: 18px; color: #666; margin-bottom: 36px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.6;
+}
+
+/* Toggle */
+.toggle-wrap {
+  display: inline-flex; align-items: center; gap: 14px;
+  font-size: 14px; font-weight: 500; color: #555;
+  background: #fff; padding: 8px 20px; border-radius: 50px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.toggle-track {
+  width: 52px; height: 28px; background: #ddd; border-radius: 14px;
+  position: relative; cursor: pointer; transition: background 0.3s;
+}
+.toggle-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#billing-toggle:checked ~ .window .toggle-track {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+}
+#billing-toggle:checked ~ .window .toggle-track::after { transform: translateX(24px); }
+.save-badge {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #1b5e20;
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;
+}
+
+/* Cards Section */
+.cards-section { padding: 48px 40px 64px; }
+.cards { display: flex; gap: 24px; justify-content: center; max-width: 1060px; margin: 0 auto; }
+.card {
+  flex: 1; max-width: 340px; background: #fff; border: 1px solid #e8e8ee;
+  border-radius: 20px; padding: 40px 32px; text-align: left;
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), box-shadow 0.4s cubic-bezier(0.4,0,0.2,1),
+              border-color 0.3s;
+  position: relative;
+}
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.1);
+  border-color: #d4d0f0;
+}
+.card.popular {
+  border: 2px solid #6c5ce7;
+  background: linear-gradient(180deg, #fafaff 0%, #fff 100%);
+  box-shadow: 0 8px 40px rgba(108,92,231,0.12);
+}
+.card.popular:hover {
+  box-shadow: 0 24px 64px rgba(108,92,231,0.2);
+  transform: translateY(-12px);
+}
+.popular-badge {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, #6c5ce7, #a855f7); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 6px 18px; border-radius: 20px;
+  white-space: nowrap; box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+  letter-spacing: 0.02em;
+}
+.card-tier {
+  font-size: 13px; font-weight: 700; color: #6c5ce7; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 12px;
+}
+.card-price {
+  font-size: 52px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+.card-price span { font-size: 16px; font-weight: 500; color: #999; letter-spacing: 0; }
+.card-desc { font-size: 14px; color: #888; margin-bottom: 28px; line-height: 1.6; }
+.price-annual { display: none; }
+#billing-toggle:checked ~ .window .price-monthly { display: none; }
+#billing-toggle:checked ~ .window .price-annual { display: block; }
+
+.card-features { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+.card-features li { font-size: 14px; color: #555; padding-left: 28px; position: relative; line-height: 1.4; }
+.card-features li::before {
+  content: ''; position: absolute; left: 0; top: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+}
+.card-features li::after {
+  content: ''; position: absolute; left: 5px; top: 8px;
+  width: 8px; height: 5px; border-left: 2px solid #2e7d32;
+  border-bottom: 2px solid #2e7d32; transform: rotate(-45deg);
+}
+.card-cta {
+  display: block; width: 100%; padding: 15px; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  text-align: center; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.card-cta:hover { transform: translateY(-2px); }
+.cta-primary {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7); color: #fff;
+  box-shadow: 0 4px 16px rgba(108,92,231,0.3);
+}
+.cta-primary:hover { box-shadow: 0 8px 24px rgba(108,92,231,0.4); }
+.cta-outline { background: #fff; color: #6c5ce7; border: 2px solid #d4d0f0; }
+.cta-outline:hover { background: #f8f7ff; border-color: #6c5ce7; }
+.cta-dark {
+  background: linear-gradient(135deg, #1a1a2e, #2d2b55); color: #fff;
+  box-shadow: 0 4px 16px rgba(26,26,46,0.2);
+}
+.cta-dark:hover { box-shadow: 0 8px 24px rgba(26,26,46,0.3); }
+
+/* ─── Testimonials ─── */
+.testimonials {
+  max-width: 1060px; margin: 0 auto; padding: 0 40px 64px;
+}
+.section-title {
+  font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px;
+}
+.section-sub {
+  font-size: 15px; color: #888; text-align: center; margin-bottom: 40px;
+}
+.testimonial-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.testimonial {
+  background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 28px;
+  text-align: left; transition: transform 0.3s, box-shadow 0.3s;
+}
+.testimonial:hover {
+  transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+}
+.testimonial-stars { color: #f59e0b; font-size: 15px; margin-bottom: 14px; letter-spacing: 2px; }
+.testimonial-text { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 20px; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.testimonial-name { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.testimonial-role { font-size: 12px; color: #888; }
+
+/* ─── FAQ ─── */
+.faq { max-width: 680px; margin: 0 auto; padding: 0 40px 72px; }
+.faq-item { border-bottom: 1px solid #eee; }
+.faq-trigger {
+  display: block; width: 100%; padding: 20px 0; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 600; color: #1a1a2e;
+  text-align: left; position: relative; padding-right: 36px;
+  transition: color 0.2s;
+}
+.faq-trigger:hover { color: #6c5ce7; }
+.faq-trigger::after {
+  content: '+'; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-size: 22px; font-weight: 400; color: #bbb; transition: color 0.2s, transform 0.3s;
+}
+.faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
+.faq-answer p { padding: 0 0 20px; font-size: 14px; color: #666; line-height: 1.7; }
+
+#faq-1:checked ~ .window .faq-item[data-faq="1"] .faq-answer,
+#faq-2:checked ~ .window .faq-item[data-faq="2"] .faq-answer,
+#faq-3:checked ~ .window .faq-item[data-faq="3"] .faq-answer,
+#faq-4:checked ~ .window .faq-item[data-faq="4"] .faq-answer,
+#faq-5:checked ~ .window .faq-item[data-faq="5"] .faq-answer { max-height: 200px; }
+#faq-1:checked ~ .window .faq-item[data-faq="1"] .faq-trigger::after,
+#faq-2:checked ~ .window .faq-item[data-faq="2"] .faq-trigger::after,
+#faq-3:checked ~ .window .faq-item[data-faq="3"] .faq-trigger::after,
+#faq-4:checked ~ .window .faq-item[data-faq="4"] .faq-trigger::after,
+#faq-5:checked ~ .window .faq-item[data-faq="5"] .faq-trigger::after {
+  content: '\2212'; color: #6c5ce7; transform: translateY(-50%);
+}
+#faq-1:checked ~ .window .faq-item[data-faq="1"] .faq-trigger,
+#faq-2:checked ~ .window .faq-item[data-faq="2"] .faq-trigger,
+#faq-3:checked ~ .window .faq-item[data-faq="3"] .faq-trigger,
+#faq-4:checked ~ .window .faq-item[data-faq="4"] .faq-trigger,
+#faq-5:checked ~ .window .faq-item[data-faq="5"] .faq-trigger { color: #6c5ce7; }
+
+/* ─── CTA Banner ─── */
+.cta-banner {
+  max-width: 900px; margin: 0 auto 64px; padding: 48px 60px;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a855f7 50%, #6c5ce7 100%);
+  background-size: 200% 100%;
+  border-radius: 24px; text-align: center; color: #fff;
+  position: relative; overflow: hidden;
+}
+.cta-banner::before {
+  content: ''; position: absolute; top: -50%; right: -20%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-banner h3 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+.cta-banner p { font-size: 16px; opacity: 0.9; margin-bottom: 28px; }
+.cta-banner-btn {
+  display: inline-block; padding: 14px 36px; background: #fff; color: #6c5ce7;
+  font-family: inherit; font-size: 15px; font-weight: 700; border-radius: 12px;
+  text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.cta-banner-btn:hover {
+  transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .pricing-hero { padding: 40px 20px 32px; }
+#preview-mobile:checked ~ .window .pricing-hero h2 { font-size: 28px; }
+#preview-mobile:checked ~ .window .pricing-hero .subtitle { font-size: 14px; }
+#preview-mobile:checked ~ .window .cards-section { padding: 32px 16px; }
+#preview-mobile:checked ~ .window .cards { flex-direction: column; align-items: center; }
+#preview-mobile:checked ~ .window .card { max-width: 100%; }
+#preview-mobile:checked ~ .window .card-price { font-size: 40px; }
+#preview-mobile:checked ~ .window .testimonials { padding: 0 16px 48px; }
+#preview-mobile:checked ~ .window .testimonial-grid { grid-template-columns: 1fr; }
+#preview-mobile:checked ~ .window .section-title { font-size: 22px; }
+#preview-mobile:checked ~ .window .faq { padding: 0 16px 48px; }
+#preview-mobile:checked ~ .window .cta-banner { margin: 0 16px 48px; padding: 32px 24px; }
+#preview-mobile:checked ~ .window .cta-banner h3 { font-size: 22px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Pricing Page</h1>
+      <span class="exp-version">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality polish: gradient accents, refined typography with gradient text, micro-interactions on all interactive elements, a CTA banner section, and improved visual hierarchy throughout.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v5: Production-quality refinement. Add gradient accents to the hero heading (gradient text via background-clip), popular badge, and CTA buttons. Refine typography with tighter letter-spacing on prices and improved line heights. Add micro-interactions: smoother hover transitions with cubic-bezier easing, hover color shifts on FAQ triggers, testimonial card lift on hover, CTA button shadow expansion. Add a gradient CTA banner section at the bottom. Improve the billing toggle with gradient track and pill shadow. Overall visual hierarchy improvements with a subtle hero gradient background and radial glow.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="pricing-page-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Gradient accents & CTA</span>
+        </a>
+        <a href="pricing-page-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Testimonials & FAQ</span>
+        </a>
+        <a href="pricing-page-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Add-on checkboxes</span>
+        </a>
+        <a href="pricing-page-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Feature matrix</span>
+        </a>
+        <a href="pricing-page-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial 3-tier pricing</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <input type="checkbox" id="billing-toggle">
+    <input type="checkbox" id="faq-1">
+    <input type="checkbox" id="faq-2">
+    <input type="checkbox" id="faq-3">
+    <input type="checkbox" id="faq-4">
+    <input type="checkbox" id="faq-5">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="pricing">
+        <!-- Hero -->
+        <div class="pricing-hero">
+          <h2>Simple, transparent pricing</h2>
+          <p class="subtitle">Choose the plan that fits your team. No hidden fees, no surprises. Upgrade or downgrade anytime.</p>
+          <div class="toggle-wrap">
+            <span>Monthly</span>
+            <label for="billing-toggle" class="toggle-track"></label>
+            <span>Annual</span>
+            <span class="save-badge">Save 20%</span>
+          </div>
+        </div>
+
+        <!-- Cards -->
+        <div class="cards-section">
+          <div class="cards">
+            <div class="card">
+              <div class="card-tier">Starter</div>
+              <div class="price-monthly"><div class="card-price">$19<span>/mo</span></div></div>
+              <div class="price-annual"><div class="card-price">$15<span>/mo</span></div></div>
+              <p class="card-desc">Perfect for individuals and small projects just getting started.</p>
+              <ul class="card-features">
+                <li>Up to 3 projects</li>
+                <li>5 GB storage</li>
+                <li>Basic analytics</li>
+                <li>Email support</li>
+                <li>API access</li>
+              </ul>
+              <a href="#" class="card-cta cta-outline">Get Started</a>
+            </div>
+            <div class="card popular">
+              <div class="popular-badge">Most Popular</div>
+              <div class="card-tier">Pro</div>
+              <div class="price-monthly"><div class="card-price">$49<span>/mo</span></div></div>
+              <div class="price-annual"><div class="card-price">$39<span>/mo</span></div></div>
+              <p class="card-desc">For growing teams that need power, collaboration, and insights.</p>
+              <ul class="card-features">
+                <li>Unlimited projects</li>
+                <li>50 GB storage</li>
+                <li>Advanced analytics</li>
+                <li>Priority support</li>
+                <li>API access</li>
+                <li>Team collaboration</li>
+                <li>Custom integrations</li>
+              </ul>
+              <a href="#" class="card-cta cta-primary">Get Started</a>
+            </div>
+            <div class="card">
+              <div class="card-tier">Enterprise</div>
+              <div class="card-price">Custom</div>
+              <p class="card-desc">For organizations with advanced security, compliance, and scale needs.</p>
+              <ul class="card-features">
+                <li>Everything in Pro</li>
+                <li>Unlimited storage</li>
+                <li>SSO &amp; SAML</li>
+                <li>Dedicated account manager</li>
+                <li>Custom SLA</li>
+                <li>Audit logs</li>
+                <li>On-premise option</li>
+              </ul>
+              <a href="#" class="card-cta cta-dark">Contact Sales</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonials -->
+        <div class="testimonials">
+          <div class="section-title">Trusted by 10,000+ teams</div>
+          <p class="section-sub">Here's what our customers have to say about their experience.</p>
+          <div class="testimonial-grid">
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"We switched to Pro and saw a 40% boost in team productivity within the first month. The collaboration features are a game-changer."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">SJ</div>
+                <div>
+                  <div class="testimonial-name">Sarah Johnson</div>
+                  <div class="testimonial-role">VP of Engineering, Acme Corp</div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"The Enterprise plan gives us everything we need. SSO, audit logs, and a dedicated account manager who actually responds within hours."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">MK</div>
+                <div>
+                  <div class="testimonial-name">Michael Kim</div>
+                  <div class="testimonial-role">CTO, FinanceFlow</div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial">
+              <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="testimonial-text">"Started on Starter, now on Pro. The upgrade path is seamless and pricing is genuinely fair. No hidden fees, no surprises."</p>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar">ER</div>
+                <div>
+                  <div class="testimonial-name">Emily Rodriguez</div>
+                  <div class="testimonial-role">Founder, DesignLab</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq">
+          <div class="section-title">Frequently asked questions</div>
+          <p class="section-sub">Everything you need to know about our pricing and plans.</p>
+          <div class="faq-item" data-faq="1">
+            <label for="faq-1" class="faq-trigger">Can I switch plans at any time?</label>
+            <div class="faq-answer">
+              <p>Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll be prorated for the remainder of your billing cycle. When downgrading, the change takes effect at your next billing date.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="2">
+            <label for="faq-2" class="faq-trigger">What happens if I exceed my storage limit?</label>
+            <div class="faq-answer">
+              <p>We'll notify you when you reach 80% of your storage limit. If you exceed it, your existing data is safe, but you won't be able to upload new files until you upgrade or free up space.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="3">
+            <label for="faq-3" class="faq-trigger">Is there a free trial available?</label>
+            <div class="faq-answer">
+              <p>Yes! All paid plans come with a 14-day free trial. No credit card required. You can explore every feature before committing to a plan.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="4">
+            <label for="faq-4" class="faq-trigger">Do you offer refunds?</label>
+            <div class="faq-answer">
+              <p>We offer a 30-day money-back guarantee on all plans. If you're not satisfied, contact our support team and we'll process a full refund, no questions asked.</p>
+            </div>
+          </div>
+          <div class="faq-item" data-faq="5">
+            <label for="faq-5" class="faq-trigger">What payment methods do you accept?</label>
+            <div class="faq-answer">
+              <p>We accept all major credit cards (Visa, Mastercard, Amex), PayPal, and wire transfers for Enterprise plans. Annual plans can also be invoiced.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Banner -->
+        <div class="cta-banner">
+          <h3>Ready to get started?</h3>
+          <p>Join 10,000+ teams already building with us. Start your free trial today.</p>
+          <a href="#" class="cta-banner-btn">Start Free Trial</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

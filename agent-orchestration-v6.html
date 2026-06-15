@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v6: Kitchen Brigade</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+/* ─── Kitchen Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #1a1a1a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.kitchen-floor {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+    #2a2a2a;
+  padding: 30px;
+  overflow: hidden;
+}
+
+/* Tile floor pattern */
+.kitchen-floor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,0.02) 0% 25%, transparent 0% 50%) 0 0 / 80px 80px;
+  pointer-events: none;
+}
+
+/* ─── Kitchen Title ─── */
+.kitchen-title {
+  text-align: center;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.kitchen-title h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e8e0d4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kitchen-title .subtitle {
+  font-size: 11px;
+  color: #8a7e6e;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.kitchen-title .divider {
+  display: block;
+  width: 160px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #6a5e4e, transparent);
+  margin: 10px auto 0;
+}
+
+/* ─── Ticket Rail ─── */
+.ticket-rail {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, #4a3e2e 0%, #3a3020 100%);
+  border: 2px solid #5a4e3a;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.ticket-rail-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a89878;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.ticket {
+  background: #f5f0e0;
+  border: 1px solid #d4c8a8;
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-width: 160px;
+  max-width: 180px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ticket::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 4px 4px 0 0;
+}
+
+.ticket.ticket-fire::before { background: #e74c3c; }
+.ticket.ticket-working::before { background: #f39c12; }
+.ticket.ticket-done::before { background: #2ecc71; }
+.ticket.ticket-waiting::before { background: #8b9cf7; }
+
+.ticket-number {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8a7e6e;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.ticket-desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3a3020;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.ticket-station {
+  font-size: 9px;
+  color: #8a7e6e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ticket-status {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 6px;
+}
+
+.ticket-fire .ticket-status { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.ticket-working .ticket-status { background: rgba(243,156,18,0.15); color: #c87f0a; }
+.ticket-done .ticket-status { background: rgba(46,204,113,0.15); color: #1e8449; }
+.ticket-waiting .ticket-status { background: rgba(139,156,247,0.15); color: #5b6abf; }
+
+/* ─── Kitchen Layout ─── */
+.kitchen-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  min-height: 600px;
+}
+
+/* ─── The Pass (Chef's Station) ─── */
+.the-pass {
+  grid-column: 1 / 4;
+  grid-row: 1;
+  background: linear-gradient(135deg, #3d2e1a 0%, #2e2215 100%);
+  border: 2px solid #6b5535;
+  border-radius: 8px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Heat lamp glow */
+.the-pass::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 60px;
+  background: radial-gradient(ellipse, rgba(255,160,60,0.15) 0%, transparent 70%);
+  animation: heatLamp 3s ease-in-out infinite alternate;
+}
+
+@keyframes heatLamp {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.chef-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5f0e0, #e8dcc8);
+  border: 3px solid #d4b896;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Chef hat */
+.chef-hat {
+  position: relative;
+  width: 28px;
+  height: 22px;
+}
+
+.chef-hat-top {
+  width: 28px;
+  height: 14px;
+  background: #fff;
+  border-radius: 10px 10px 0 0;
+  border: 1.5px solid #bbb;
+  border-bottom: none;
+}
+
+.chef-hat-band {
+  width: 28px;
+  height: 8px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-top: none;
+}
+
+.chef-info {
+  flex: 1;
+}
+
+.chef-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f5e6d0;
+  letter-spacing: 0.04em;
+}
+
+.chef-info .chef-role {
+  font-size: 10px;
+  color: #a89878;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.chef-info .chef-call {
+  font-size: 12px;
+  color: #e8dcc8;
+  margin-top: 6px;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.pass-plates {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.plate {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #6b5535;
+  background: radial-gradient(circle, #3a3020 60%, #2e2215 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #a89878;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.plate.plate-ready {
+  border-color: #2ecc71;
+  box-shadow: 0 0 8px rgba(46,204,113,0.3);
+}
+
+.plate.plate-ready::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ecc71;
+}
+
+/* ─── Station Shared ─── */
+.station {
+  background: linear-gradient(180deg, #2e2e2e 0%, #252525 100%);
+  border: 1.5px solid #444;
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+
+.station-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.station-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.station-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8e0d4;
+  letter-spacing: 0.02em;
+}
+
+.station-role {
+  font-size: 9px;
+  color: #8a7e6e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 1px;
+}
+
+.station-status {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-top: 2px;
+}
+
+.status-firing { background: rgba(231,76,60,0.2); color: #e74c3c; }
+.status-working { background: rgba(243,156,18,0.2); color: #f39c12; }
+.status-done { background: rgba(46,204,113,0.2); color: #2ecc71; }
+.status-waiting { background: rgba(139,156,247,0.2); color: #8b9cf7; }
+
+.station-task {
+  font-size: 11px;
+  color: #b0a898;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.station-task strong {
+  color: #d4c8b0;
+}
+
+/* Station work items */
+.station-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.station-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  font-size: 11px;
+  color: #a09888;
+}
+
+.station-item.item-done { border-left-color: #2ecc71; }
+.station-item.item-active { border-left-color: #f39c12; }
+.station-item.item-pending { border-left-color: #555; }
+
+.item-check {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-done .item-check {
+  border-color: #2ecc71;
+  background: rgba(46,204,113,0.15);
+}
+
+.item-done .item-check::after {
+  content: '';
+  width: 6px;
+  height: 3px;
+  border-left: 1.5px solid #2ecc71;
+  border-bottom: 1.5px solid #2ecc71;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+.item-active .item-check {
+  border-color: #f39c12;
+  background: rgba(243,156,18,0.1);
+}
+
+/* Spinning indicator for active items */
+.item-active .item-check::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid transparent;
+  border-top-color: #f39c12;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Commis (sub-sub-agents) */
+.commis-list {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+}
+
+.commis-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6a6050;
+  margin-bottom: 6px;
+}
+
+.commis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  font-size: 10px;
+  color: #8a7e6e;
+  margin: 2px;
+}
+
+.commis-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.commis-dot.active { background: #f39c12; }
+.commis-dot.idle { background: #555; }
+.commis-dot.done { background: #2ecc71; }
+
+/* ─── Station Colors ─── */
+.station-saucier { border-color: #c0392b; }
+.station-saucier .station-icon { background: rgba(192,57,43,0.2); color: #e74c3c; }
+.station-saucier .station-name { color: #f0a8a0; }
+
+.station-poissonnier { border-color: #2980b9; }
+.station-poissonnier .station-icon { background: rgba(41,128,185,0.2); color: #3498db; }
+.station-poissonnier .station-name { color: #a0c8e8; }
+
+.station-rotisseur { border-color: #d35400; }
+.station-rotisseur .station-icon { background: rgba(211,84,0,0.2); color: #e67e22; }
+.station-rotisseur .station-name { color: #f0c8a0; }
+
+.station-patissier { border-color: #8e44ad; }
+.station-patissier .station-icon { background: rgba(142,68,173,0.2); color: #9b59b6; }
+.station-patissier .station-name { color: #d0a8e8; }
+
+.station-garde { border-color: #27ae60; }
+.station-garde .station-icon { background: rgba(39,174,96,0.2); color: #2ecc71; }
+.station-garde .station-name { color: #a0e8c0; }
+
+.station-entremetier { border-color: #f39c12; }
+.station-entremetier .station-icon { background: rgba(243,156,18,0.2); color: #f39c12; }
+.station-entremetier .station-name { color: #f0d8a0; }
+
+/* ─── Left Column: Hot Line ─── */
+.hot-line {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hot-line-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #e74c3c;
+  text-align: center;
+  padding: 4px 0;
+  border: 1px dashed rgba(231,76,60,0.3);
+  border-radius: 4px;
+  background: rgba(231,76,60,0.05);
+}
+
+/* ─── Center Column: Main Floor ─── */
+.main-floor {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ─── Right Column: Cold Line + Pastry ─── */
+.cold-line {
+  grid-column: 3;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cold-line-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3498db;
+  text-align: center;
+  padding: 4px 0;
+  border: 1px dashed rgba(52,152,219,0.3);
+  border-radius: 4px;
+  background: rgba(52,152,219,0.05);
+}
+
+/* ─── 86 Call / Runner AskUserQuestion ─── */
+.eighty-six-call {
+  grid-column: 1 / 4;
+  grid-row: 3;
+  position: relative;
+  z-index: 10;
+}
+
+.runner-container {
+  background: linear-gradient(135deg, #1a1226 0%, #201430 100%);
+  border: 2px solid rgba(139,156,247,0.4);
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  box-shadow: 0 6px 24px rgba(139,156,247,0.15), 0 0 0 1px rgba(139,156,247,0.1);
+  animation: eightySixPulse 2s ease-in-out infinite;
+}
+
+@keyframes eightySixPulse {
+  0%, 100% { box-shadow: 0 6px 24px rgba(139,156,247,0.15), 0 0 0 1px rgba(139,156,247,0.1); }
+  50% { box-shadow: 0 6px 30px rgba(139,156,247,0.25), 0 0 0 2px rgba(139,156,247,0.2); }
+}
+
+.runner-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139,156,247,0.2), rgba(139,156,247,0.1));
+  border: 2px solid rgba(139,156,247,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Runner figure */
+.runner-figure {
+  position: relative;
+  width: 20px;
+  height: 24px;
+}
+
+.runner-figure-head {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8b9cf7;
+  margin: 0 auto 2px;
+}
+
+.runner-figure-body {
+  width: 12px;
+  height: 14px;
+  background: #8b9cf7;
+  border-radius: 3px 3px 0 0;
+  margin: 0 auto;
+  opacity: 0.7;
+}
+
+.runner-content {
+  flex: 1;
+}
+
+.runner-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.eighty-six-badge {
+  display: inline-block;
+  background: rgba(231,76,60,0.2);
+  color: #e74c3c;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  animation: eightySixFlash 1.5s ease-in-out infinite;
+}
+
+@keyframes eightySixFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.runner-from {
+  font-size: 10px;
+  color: #8a7e6e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.runner-from strong {
+  color: #a0e8c0;
+}
+
+.runner-question {
+  font-size: 13px;
+  color: #e0dcd4;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.runner-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.runner-option {
+  padding: 10px 16px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  min-width: 140px;
+}
+
+.runner-option-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6a6050;
+  margin-bottom: 4px;
+}
+
+.runner-option-desc {
+  font-size: 12px;
+  color: #c0b8a8;
+  line-height: 1.4;
+}
+
+.runner-waiting {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.runner-waiting-text {
+  font-size: 10px;
+  color: #8b9cf7;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.waiting-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.waiting-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8b9cf7;
+  animation: waitingDot 1.4s ease-in-out infinite;
+}
+
+.waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+.waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes waitingDot {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ─── Steam Effects ─── */
+.steam-container {
+  position: absolute;
+  top: -8px;
+  pointer-events: none;
+}
+
+.steam {
+  position: absolute;
+  width: 6px;
+  height: 20px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+  animation: steamRise 2.5s ease-out infinite;
+}
+
+.steam:nth-child(1) { left: 0; animation-delay: 0s; }
+.steam:nth-child(2) { left: 12px; animation-delay: 0.8s; }
+.steam:nth-child(3) { left: 24px; animation-delay: 1.6s; }
+
+@keyframes steamRise {
+  0% { opacity: 0; transform: translateY(0) scaleX(1); }
+  30% { opacity: 0.4; }
+  100% { opacity: 0; transform: translateY(-30px) scaleX(2); }
+}
+
+/* ─── Flame Effects ─── */
+.flames {
+  display: flex;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.flame {
+  width: 6px;
+  height: 12px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flicker 0.8s ease-in-out infinite alternate;
+}
+
+.flame:nth-child(odd) {
+  background: linear-gradient(to top, #e74c3c, #f39c12);
+  animation-delay: 0.1s;
+}
+
+.flame:nth-child(even) {
+  background: linear-gradient(to top, #c0392b, #e67e22);
+  height: 10px;
+  animation-delay: 0.3s;
+}
+
+@keyframes flicker {
+  0% { transform: scaleY(0.8) scaleX(0.9); opacity: 0.7; }
+  100% { transform: scaleY(1.1) scaleX(1.1); opacity: 1; }
+}
+
+/* ─── Legend ─── */
+.kitchen-legend {
+  grid-column: 1 / 4;
+  margin-top: 20px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.legend-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #6a6050;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-swatch.sw-firing { background: #e74c3c; }
+.legend-swatch.sw-working { background: #f39c12; }
+.legend-swatch.sw-done { background: #2ecc71; }
+.legend-swatch.sw-waiting { background: #8b9cf7; }
+.legend-swatch.sw-human { background: linear-gradient(135deg, #f5f0e0, #e8dcc8); border: 1px solid #8a7e6e; }
+
+/* ─── Heat shimmer ─── */
+.heat-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(255,120,50,0.03) 0%, transparent 100%);
+  animation: shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 0.7; transform: scaleY(1.1); }
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as a restaurant kitchen brigade de cuisine &mdash; a top-down view of a professional kitchen mid-service, where the Chef at the pass orchestrates station chefs and commis to build an analytics dashboard. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Kitchen Brigade &mdash; the human is the dining room sending orders, the Chef (orchestrator) stands at the pass coordinating all stations. Each station chef (Saucier, Poissonnier, R&ocirc;tisseur, P&acirc;tissier, Garde Manger, Entremetier) is a sub-agent working a specific domain. Commis are sub-sub-agents. A ticket rail shows task decomposition. When a question arises, the Runner carries it to the pass and the Chef calls "86!" to halt the line.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a kitchen brigade metaphor for human/agent orchestration. Render a top-down kitchen floor plan with the Chef at the pass as orchestrator, station chefs as sub-agents (Saucier, Poissonnier, R&ocirc;tisseur, P&acirc;tissier, etc.), and commis as sub-sub-agents. Include a ticket rail showing task decomposition. The scenario is building an analytics dashboard. Show a "Runner" carrying an AskUserQuestion from the Garde Manger station to the pass, with the Chef calling "86!" to halt the line while waiting for an answer from the dining room (human).
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="kitchen-floor">
+      <div class="heat-shimmer"></div>
+
+      <!-- Kitchen Title -->
+      <div class="kitchen-title">
+        <h2>Brigade de Cuisine</h2>
+        <div class="subtitle">Analytics Dashboard &mdash; Service In Progress</div>
+        <span class="divider"></span>
+      </div>
+
+      <!-- Ticket Rail -->
+      <div class="ticket-rail">
+        <div class="ticket-rail-label">Ticket Rail</div>
+
+        <div class="ticket ticket-done">
+          <div class="ticket-number">TKT-001</div>
+          <div class="ticket-desc">Database schema &amp; data models</div>
+          <div class="ticket-station">Entremetier</div>
+          <div class="ticket-status">Done</div>
+        </div>
+
+        <div class="ticket ticket-done">
+          <div class="ticket-number">TKT-002</div>
+          <div class="ticket-desc">API endpoints &amp; data pipeline</div>
+          <div class="ticket-station">Saucier</div>
+          <div class="ticket-status">Done</div>
+        </div>
+
+        <div class="ticket ticket-fire">
+          <div class="ticket-number">TKT-003</div>
+          <div class="ticket-desc">Chart components &amp; visualizations</div>
+          <div class="ticket-station">R&ocirc;tisseur</div>
+          <div class="ticket-status">Firing</div>
+        </div>
+
+        <div class="ticket ticket-working">
+          <div class="ticket-number">TKT-004</div>
+          <div class="ticket-desc">Real-time data streaming layer</div>
+          <div class="ticket-station">Poissonnier</div>
+          <div class="ticket-status">Working</div>
+        </div>
+
+        <div class="ticket ticket-waiting">
+          <div class="ticket-number">TKT-005</div>
+          <div class="ticket-desc">Dashboard layout &amp; grid system</div>
+          <div class="ticket-station">Garde Manger</div>
+          <div class="ticket-status">86'd &mdash; Waiting</div>
+        </div>
+
+        <div class="ticket ticket-working">
+          <div class="ticket-number">TKT-006</div>
+          <div class="ticket-desc">Export &amp; reporting module</div>
+          <div class="ticket-station">P&acirc;tissier</div>
+          <div class="ticket-status">Working</div>
+        </div>
+      </div>
+
+      <!-- Kitchen Layout Grid -->
+      <div class="kitchen-layout">
+
+        <!-- THE PASS -->
+        <div class="the-pass">
+          <div class="chef-icon">
+            <div class="chef-hat">
+              <div class="chef-hat-top"></div>
+              <div class="chef-hat-band"></div>
+            </div>
+          </div>
+          <div class="chef-info">
+            <h3>Chef de Cuisine</h3>
+            <div class="chef-role">Orchestrator Agent &bull; The Pass</div>
+            <div class="chef-call">"Eighty-six the Garde Manger ticket! Line &mdash; hold positions. Runner to the dining room, now!"</div>
+          </div>
+          <div class="pass-plates">
+            <div class="plate plate-ready"></div>
+            <div class="plate plate-ready"></div>
+            <div class="plate">TKT-3</div>
+            <div class="plate">TKT-4</div>
+          </div>
+        </div>
+
+        <!-- HOT LINE (Left) -->
+        <div class="hot-line">
+          <div class="hot-line-label">Hot Line</div>
+
+          <!-- Saucier -->
+          <div class="station station-saucier">
+            <div class="steam-container">
+              <div class="steam"></div>
+              <div class="steam"></div>
+              <div class="steam"></div>
+            </div>
+            <div class="station-header">
+              <div class="station-icon">S</div>
+              <div>
+                <div class="station-name">Saucier</div>
+                <div class="station-role">API &amp; Data Pipeline Agent</div>
+                <span class="station-status status-done">Complete</span>
+              </div>
+            </div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                REST endpoints defined
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Auth middleware
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Response transforms
+              </div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis</div>
+              <span class="commis"><span class="commis-dot done"></span> Validation</span>
+              <span class="commis"><span class="commis-dot done"></span> Caching</span>
+            </div>
+          </div>
+
+          <!-- R&ocirc;tisseur -->
+          <div class="station station-rotisseur">
+            <div class="station-header">
+              <div class="station-icon">R</div>
+              <div>
+                <div class="station-name">R&ocirc;tisseur</div>
+                <div class="station-role">Chart &amp; Visualization Agent</div>
+                <span class="station-status status-firing">Firing</span>
+              </div>
+            </div>
+            <div class="station-task"><strong>TKT-003:</strong> Building bar charts, line graphs, pie charts, and KPI cards for the main dashboard view.</div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Bar chart component
+              </div>
+              <div class="station-item item-active">
+                <div class="item-check"></div>
+                Line graph with tooltips
+              </div>
+              <div class="station-item item-pending">
+                <div class="item-check"></div>
+                KPI summary cards
+              </div>
+            </div>
+            <div class="flames">
+              <div class="flame"></div>
+              <div class="flame"></div>
+              <div class="flame"></div>
+              <div class="flame"></div>
+              <div class="flame"></div>
+              <div class="flame"></div>
+              <div class="flame"></div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis</div>
+              <span class="commis"><span class="commis-dot active"></span> Colors</span>
+              <span class="commis"><span class="commis-dot active"></span> Axes</span>
+              <span class="commis"><span class="commis-dot idle"></span> Legends</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN FLOOR (Center) -->
+        <div class="main-floor">
+          <!-- Entremetier -->
+          <div class="station station-entremetier">
+            <div class="station-header">
+              <div class="station-icon">E</div>
+              <div>
+                <div class="station-name">Entremetier</div>
+                <div class="station-role">Database &amp; Infrastructure Agent</div>
+                <span class="station-status status-done">Complete</span>
+              </div>
+            </div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                PostgreSQL schema migration
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Aggregation materialized views
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Connection pooling config
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Seed data &amp; fixtures
+              </div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis</div>
+              <span class="commis"><span class="commis-dot done"></span> Indexing</span>
+              <span class="commis"><span class="commis-dot done"></span> Migrations</span>
+              <span class="commis"><span class="commis-dot done"></span> Seeds</span>
+            </div>
+          </div>
+
+          <!-- Poissonnier -->
+          <div class="station station-poissonnier">
+            <div class="steam-container" style="left: 40px;">
+              <div class="steam"></div>
+              <div class="steam"></div>
+              <div class="steam"></div>
+            </div>
+            <div class="station-header">
+              <div class="station-icon">P</div>
+              <div>
+                <div class="station-name">Poissonnier</div>
+                <div class="station-role">Real-time Streaming Agent</div>
+                <span class="station-status status-working">Working</span>
+              </div>
+            </div>
+            <div class="station-task"><strong>TKT-004:</strong> Setting up WebSocket connections and server-sent events for live metric updates on the dashboard.</div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                WebSocket server scaffolding
+              </div>
+              <div class="station-item item-active">
+                <div class="item-check"></div>
+                Event channel subscriptions
+              </div>
+              <div class="station-item item-pending">
+                <div class="item-check"></div>
+                Reconnection &amp; backoff logic
+              </div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis</div>
+              <span class="commis"><span class="commis-dot active"></span> Serializer</span>
+              <span class="commis"><span class="commis-dot idle"></span> Heartbeat</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLD LINE + PASTRY (Right) -->
+        <div class="cold-line">
+          <div class="cold-line-label">Cold Line &amp; Pastry</div>
+
+          <!-- Garde Manger (the station with the question) -->
+          <div class="station station-garde" style="border-style: dashed; opacity: 0.75;">
+            <div class="station-header">
+              <div class="station-icon">G</div>
+              <div>
+                <div class="station-name">Garde Manger</div>
+                <div class="station-role">Layout &amp; Grid Agent</div>
+                <span class="station-status status-waiting">86'd &mdash; Waiting</span>
+              </div>
+            </div>
+            <div class="station-task"><strong>TKT-005:</strong> Dashboard grid system requires a layout decision. Ticket 86'd &mdash; Runner dispatched to the pass.</div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Responsive breakpoints
+              </div>
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                Sidebar navigation shell
+              </div>
+              <div class="station-item item-pending" style="border-left-color: #8b9cf7;">
+                <div class="item-check" style="border-color: #8b9cf7;"></div>
+                <em style="color: #8b9cf7;">Grid density &mdash; awaiting answer</em>
+              </div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis (Paused)</div>
+              <span class="commis"><span class="commis-dot idle"></span> Drag-drop</span>
+              <span class="commis"><span class="commis-dot idle"></span> Resize</span>
+            </div>
+          </div>
+
+          <!-- P&acirc;tissier -->
+          <div class="station station-patissier">
+            <div class="station-header">
+              <div class="station-icon">P</div>
+              <div>
+                <div class="station-name">P&acirc;tissier</div>
+                <div class="station-role">Export &amp; Reporting Agent</div>
+                <span class="station-status status-working">Working</span>
+              </div>
+            </div>
+            <div class="station-task"><strong>TKT-006:</strong> Crafting PDF/CSV export templates and scheduled report generation.</div>
+            <div class="station-items">
+              <div class="station-item item-done">
+                <div class="item-check"></div>
+                CSV formatter
+              </div>
+              <div class="station-item item-active">
+                <div class="item-check"></div>
+                PDF template engine
+              </div>
+              <div class="station-item item-pending">
+                <div class="item-check"></div>
+                Scheduled report cron
+              </div>
+            </div>
+            <div class="commis-list">
+              <div class="commis-label">Commis</div>
+              <span class="commis"><span class="commis-dot active"></span> Styling</span>
+              <span class="commis"><span class="commis-dot idle"></span> Scheduler</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 86 CALL / RUNNER -->
+        <div class="eighty-six-call">
+          <div class="runner-container">
+            <div class="runner-icon">
+              <div class="runner-figure">
+                <div class="runner-figure-head"></div>
+                <div class="runner-figure-body"></div>
+              </div>
+            </div>
+            <div class="runner-content">
+              <div class="runner-header">
+                <span class="eighty-six-badge">86!</span>
+                <div class="runner-from">Runner from <strong>Garde Manger</strong> &rarr; The Pass &rarr; Dining Room</div>
+              </div>
+              <div class="runner-question">
+                The dashboard grid needs a density decision. Should we use a <strong>compact 12-column grid</strong> with smaller, information-dense widgets, or a <strong>spacious 6-column grid</strong> with larger, more readable panels?
+              </div>
+              <div class="runner-options">
+                <div class="runner-option">
+                  <div class="runner-option-label">Option A</div>
+                  <div class="runner-option-desc"><strong>Compact 12-col</strong> &mdash; More widgets visible at once, data-dense, power-user oriented</div>
+                </div>
+                <div class="runner-option">
+                  <div class="runner-option-label">Option B</div>
+                  <div class="runner-option-desc"><strong>Spacious 6-col</strong> &mdash; Fewer widgets, larger charts, executive-friendly readability</div>
+                </div>
+                <div class="runner-option">
+                  <div class="runner-option-label">Option C</div>
+                  <div class="runner-option-desc"><strong>Hybrid</strong> &mdash; 12-col default with a toggle to switch to 6-col "focus mode"</div>
+                </div>
+              </div>
+              <div class="runner-waiting">
+                <div class="waiting-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="runner-waiting-text">Line halted &mdash; Awaiting response from the dining room</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="kitchen-legend">
+          <div class="legend-entry">
+            <div class="legend-swatch sw-human"></div>
+            Chef / Pass = Orchestrator
+          </div>
+          <div class="legend-entry">
+            <div class="legend-swatch sw-firing"></div>
+            Firing = Active Build
+          </div>
+          <div class="legend-entry">
+            <div class="legend-swatch sw-working"></div>
+            Working = In Progress
+          </div>
+          <div class="legend-entry">
+            <div class="legend-swatch sw-done"></div>
+            Done = Complete
+          </div>
+          <div class="legend-entry">
+            <div class="legend-swatch sw-waiting"></div>
+            86'd = Awaiting Human
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v3: Stream</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #f7f6f3; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── CRM Stream Layout ─── */
+.crm { display: flex; height: 100%; font-family: 'Inter', sans-serif; color: #1a1a2e; overflow: hidden; }
+
+/* ─── Left Filter Sidebar ─── */
+.filter-sidebar { width: 240px; min-width: 240px; background: #fff; border-right: 1px solid #e8e6e1; padding: 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+.filter-sidebar h2 { font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 0; }
+.filter-group h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin: 0 0 10px 0; }
+.filter-chip { display: inline-block; padding: 5px 12px; border-radius: 16px; font-size: 11px; font-weight: 500; background: #f0eeeb; color: #666; margin: 0 4px 6px 0; cursor: default; border: 1px solid transparent; }
+.filter-chip.active { background: #eef0ff; color: #4a5acb; border-color: #c5ccf7; font-weight: 600; }
+.contact-filter { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; cursor: default; }
+.contact-filter:hover { background: #f5f4f1; }
+.contact-avatar-sm { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.contact-filter-name { font-size: 12px; font-weight: 500; color: #333; }
+.contact-filter-count { font-size: 10px; color: #999; margin-left: auto; }
+
+/* Role toggle */
+.role-bar { background: #f5f4f1; border-radius: 8px; padding: 3px; display: flex; gap: 2px; }
+.role-label { flex: 1; text-align: center; padding: 6px 4px; border-radius: 6px; font-size: 10px; font-weight: 600; color: #999; cursor: pointer; transition: all 0.2s; }
+.role-label:hover { color: #666; }
+#role-solo:checked ~ .crm .filter-sidebar .role-bar label[for="role-solo"],
+#role-team:checked ~ .crm .filter-sidebar .role-bar label[for="role-team"],
+#role-admin:checked ~ .crm .filter-sidebar .role-bar label[for="role-admin"] { background: #fff; color: #1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* Team/Admin extras */
+.team-only, .admin-only { display: none; }
+#role-team:checked ~ .crm .team-only { display: block; }
+#role-admin:checked ~ .crm .admin-only { display: block; }
+#role-team:checked ~ .crm .solo-only { display: none; }
+#role-admin:checked ~ .crm .solo-only { display: none; }
+
+/* ─── Main Feed ─── */
+.feed-area { flex: 1; overflow-y: auto; padding: 24px 0; display: flex; flex-direction: column; align-items: center; }
+.feed { width: 700px; max-width: 100%; }
+
+/* Date separators */
+.date-sep { position: sticky; top: 0; z-index: 10; padding: 8px 0; background: #f7f6f3; }
+.date-sep span { display: inline-block; background: #fff; border: 1px solid #e8e6e1; border-radius: 16px; padding: 4px 14px; font-size: 11px; font-weight: 600; color: #666; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+/* Timeline */
+.timeline-group { position: relative; padding-left: 40px; }
+.timeline-group::before { content: ''; position: absolute; left: 17px; top: 0; bottom: 0; width: 2px; background: #e8e6e1; }
+
+/* Activity cards */
+.activity-card { position: relative; background: #fff; border: 1px solid #e8e6e1; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+.activity-card:hover { border-color: #d0cec9; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+/* Icon on timeline */
+.activity-icon { position: absolute; left: -32px; top: 16px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #f7f6f3; z-index: 2; }
+.activity-icon svg { width: 12px; height: 12px; }
+.icon-call { background: #e8f4fd; color: #2980b9; }
+.icon-call svg { stroke: #2980b9; }
+.icon-email { background: #e8f4fd; color: #3498db; }
+.icon-email svg { stroke: #3498db; }
+.icon-showing { background: #eafaf1; color: #27ae60; }
+.icon-showing svg { stroke: #27ae60; }
+.icon-offer { background: #fef9e7; color: #d4a017; }
+.icon-offer svg { stroke: #d4a017; }
+.icon-note { background: #f4f0fa; color: #8e44ad; }
+.icon-note svg { stroke: #8e44ad; }
+.icon-stage { background: #fdf2e9; color: #e67e22; }
+.icon-stage svg { stroke: #e67e22; }
+.icon-milestone { background: #fdedef; color: #c0392b; }
+.icon-milestone svg { stroke: #c0392b; }
+.icon-closing { background: #f0e6ff; color: #7d3cff; }
+.icon-closing svg { stroke: #7d3cff; }
+
+/* Card header */
+.activity-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.activity-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.activity-meta { flex: 1; }
+.activity-who { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+.activity-type-label { font-size: 11px; color: #999; }
+.activity-time { font-size: 10px; color: #bbb; flex-shrink: 0; }
+.activity-body { font-size: 13px; color: #555; line-height: 1.6; }
+.activity-body strong { color: #333; font-weight: 600; }
+.activity-address { display: inline-flex; align-items: center; gap: 4px; background: #f5f4f1; padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #666; font-weight: 500; margin-top: 6px; }
+
+/* Agent badge for team view */
+.agent-badge { display: inline-block; background: #eef0ff; color: #4a5acb; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+.agent-badge { display: none; }
+#role-team:checked ~ .crm .agent-badge,
+#role-admin:checked ~ .crm .agent-badge { display: inline-block; }
+
+/* Milestone card */
+.activity-card.milestone { border-color: #c5ccf7; background: linear-gradient(135deg, #fafbff 0%, #f0f2ff 100%); }
+.activity-card.milestone .activity-body { font-size: 14px; font-weight: 500; color: #333; }
+.milestone-value { font-size: 20px; font-weight: 800; color: #4a5acb; margin-top: 4px; }
+
+/* Quiet period warning */
+.quiet-warning { background: #fff8f0; border: 1px dashed #f0c27a; border-radius: 10px; padding: 12px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.quiet-warning-icon { width: 32px; height: 32px; border-radius: 50%; background: #fef3e0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+.quiet-warning-text { font-size: 12px; color: #b8860b; line-height: 1.4; }
+.quiet-warning-text strong { color: #8b6914; }
+
+/* Daily digest */
+.daily-digest { background: linear-gradient(135deg, #f8f9ff 0%, #eef0ff 100%); border: 1px solid #dde1f7; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+.digest-title { font-size: 12px; font-weight: 700; color: #4a5acb; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+.digest-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.digest-stat { display: flex; flex-direction: column; }
+.digest-stat-num { font-size: 20px; font-weight: 800; color: #1a1a2e; }
+.digest-stat-label { font-size: 10px; color: #999; font-weight: 500; }
+
+/* Expandable detail via checkbox */
+.expand-toggle { display: none; }
+.activity-detail { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+.expand-label { font-size: 11px; color: #8b9cf7; cursor: pointer; display: inline-block; margin-top: 6px; font-weight: 500; }
+.expand-label:hover { text-decoration: underline; }
+.expand-toggle:checked + .activity-card .activity-detail { max-height: 200px; }
+.expand-toggle:checked + .activity-card .expand-label span.show { display: none; }
+.expand-toggle:checked + .activity-card .expand-label span.hide { display: inline; }
+.expand-label span.hide { display: none; }
+
+/* ─── Right Summary Rail ─── */
+.summary-rail { width: 220px; min-width: 220px; background: #fff; border-left: 1px solid #e8e6e1; padding: 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+.summary-rail h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin: 0 0 10px 0; }
+.stat-card { background: #f9f8f6; border-radius: 8px; padding: 14px; }
+.stat-card .stat-value { font-size: 24px; font-weight: 800; color: #1a1a2e; }
+.stat-card .stat-label { font-size: 11px; color: #999; margin-top: 2px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0eeeb; }
+.stat-row:last-child { border-bottom: none; }
+.stat-row-label { font-size: 12px; color: #666; }
+.stat-row-value { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.upcoming-item { padding: 10px 0; border-bottom: 1px solid #f0eeeb; }
+.upcoming-item:last-child { border-bottom: none; }
+.upcoming-time { font-size: 10px; font-weight: 600; color: #4a5acb; }
+.upcoming-desc { font-size: 12px; color: #333; margin-top: 2px; }
+.upcoming-contact { font-size: 11px; color: #999; }
+
+/* Team rail */
+.team-stat-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.team-stat-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.team-stat-name { font-size: 11px; color: #333; flex: 1; }
+.team-stat-count { font-size: 11px; font-weight: 700; color: #1a1a2e; }
+
+/* Admin density toggle */
+.density-toggle { display: flex; background: #f0eeeb; border-radius: 6px; padding: 2px; gap: 2px; margin-bottom: 10px; }
+.density-label { flex: 1; text-align: center; padding: 5px; border-radius: 4px; font-size: 10px; font-weight: 600; color: #999; cursor: pointer; }
+
+/* Mobile overrides */
+#preview-mobile:checked ~ .window .filter-sidebar { display: none; }
+#preview-mobile:checked ~ .window .summary-rail { display: none; }
+#preview-mobile:checked ~ .window .feed { width: 100%; padding: 0 12px; }
+#preview-mobile:checked ~ .window .feed-area { padding: 16px 0; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v3</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>"Stream" &mdash; Everything that happened, as it happened. A chronological activity feed showing all interactions across contacts and deals, styled like a social media news feed for real estate agents.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Timeline/Activity Feed &mdash; single dominant column with activity cards, left filter sidebar, right summary rail, role-based toggle, expandable details, quiet period warnings, and milestone markers.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v3: "Stream" — Timeline/Activity Feed</strong><br><br>
+        Tagline: "Everything that happened, as it happened."<br>
+        Core metaphor: A social media news feed — a chronological record of every interaction across all contacts and deals.<br><br>
+        Layout: Single dominant column (centered, ~700px) with activity cards flowing vertically. Left sidebar (~240px) with filters by contact, activity type, date range, deal stage. Right rail (~200px) with "Today's Summary" stats and upcoming items. Date separator lines between event clusters.<br><br>
+        Key UI elements: Activity cards with left-side icon rail (phone, envelope, house, dollar) connected by vertical timeline line. Sticky date separators. Filter chip bar. Expandable detail on cards. Contact avatar clusters. "Quiet period" warning bands. Milestone markers. Daily digest summary card.<br><br>
+        Color/mood: Light, airy, generous whitespace. Pale background with white cards. Activity icons in muted colors (blue=communication, green=showings, amber=offers, purple=closings). Calm, readable, archival.<br><br>
+        Role toggle: Solo Agent shows personal activities. Team Lead interleaves team activities with agent badges. Brokerage Admin defaults to highlights only with density toggle and brokerage KPIs.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; View origination prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <!-- Role radios (siblings of .window for CSS targeting) -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <div class="window">
+      <div class="crm">
+
+        <!-- ─── Left Filter Sidebar ─── -->
+        <div class="filter-sidebar">
+          <h2>Activity Stream</h2>
+
+          <div>
+            <div class="role-bar">
+              <label for="role-solo" class="role-label">Solo Agent</label>
+              <label for="role-team" class="role-label">Team Lead</label>
+              <label for="role-admin" class="role-label">Admin</label>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <h3>Activity Type</h3>
+            <span class="filter-chip active">All</span>
+            <span class="filter-chip">Calls</span>
+            <span class="filter-chip">Emails</span>
+            <span class="filter-chip">Showings</span>
+            <span class="filter-chip">Offers</span>
+            <span class="filter-chip">Notes</span>
+            <span class="filter-chip">Stage Changes</span>
+          </div>
+
+          <div class="filter-group solo-only">
+            <h3>Contacts</h3>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#4a5acb;">MR</div>
+              <span class="contact-filter-name">Maria Rodriguez</span>
+              <span class="contact-filter-count">5</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#27ae60;">JC</div>
+              <span class="contact-filter-name">James Chen</span>
+              <span class="contact-filter-count">4</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#e67e22;">SP</div>
+              <span class="contact-filter-name">Sarah Park</span>
+              <span class="contact-filter-count">3</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#c0392b;">DT</div>
+              <span class="contact-filter-name">David Thompson</span>
+              <span class="contact-filter-count">2</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#8e44ad;">LW</div>
+              <span class="contact-filter-name">Lisa Wang</span>
+              <span class="contact-filter-count">2</span>
+            </div>
+          </div>
+
+          <div class="filter-group team-only">
+            <h3>Agents</h3>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#4a5acb;">YO</div>
+              <span class="contact-filter-name">You</span>
+              <span class="contact-filter-count">8</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#e67e22;">KN</div>
+              <span class="contact-filter-name">Karen Nguyen</span>
+              <span class="contact-filter-count">6</span>
+            </div>
+            <div class="contact-filter">
+              <div class="contact-avatar-sm" style="background:#27ae60;">MB</div>
+              <span class="contact-filter-name">Mike Brooks</span>
+              <span class="contact-filter-count">4</span>
+            </div>
+          </div>
+
+          <div class="filter-group admin-only">
+            <h3>Density</h3>
+            <div class="density-toggle">
+              <span class="density-label" style="background:#fff; color:#1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Highlights</span>
+              <span class="density-label">All</span>
+            </div>
+            <h3 style="margin-top:12px;">Offices</h3>
+            <span class="filter-chip active">All Offices</span>
+            <span class="filter-chip">Downtown</span>
+            <span class="filter-chip">Westside</span>
+            <span class="filter-chip">Lakefront</span>
+          </div>
+
+          <div class="filter-group">
+            <h3>Date Range</h3>
+            <span class="filter-chip active">This Week</span>
+            <span class="filter-chip">Today</span>
+            <span class="filter-chip">Last 7 Days</span>
+            <span class="filter-chip">This Month</span>
+          </div>
+        </div>
+
+        <!-- ─── Main Feed ─── -->
+        <div class="feed-area">
+          <div class="feed">
+
+            <!-- ═══ TODAY ═══ -->
+            <div class="date-sep"><span>Today &mdash; January 31</span></div>
+
+            <div class="daily-digest">
+              <div class="digest-title">Daily Digest</div>
+              <div class="digest-stats">
+                <div class="digest-stat"><span class="digest-stat-num">3</span><span class="digest-stat-label">Calls</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">5</span><span class="digest-stat-label">Emails</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">2</span><span class="digest-stat-label">Showings</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">1</span><span class="digest-stat-label">Offer</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">1</span><span class="digest-stat-label">Closing</span></div>
+              </div>
+            </div>
+
+            <div class="timeline-group">
+
+              <!-- Milestone: Closing -->
+              <div class="activity-card milestone">
+                <div class="activity-icon icon-closing">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#7d3cff;">MR</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Maria Rodriguez <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Closing Completed</div>
+                  </div>
+                  <div class="activity-time">10:30 AM</div>
+                </div>
+                <div class="activity-body">
+                  <strong>Deal closed!</strong> 742 Evergreen Terrace sold for <strong>$485,000</strong>. Buyer financing cleared, all documents signed. Commission: $14,550.
+                  <div class="milestone-value">$485,000</div>
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    742 Evergreen Terrace, Springfield
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call -->
+              <div class="activity-card">
+                <div class="activity-icon icon-call">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#27ae60;">JC</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">James Chen <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Phone Call &middot; 12 min</div>
+                  </div>
+                  <div class="activity-time">9:45 AM</div>
+                </div>
+                <div class="activity-body">
+                  Discussed counter-offer on 1845 Oak Drive. James wants to come up to $520K but stay firm on the inspection contingency. Will draft revised offer by EOD.
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="activity-card">
+                <div class="activity-icon icon-email">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#e67e22;">SP</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Sarah Park <span class="agent-badge">K. Nguyen</span></div>
+                    <div class="activity-type-label">Email Sent</div>
+                  </div>
+                  <div class="activity-time">9:12 AM</div>
+                </div>
+                <div class="activity-body">
+                  Sent pre-approval checklist and lender recommendations. Sarah confirmed she'll have mortgage pre-approval docs by Wednesday.
+                </div>
+              </div>
+
+              <!-- Showing -->
+              <div class="activity-card">
+                <div class="activity-icon icon-showing">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#27ae60;">JC</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">James Chen <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Showing Scheduled</div>
+                  </div>
+                  <div class="activity-time">8:30 AM</div>
+                </div>
+                <div class="activity-body">
+                  Scheduled showing for tomorrow at 2:00 PM. 3BR/2BA ranch with updated kitchen. James specifically interested in the backyard space.
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    2301 Maple Lane, Riverside Heights
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /timeline-group -->
+
+            <!-- ═══ YESTERDAY ═══ -->
+            <div class="date-sep"><span>Yesterday &mdash; January 30</span></div>
+
+            <div class="daily-digest">
+              <div class="digest-title">Daily Digest</div>
+              <div class="digest-stats">
+                <div class="digest-stat"><span class="digest-stat-num">4</span><span class="digest-stat-label">Calls</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">3</span><span class="digest-stat-label">Emails</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">1</span><span class="digest-stat-label">Showing</span></div>
+                <div class="digest-stat"><span class="digest-stat-num">1</span><span class="digest-stat-label">Stage Change</span></div>
+              </div>
+            </div>
+
+            <div class="timeline-group">
+
+              <!-- Quiet period warning -->
+              <div class="quiet-warning">
+                <div class="quiet-warning-icon">&#9888;</div>
+                <div class="quiet-warning-text">
+                  <strong>David Thompson</strong> has had no activity for <strong>9 days</strong>. Last contact was a showing on Jan 21. Consider reaching out.
+                </div>
+              </div>
+
+              <!-- Stage change -->
+              <div class="activity-card">
+                <div class="activity-icon icon-stage">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#4a5acb;">MR</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Maria Rodriguez <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Stage Change</div>
+                  </div>
+                  <div class="activity-time">4:15 PM</div>
+                </div>
+                <div class="activity-body">
+                  Deal moved from <strong>Under Contract</strong> &rarr; <strong>Clear to Close</strong>. Final walkthrough completed, all contingencies satisfied. Closing scheduled for tomorrow.
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    742 Evergreen Terrace, Springfield
+                  </div>
+                </div>
+              </div>
+
+              <!-- Offer -->
+              <div class="activity-card">
+                <div class="activity-icon icon-offer">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#27ae60;">JC</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">James Chen <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Offer Submitted</div>
+                  </div>
+                  <div class="activity-time">2:30 PM</div>
+                </div>
+                <div class="activity-body">
+                  Submitted offer at <strong>$510,000</strong> on 1845 Oak Drive. 20% down, 30-year fixed. Inspection and appraisal contingencies included. Seller has 48 hours to respond.
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    1845 Oak Drive, Willowbrook
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call -->
+              <div class="activity-card">
+                <div class="activity-icon icon-call">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#8e44ad;">LW</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Lisa Wang <span class="agent-badge">M. Brooks</span></div>
+                    <div class="activity-type-label">Phone Call &middot; 8 min</div>
+                  </div>
+                  <div class="activity-time">11:20 AM</div>
+                </div>
+                <div class="activity-body">
+                  Lisa called to discuss timeline for selling her condo. Wants to list by March 1. Discussed comp analysis &mdash; suggested pricing at $325K based on recent sales in the building.
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="activity-card">
+                <div class="activity-icon icon-email">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#e67e22;">SP</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Sarah Park <span class="agent-badge">K. Nguyen</span></div>
+                    <div class="activity-type-label">Email Received</div>
+                  </div>
+                  <div class="activity-time">10:05 AM</div>
+                </div>
+                <div class="activity-body">
+                  Sarah replied with questions about the Highland Park neighborhood &mdash; school districts, commute times, and HOA fees. Wants to schedule showings this weekend.
+                </div>
+              </div>
+
+              <!-- Note -->
+              <div class="activity-card">
+                <div class="activity-icon icon-note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#c0392b;">DT</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">David Thompson <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Note Added</div>
+                  </div>
+                  <div class="activity-time">9:00 AM</div>
+                </div>
+                <div class="activity-body">
+                  Internal note: David mentioned he may need to delay his search by 2-3 weeks due to work travel. Follow up after Feb 10. Budget still $400-450K, prefers south side.
+                </div>
+              </div>
+
+            </div><!-- /timeline-group -->
+
+            <!-- ═══ JANUARY 28 ═══ -->
+            <div class="date-sep"><span>January 28</span></div>
+
+            <div class="timeline-group">
+
+              <!-- Showing -->
+              <div class="activity-card">
+                <div class="activity-icon icon-showing">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#4a5acb;">MR</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Maria Rodriguez <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Final Walkthrough</div>
+                  </div>
+                  <div class="activity-time">3:00 PM</div>
+                </div>
+                <div class="activity-body">
+                  Final walkthrough completed at 742 Evergreen Terrace. Property in expected condition. Minor touch-up paint noted &mdash; seller agreed to credit $200. Maria is satisfied and ready to close.
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    742 Evergreen Terrace, Springfield
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call -->
+              <div class="activity-card">
+                <div class="activity-icon icon-call">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#8e44ad;">LW</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Lisa Wang <span class="agent-badge">M. Brooks</span></div>
+                    <div class="activity-type-label">Phone Call &middot; 22 min</div>
+                  </div>
+                  <div class="activity-time">11:00 AM</div>
+                </div>
+                <div class="activity-body">
+                  Initial consultation call. Lisa is relocating from Portland, OR. Currently renting, wants to buy a 2BR condo downtown, budget $300-350K. Prefers modern finishes, in-unit laundry a must. Sent her three listings to review.
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="activity-card">
+                <div class="activity-icon icon-email">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#27ae60;">JC</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">James Chen <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Email Sent</div>
+                  </div>
+                  <div class="activity-time">9:15 AM</div>
+                </div>
+                <div class="activity-body">
+                  Sent comparative market analysis for 1845 Oak Drive. Listed at $535K, comps suggest $505-520K is fair. Recommended opening at $510K with escalation clause to $525K.
+                </div>
+              </div>
+
+            </div><!-- /timeline-group -->
+
+            <!-- ═══ JANUARY 26 ═══ -->
+            <div class="date-sep"><span>January 26</span></div>
+
+            <div class="timeline-group">
+
+              <!-- Showing -->
+              <div class="activity-card">
+                <div class="activity-icon icon-showing">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#27ae60;">JC</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">James Chen <span class="agent-badge">You</span></div>
+                    <div class="activity-type-label">Showing Completed</div>
+                  </div>
+                  <div class="activity-time">2:00 PM</div>
+                </div>
+                <div class="activity-body">
+                  Toured 1845 Oak Drive with James. He loved the open floor plan and natural light. Main concern is the small garage. Wants to put in an offer &mdash; will discuss numbers this week.
+                  <div class="activity-address">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    1845 Oak Drive, Willowbrook
+                  </div>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="activity-card">
+                <div class="activity-icon icon-email">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="activity-header">
+                  <div class="activity-avatar" style="background:#e67e22;">SP</div>
+                  <div class="activity-meta">
+                    <div class="activity-who">Sarah Park <span class="agent-badge">K. Nguyen</span></div>
+                    <div class="activity-type-label">Email Sent</div>
+                  </div>
+                  <div class="activity-time">10:30 AM</div>
+                </div>
+                <div class="activity-body">
+                  Sent welcome packet and buyer consultation questionnaire. Sarah is a first-time buyer, budget $280-320K, looking for a townhouse in Highland Park area. Prefers move-in ready.
+                </div>
+              </div>
+
+            </div><!-- /timeline-group -->
+
+          </div><!-- /feed -->
+        </div><!-- /feed-area -->
+
+        <!-- ─── Right Summary Rail ─── -->
+        <div class="summary-rail">
+
+          <!-- Solo stats -->
+          <div class="solo-only">
+            <h3>Today's Summary</h3>
+            <div class="stat-card" style="margin-bottom:8px;">
+              <div class="stat-value">$485K</div>
+              <div class="stat-label">Closed Today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">12</div>
+              <div class="stat-label">Activities This Week</div>
+            </div>
+          </div>
+
+          <!-- Team stats -->
+          <div class="team-only">
+            <h3>Team Totals (This Week)</h3>
+            <div class="stat-card" style="margin-bottom:8px;">
+              <div class="stat-value">$485K</div>
+              <div class="stat-label">Volume Closed</div>
+            </div>
+            <div class="stat-card" style="margin-bottom:12px;">
+              <div class="stat-value">28</div>
+              <div class="stat-label">Total Activities</div>
+            </div>
+            <h3>By Agent</h3>
+            <div class="team-stat-row">
+              <div class="team-stat-avatar" style="background:#4a5acb;">YO</div>
+              <span class="team-stat-name">You</span>
+              <span class="team-stat-count">12</span>
+            </div>
+            <div class="team-stat-row">
+              <div class="team-stat-avatar" style="background:#e67e22;">KN</div>
+              <span class="team-stat-name">Karen Nguyen</span>
+              <span class="team-stat-count">10</span>
+            </div>
+            <div class="team-stat-row">
+              <div class="team-stat-avatar" style="background:#27ae60;">MB</div>
+              <span class="team-stat-name">Mike Brooks</span>
+              <span class="team-stat-count">6</span>
+            </div>
+          </div>
+
+          <!-- Admin stats -->
+          <div class="admin-only">
+            <h3>Brokerage KPIs</h3>
+            <div class="stat-card" style="margin-bottom:8px;">
+              <div class="stat-value">$2.1M</div>
+              <div class="stat-label">Volume This Month</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <div class="stat-row"><span class="stat-row-label">Active Deals</span><span class="stat-row-value">14</span></div>
+              <div class="stat-row"><span class="stat-row-label">Closings MTD</span><span class="stat-row-value">6</span></div>
+              <div class="stat-row"><span class="stat-row-label">Avg Days on Market</span><span class="stat-row-value">23</span></div>
+              <div class="stat-row"><span class="stat-row-label">Agents Active</span><span class="stat-row-value">8</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h3>Upcoming</h3>
+            <div class="upcoming-item">
+              <div class="upcoming-time">Today, 2:00 PM</div>
+              <div class="upcoming-desc">Showing &mdash; 2301 Maple Lane</div>
+              <div class="upcoming-contact">James Chen</div>
+            </div>
+            <div class="upcoming-item">
+              <div class="upcoming-time">Tomorrow, 10:00 AM</div>
+              <div class="upcoming-desc">Listing appointment</div>
+              <div class="upcoming-contact">Lisa Wang</div>
+            </div>
+            <div class="upcoming-item">
+              <div class="upcoming-time">Feb 2, 1:00 PM</div>
+              <div class="upcoming-desc">Showing &mdash; 44 Park Ave #12B</div>
+              <div class="upcoming-contact">Sarah Park</div>
+            </div>
+            <div class="upcoming-item">
+              <div class="upcoming-time">Feb 3, 3:00 PM</div>
+              <div class="upcoming-desc">Offer review meeting</div>
+              <div class="upcoming-contact">James Chen</div>
+            </div>
+          </div>
+
+          <div>
+            <h3>Pipeline Snapshot</h3>
+            <div class="stat-row"><span class="stat-row-label">New Leads</span><span class="stat-row-value">3</span></div>
+            <div class="stat-row"><span class="stat-row-label">Active Showings</span><span class="stat-row-value">2</span></div>
+            <div class="stat-row"><span class="stat-row-label">Offers Out</span><span class="stat-row-value">1</span></div>
+            <div class="stat-row"><span class="stat-row-label">Under Contract</span><span class="stat-row-value">1</span></div>
+            <div class="stat-row"><span class="stat-row-label">Closed (Jan)</span><span class="stat-row-value">1</span></div>
+          </div>
+
+        </div><!-- /summary-rail -->
+
+      </div><!-- /crm -->
+    </div><!-- /window -->
+  </div><!-- /experiment-content -->
+</div><!-- /experiment-frame -->
+</body>
+</html>

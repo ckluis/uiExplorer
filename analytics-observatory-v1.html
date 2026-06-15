@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Observatory — v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+  .experiment-sidebar {
+    width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+    padding: 24px 20px; overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px;
+  }
+  .experiment-sidebar::-webkit-scrollbar { width: 4px; }
+  .experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+  .experiment-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .experiment-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #888; margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+    font-size: 12px; color: #bbb; font-style: italic;
+  }
+  .experiment-sidebar .exp-prev { font-size: 12px; }
+  .experiment-sidebar .exp-autonomous {
+    display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+  }
+
+  /* ─── Model Badge ─── */
+  .experiment-sidebar .exp-model {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+  }
+  .experiment-sidebar .exp-model.opus { background: rgba(229,166,59,0.15); color: #e5a63b; }
+  .experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.15); color: #8b9cf7; }
+  .experiment-sidebar .exp-model.haiku { background: rgba(94,196,212,0.15); color: #5ec4d4; }
+
+  /* ─── Agent Trace ─── */
+  .experiment-sidebar .exp-at-workflow {
+    font-size: 10px; color: #888; font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 4px;
+    margin-bottom: 8px; letter-spacing: 0.02em;
+  }
+  .experiment-sidebar .exp-agent-trace { display: flex; flex-direction: column; gap: 6px; }
+  .experiment-sidebar .exp-at-entry {
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px 10px; border-left: 3px solid #555;
+  }
+  .experiment-sidebar .exp-at-entry.opus { border-left-color: #e5a63b; }
+  .experiment-sidebar .exp-at-entry.sonnet { border-left-color: #8b9cf7; }
+  .experiment-sidebar .exp-at-entry.haiku { border-left-color: #5ec4d4; }
+  .experiment-sidebar .exp-at-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .experiment-sidebar .exp-at-role {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #ddd;
+  }
+  .experiment-sidebar .exp-at-model { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin-left: auto; }
+  .experiment-sidebar .exp-at-model.opus { background: rgba(229,166,59,0.15); color: #e5a63b; }
+  .experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: #8b9cf7; }
+  .experiment-sidebar .exp-at-model.haiku { background: rgba(94,196,212,0.15); color: #5ec4d4; }
+  .experiment-sidebar .exp-at-action { font-size: 11px; color: #bbb; line-height: 1.4; }
+  .experiment-sidebar .exp-at-prompt {
+    font-size: 10px; color: #888; font-style: italic; margin-top: 4px; padding-top: 4px;
+    border-top: 1px solid rgba(255,255,255,0.06); line-height: 1.4;
+  }
+  .experiment-sidebar .exp-at-arrow { text-align: center; color: #555; font-size: 10px; line-height: 1; }
+
+  /* ─── Sidebar Versions Card ─── */
+  .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+  .experiment-sidebar .exp-vc-entry {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px;
+    text-decoration: none; color: inherit; transition: background 0.15s;
+  }
+  .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+  .experiment-sidebar .exp-vc-entry.current { background: rgba(139,156,247,0.12); border: 1px solid rgba(139,156,247,0.25); }
+  .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+  .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+  .experiment-sidebar .exp-vc-model { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin-left: auto; flex-shrink: 0; }
+  .experiment-sidebar .exp-vc-model.opus { background: rgba(229,166,59,0.12); color: #e5a63b; }
+  .experiment-sidebar .exp-vc-model.sonnet { background: rgba(139,156,247,0.12); color: #8b9cf7; }
+  .experiment-sidebar .exp-vc-model.haiku { background: rgba(94,196,212,0.12); color: #5ec4d4; }
+
+  /* ─── Device Preview Switcher ─── */
+  .experiment-content {
+    flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+  .preview-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+  }
+  .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+  .preview-btn svg { width: 20px; height: 20px; }
+  #preview-web:checked ~ .preview-bar label[for="preview-web"],
+  #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+  #preview-full:checked ~ .preview-bar label[for="preview-full"] {
+    background: rgba(255,255,255,0.2); color: white;
+  }
+  .window {
+    width: 1360px; height: 820px; background: #fafafa;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+    position: relative;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+  #preview-full:checked ~ .preview-bar {
+    position: absolute; top: 8px; z-index: 100;
+    background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+  }
+  #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+  /* ═══════════════════════════════════════════════════
+     ANALYTICS OBSERVATORY — APP STYLES
+     ═══════════════════════════════════════════════════ */
+
+  .ao-app {
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #fafafa; color: #111827; -webkit-font-smoothing: antialiased;
+    font-size: 13px;
+  }
+
+  /* ─── Top Bar ─── */
+  .ao-topbar {
+    display: flex; align-items: center; gap: 16px;
+    height: 56px; padding: 0 24px;
+    background: #ffffff; border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  .ao-logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ao-logo-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s ease;
+  }
+  .ao-logo:hover .ao-logo-icon {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  .ao-logo-icon svg { width: 16px; height: 16px; color: #fff; }
+  .ao-logo-text {
+    font-size: 15px; font-weight: 700; color: #111827; letter-spacing: -0.3px;
+  }
+  .ao-topbar-spacer { flex: 1; }
+  .ao-time-range {
+    display: flex; align-items: center; gap: 2px;
+    background: #f3f4f6; border-radius: 8px; padding: 3px;
+  }
+  .ao-time-label {
+    display: flex; align-items: center; justify-content: center;
+    padding: 5px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: #6b7280;
+    transition: all 0.2s ease;
+  }
+  .ao-time-label:hover {
+    color: #374151;
+    background: rgba(0,0,0,0.04);
+    border-radius: 6px;
+  }
+
+  /* Time range active states */
+  #time-7d:checked ~ .window .ao-time-label[for="time-7d"],
+  #time-30d:checked ~ .window .ao-time-label[for="time-30d"],
+  #time-90d:checked ~ .window .ao-time-label[for="time-90d"],
+  #time-1y:checked ~ .window .ao-time-label[for="time-1y"] {
+    background: #ffffff; color: #111827; font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  }
+
+  .ao-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+    margin-left: 8px; cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ao-avatar:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  }
+
+  /* ─── Tab Navigation ─── */
+  .ao-tabs {
+    display: flex; align-items: center; gap: 0;
+    padding: 0 24px; background: #ffffff;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  .ao-tab {
+    display: flex; align-items: center; justify-content: center;
+    padding: 12px 20px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: #6b7280;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .ao-tab:hover {
+    color: #374151;
+    background: rgba(99,102,241,0.04);
+  }
+
+  /* Tab active states */
+  #tab-overview:checked ~ .window .ao-tab[for="tab-overview"],
+  #tab-revenue:checked ~ .window .ao-tab[for="tab-revenue"],
+  #tab-usage:checked ~ .window .ao-tab[for="tab-usage"],
+  #tab-cohorts:checked ~ .window .ao-tab[for="tab-cohorts"] {
+    color: #6366f1; font-weight: 600;
+    border-bottom-color: #6366f1;
+  }
+
+  /* ─── Main Content ─── */
+  .ao-main {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 24px;
+    scroll-behavior: smooth;
+  }
+  /* Styled scrollbars */
+  .ao-main::-webkit-scrollbar {
+    width: 6px;
+  }
+  .ao-main::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ao-main::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.12);
+    border-radius: 3px;
+  }
+  .ao-main::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.22);
+  }
+
+  /* Tab content visibility */
+  .ao-tab-content { display: none; }
+  #tab-overview:checked ~ .window .ao-overview-content,
+  #tab-revenue:checked ~ .window .ao-revenue-content,
+  #tab-usage:checked ~ .window .ao-usage-content,
+  #tab-cohorts:checked ~ .window .ao-cohorts-content { display: block; }
+
+  /* ─── Metric Cards ─── */
+  .ao-metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .ao-metric-card {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px; padding: 20px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+  .ao-metric-card:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+    border-color: rgba(0,0,0,0.10);
+  }
+  .ao-metric-label {
+    font-size: 11px; font-weight: 500; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .ao-metric-row {
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .ao-metric-value {
+    font-size: 30px; font-weight: 800; color: #111827;
+    letter-spacing: -0.5px; line-height: 1;
+  }
+  .ao-metric-trend {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600;
+    padding: 2px 8px; border-radius: 6px;
+    transition: transform 0.15s ease;
+  }
+  .ao-metric-card:hover .ao-metric-trend {
+    transform: scale(1.05);
+  }
+  .ao-metric-trend.up {
+    color: #059669; background: rgba(5,150,105,0.08);
+  }
+  .ao-metric-trend.down {
+    color: #dc2626; background: rgba(220,38,38,0.08);
+  }
+  .ao-metric-trend.down.good {
+    color: #059669; background: rgba(5,150,105,0.08);
+  }
+  .ao-metric-trend svg { width: 12px; height: 12px; }
+
+  /* Sparklines */
+  .ao-sparkline {
+    height: 24px; margin-top: 12px; position: relative;
+    transition: transform 0.2s ease;
+  }
+  .ao-metric-card:hover .ao-sparkline {
+    transform: scaleY(1.1);
+    transform-origin: bottom;
+  }
+  .ao-sparkline-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 100%;
+  }
+  .ao-sparkline-line {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 100%;
+  }
+
+  /* ─── Charts Layout ─── */
+  .ao-charts-row {
+    display: grid; grid-template-columns: 3fr 2fr; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .ao-chart-card {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px; padding: 20px; overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .ao-chart-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,0.10);
+  }
+  .ao-chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .ao-chart-title {
+    font-size: 14px; font-weight: 600; color: #111827;
+  }
+  .ao-chart-subtitle {
+    font-size: 11px; color: #9ca3af; font-weight: 400;
+  }
+
+  /* ─── Area Chart ─── */
+  .ao-area-chart {
+    position: relative; height: 240px;
+    display: flex;
+  }
+  .ao-y-axis {
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding-right: 12px; width: 48px; flex-shrink: 0;
+  }
+  .ao-y-label {
+    font-size: 10px; color: #9ca3af; font-weight: 500;
+    text-align: right;
+  }
+  .ao-chart-area {
+    flex: 1; position: relative;
+    border-left: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  /* Grid lines */
+  .ao-grid-line {
+    position: absolute; left: 0; right: 0;
+    height: 1px; background: rgba(0,0,0,0.04);
+  }
+  .ao-grid-line:nth-child(1) { top: 0%; }
+  .ao-grid-line:nth-child(2) { top: 25%; }
+  .ao-grid-line:nth-child(3) { top: 50%; }
+  .ao-grid-line:nth-child(4) { top: 75%; }
+
+  /* Area fill */
+  .ao-area-fill {
+    position: absolute; bottom: 0; left: 0; right: 0; top: 0;
+  }
+  .ao-area-shape {
+    width: 100%; height: 100%;
+  }
+
+  /* X axis labels */
+  .ao-x-axis {
+    display: flex; justify-content: space-between;
+    padding-top: 8px; padding-left: 48px;
+  }
+  .ao-x-label {
+    font-size: 10px; color: #9ca3af; font-weight: 500;
+  }
+
+  /* Time-range chart switching */
+  .ao-time-variant { display: none; }
+  #time-7d:checked ~ .window .ao-time-7d,
+  #time-30d:checked ~ .window .ao-time-30d,
+  #time-90d:checked ~ .window .ao-time-90d,
+  #time-1y:checked ~ .window .ao-time-1y { display: block; }
+
+  /* Flex variants for flex containers */
+  .ao-time-variant-flex { display: none; }
+  #time-7d:checked ~ .window .ao-time-7d-flex,
+  #time-30d:checked ~ .window .ao-time-30d-flex,
+  #time-90d:checked ~ .window .ao-time-90d-flex,
+  #time-1y:checked ~ .window .ao-time-1y-flex { display: flex; }
+
+  /* Grid variants for grid containers */
+  .ao-time-variant-grid { display: none; }
+  #time-7d:checked ~ .window .ao-time-7d-grid,
+  #time-30d:checked ~ .window .ao-time-30d-grid,
+  #time-90d:checked ~ .window .ao-time-90d-grid,
+  #time-1y:checked ~ .window .ao-time-1y-grid { display: grid; }
+
+  /* Metric value switching */
+  .ao-mv { display: none; }
+  #time-7d:checked ~ .window .ao-mv-7d,
+  #time-30d:checked ~ .window .ao-mv-30d,
+  #time-90d:checked ~ .window .ao-mv-90d,
+  #time-1y:checked ~ .window .ao-mv-1y { display: inline; }
+
+  /* ─── Donut Chart ─── */
+  .ao-donut-wrap {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .ao-donut {
+    width: 180px; height: 180px; border-radius: 50%;
+    position: relative; margin: 0 auto 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: default;
+  }
+  .ao-donut:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.12);
+  }
+  .ao-donut-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px; height: 100px; border-radius: 50%;
+    background: #ffffff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .ao-donut-total {
+    font-size: 20px; font-weight: 700; color: #111827; letter-spacing: -0.3px;
+  }
+  .ao-donut-label {
+    font-size: 10px; color: #9ca3af; font-weight: 500;
+  }
+  .ao-legend {
+    display: flex; flex-direction: column; gap: 10px; width: 100%;
+  }
+  .ao-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #374151;
+    padding: 6px 8px; border-radius: 6px;
+    transition: background 0.15s ease;
+    cursor: default;
+  }
+  .ao-legend-item:hover {
+    background: rgba(0,0,0,0.03);
+  }
+  .ao-legend-dot {
+    width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  .ao-legend-item:hover .ao-legend-dot {
+    transform: scale(1.4);
+  }
+  .ao-legend-name { flex: 1; font-weight: 500; }
+  .ao-legend-val { font-weight: 600; color: #111827; }
+  .ao-legend-pct { font-size: 11px; color: #9ca3af; margin-left: 4px; }
+
+  /* ─── Revenue Tab ─── */
+  .ao-revenue-metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* Bar Chart */
+  .ao-bar-chart {
+    display: flex; align-items: flex-end; gap: 8px;
+    height: 200px; padding-top: 20px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .ao-bar-group {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .ao-bar {
+    width: 100%; border-radius: 4px 4px 0 0;
+    transition: opacity 0.2s ease, filter 0.2s ease, transform 0.15s ease;
+    position: relative;
+    cursor: pointer;
+  }
+  .ao-bar:hover {
+    opacity: 0.9;
+    filter: brightness(1.1);
+    transform: scaleX(1.08);
+  }
+  .ao-bar::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -28px; left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: #1f2937;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .ao-bar:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  .ao-bar::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: 50%;
+    transform: translateX(-50%) scale(0);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #1f2937;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .ao-bar:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  .ao-bar-label {
+    font-size: 10px; color: #9ca3af; font-weight: 500;
+    text-align: center; padding-top: 8px;
+    transition: color 0.15s ease, font-weight 0.15s ease;
+  }
+  .ao-bar-group:hover .ao-bar-label {
+    color: #374151;
+    font-weight: 600;
+  }
+  /* Bar grid lines */
+  .ao-bar-grid {
+    position: absolute; left: 0; right: 0; bottom: 0; top: 0;
+    pointer-events: none;
+  }
+  .ao-bar-grid-line {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: rgba(0,0,0,0.04);
+  }
+  .ao-bar-grid-line:nth-child(1) { bottom: 25%; }
+  .ao-bar-grid-line:nth-child(2) { bottom: 50%; }
+  .ao-bar-grid-line:nth-child(3) { bottom: 75%; }
+  .ao-bar-grid-line:nth-child(4) { bottom: 100%; }
+
+  /* Revenue Table */
+  .ao-table {
+    width: 100%; border-collapse: collapse;
+  }
+  .ao-table thead th {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #9ca3af;
+    padding: 10px 16px; text-align: left;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+  .ao-table tbody td {
+    padding: 12px 16px; font-size: 13px; color: #374151;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .ao-table tbody tr {
+    transition: background 0.15s ease;
+    cursor: pointer;
+  }
+  .ao-table tbody tr:hover {
+    background: rgba(99,102,241,0.05);
+  }
+  .ao-table tbody tr:hover .ao-tbl-name {
+    color: #6366f1;
+  }
+  .ao-table .ao-tbl-name {
+    font-weight: 600; color: #111827;
+    transition: color 0.15s ease;
+  }
+  .ao-table .ao-tbl-plan {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .ao-table tbody tr:hover .ao-tbl-plan {
+    transform: scale(1.05);
+  }
+  .ao-tbl-plan.pro { background: rgba(99,102,241,0.08); color: #6366f1; }
+  .ao-tbl-plan.team { background: rgba(16,185,129,0.08); color: #059669; }
+  .ao-tbl-plan.enterprise { background: rgba(245,158,11,0.08); color: #d97706; }
+  .ao-tbl-plan.starter { background: rgba(244,63,94,0.08); color: #e11d48; }
+
+  .ao-tbl-growth {
+    font-weight: 600; font-size: 12px;
+  }
+  .ao-tbl-growth.positive { color: #059669; }
+  .ao-tbl-growth.negative { color: #dc2626; }
+
+  .ao-tbl-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 500;
+  }
+  .ao-tbl-status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .ao-tbl-status-dot.active { background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  .ao-tbl-status-dot.at-risk { background: #f59e0b; box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  .ao-tbl-status-dot.churned { background: #ef4444; box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  .ao-table tbody tr:hover .ao-tbl-status-dot.active {
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+  }
+  .ao-table tbody tr:hover .ao-tbl-status-dot.at-risk {
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+  }
+  .ao-table tbody tr:hover .ao-tbl-status-dot.churned {
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+  }
+  .ao-tbl-status-dot {
+    transition: box-shadow 0.2s ease;
+  }
+
+  /* ─── Usage Tab ─── */
+  .ao-usage-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* Heatmap */
+  .ao-heatmap {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .ao-heatmap-row {
+    display: flex; align-items: center; gap: 2px;
+  }
+  .ao-heatmap-label {
+    width: 32px; font-size: 10px; color: #9ca3af;
+    font-weight: 500; text-align: right; padding-right: 6px;
+    flex-shrink: 0;
+  }
+  .ao-heatmap-cells {
+    display: flex; gap: 2px; flex: 1;
+  }
+  .ao-hm-cell {
+    flex: 1; aspect-ratio: 1; border-radius: 2px;
+    min-width: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: crosshair;
+    position: relative;
+  }
+  .ao-hm-cell:hover {
+    transform: scale(1.4);
+    z-index: 1;
+    box-shadow: 0 0 0 1.5px rgba(99,102,241,0.5);
+    border-radius: 3px;
+  }
+
+  /* Heatmap intensity colors */
+  .ao-hm-0 { background: #f3f4f6; }
+  .ao-hm-1 { background: rgba(99,102,241,0.12); }
+  .ao-hm-2 { background: rgba(99,102,241,0.25); }
+  .ao-hm-3 { background: rgba(99,102,241,0.40); }
+  .ao-hm-4 { background: rgba(99,102,241,0.55); }
+  .ao-hm-5 { background: rgba(99,102,241,0.70); }
+  .ao-hm-6 { background: rgba(99,102,241,0.85); }
+  .ao-hm-7 { background: #6366f1; }
+
+  .ao-heatmap-hours {
+    display: flex; gap: 2px; padding-left: 38px; margin-top: 4px;
+  }
+  .ao-heatmap-hours span {
+    flex: 1; font-size: 8px; color: #9ca3af; text-align: center;
+    min-width: 0;
+  }
+  .ao-heatmap-scale {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 12px; justify-content: center;
+  }
+  .ao-heatmap-scale-label { font-size: 10px; color: #9ca3af; }
+  .ao-heatmap-scale-cells { display: flex; gap: 2px; }
+  .ao-heatmap-scale-cells span {
+    width: 12px; height: 12px; border-radius: 2px;
+  }
+
+  /* Feature Adoption */
+  .ao-feature-list {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .ao-feature-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 8px; border-radius: 6px;
+    transition: background 0.15s ease;
+    cursor: default;
+  }
+  .ao-feature-item:hover {
+    background: rgba(99,102,241,0.04);
+  }
+  .ao-feature-name {
+    width: 120px; font-size: 12px; font-weight: 500; color: #374151;
+    flex-shrink: 0;
+  }
+  .ao-feature-bar-bg {
+    flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px;
+    overflow: hidden;
+  }
+  .ao-feature-bar {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ao-feature-item:hover .ao-feature-bar {
+    filter: brightness(1.1);
+    box-shadow: 0 0 8px rgba(99,102,241,0.25);
+  }
+  .ao-feature-pct {
+    width: 40px; text-align: right;
+    font-size: 12px; font-weight: 600; color: #111827;
+  }
+
+  /* ─── Cohorts Tab ─── */
+  .ao-cohort-table {
+    width: 100%; border-collapse: separate; border-spacing: 2px;
+  }
+  .ao-cohort-table th {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #9ca3af; padding: 8px 10px;
+    text-align: center;
+  }
+  .ao-cohort-table th:first-child {
+    text-align: left; width: 100px;
+  }
+  .ao-cohort-table td {
+    padding: 8px 10px; text-align: center;
+    font-size: 12px; font-weight: 600; border-radius: 4px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    cursor: default;
+  }
+  .ao-cohort-table td:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    filter: brightness(1.05);
+    z-index: 1;
+    position: relative;
+  }
+  .ao-cohort-table td:first-child {
+    text-align: left; font-weight: 500; color: #6b7280;
+    background: transparent !important;
+  }
+  .ao-cohort-table td:first-child:hover { transform: none; }
+
+  /* Cohort retention colors */
+  .ao-cr-100 { background: rgba(5,150,105,0.20); color: #059669; }
+  .ao-cr-90 { background: rgba(5,150,105,0.16); color: #059669; }
+  .ao-cr-80 { background: rgba(5,150,105,0.12); color: #059669; }
+  .ao-cr-70 { background: rgba(16,185,129,0.10); color: #10b981; }
+  .ao-cr-60 { background: rgba(52,211,153,0.12); color: #34d399; }
+  .ao-cr-50 { background: rgba(245,158,11,0.12); color: #d97706; }
+  .ao-cr-40 { background: rgba(245,158,11,0.16); color: #d97706; }
+  .ao-cr-30 { background: rgba(239,68,68,0.10); color: #ef4444; }
+  .ao-cr-20 { background: rgba(239,68,68,0.14); color: #ef4444; }
+  .ao-cr-10 { background: rgba(239,68,68,0.18); color: #dc2626; }
+  .ao-cr-empty { background: transparent; }
+
+  .ao-cohort-users {
+    font-size: 10px; font-weight: 400; color: #9ca3af;
+    display: block; margin-top: 1px;
+  }
+
+  /* ─── Responsive: Mobile preview ─── */
+  #preview-mobile:checked ~ .window .ao-metrics {
+    grid-template-columns: repeat(2, 1fr); gap: 8px;
+  }
+  #preview-mobile:checked ~ .window .ao-metric-value {
+    font-size: 20px;
+  }
+  #preview-mobile:checked ~ .window .ao-charts-row {
+    grid-template-columns: 1fr; gap: 12px;
+  }
+  #preview-mobile:checked ~ .window .ao-topbar {
+    padding: 0 12px; height: 48px;
+  }
+  #preview-mobile:checked ~ .window .ao-logo-text {
+    font-size: 13px;
+  }
+  #preview-mobile:checked ~ .window .ao-time-range {
+    display: none;
+  }
+  #preview-mobile:checked ~ .window .ao-main {
+    padding: 12px;
+  }
+  #preview-mobile:checked ~ .window .ao-tab {
+    padding: 10px 12px; font-size: 12px;
+  }
+  #preview-mobile:checked ~ .window .ao-revenue-metrics {
+    grid-template-columns: repeat(2, 1fr); gap: 8px;
+  }
+  #preview-mobile:checked ~ .window .ao-usage-grid {
+    grid-template-columns: 1fr;
+  }
+  #preview-mobile:checked ~ .window .ao-bar-chart {
+    height: 140px;
+  }
+  #preview-mobile:checked ~ .window .ao-area-chart {
+    height: 160px;
+  }
+  #preview-mobile:checked ~ .window .ao-metric-label {
+    font-size: 10px;
+  }
+  #preview-mobile:checked ~ .window .ao-metric-card {
+    padding: 14px;
+  }
+  #preview-mobile:checked ~ .window .ao-chart-title {
+    font-size: 13px;
+  }
+  #preview-mobile:checked ~ .window .ao-chart-subtitle {
+    font-size: 10px;
+  }
+  #preview-mobile:checked ~ .window .ao-chart-card {
+    padding: 14px;
+  }
+  #preview-mobile:checked ~ .window .ao-donut {
+    width: 140px; height: 140px;
+  }
+  #preview-mobile:checked ~ .window .ao-donut-center {
+    width: 76px; height: 76px;
+  }
+  #preview-mobile:checked ~ .window .ao-donut-total {
+    font-size: 16px;
+  }
+  #preview-mobile:checked ~ .window .ao-legend-item {
+    font-size: 11px; padding: 4px 6px;
+  }
+  #preview-mobile:checked ~ .window .ao-feature-name {
+    width: 80px; font-size: 11px;
+  }
+  #preview-mobile:checked ~ .window .ao-feature-pct {
+    font-size: 11px;
+  }
+  #preview-mobile:checked ~ .window .ao-heatmap-label {
+    font-size: 9px; width: 24px;
+  }
+  #preview-mobile:checked ~ .window .ao-table thead th {
+    font-size: 9px; padding: 8px 8px;
+  }
+  #preview-mobile:checked ~ .window .ao-table tbody td {
+    font-size: 11px; padding: 8px 8px;
+  }
+  #preview-mobile:checked ~ .window .ao-cohort-table th,
+  #preview-mobile:checked ~ .window .ao-cohort-table td {
+    font-size: 9px; padding: 4px 3px;
+  }
+  #preview-mobile:checked ~ .window .ao-charts-row {
+    margin-bottom: 16px;
+  }
+  #preview-mobile:checked ~ .window .ao-section-title {
+    font-size: 13px;
+  }
+
+  /* ─── Focus-Visible Accessibility ─── */
+  input[type="radio"]:focus-visible + .window .ao-tab,
+  .ao-tab:focus-visible,
+  .ao-time-label:focus-visible,
+  .preview-btn:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Target the specific label that corresponds to a focused radio */
+  input#tab-overview:focus-visible ~ .window .ao-tab[for="tab-overview"],
+  input#tab-revenue:focus-visible ~ .window .ao-tab[for="tab-revenue"],
+  input#tab-usage:focus-visible ~ .window .ao-tab[for="tab-usage"],
+  input#tab-cohorts:focus-visible ~ .window .ao-tab[for="tab-cohorts"],
+  input#time-7d:focus-visible ~ .window .ao-time-label[for="time-7d"],
+  input#time-30d:focus-visible ~ .window .ao-time-label[for="time-30d"],
+  input#time-90d:focus-visible ~ .window .ao-time-label[for="time-90d"],
+  input#time-1y:focus-visible ~ .window .ao-time-label[for="time-1y"] {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
+  /* ─── Section Titles ─── */
+  .ao-section-title {
+    font-size: 14px; font-weight: 600; color: #111827;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <!-- ─── Experiment Sidebar (placeholder for Sidebar agent) ─── -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Analytics Observatory</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-model opus">Opus 4.6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A Stripe-quality SaaS analytics dashboard exploring CSS-only data visualization as a first-class design concern. Features area charts via clip-path polygon(), donut charts via conic-gradient, heatmap grids, sparklines, bar charts, and cohort retention tables — all without JavaScript. Demonstrates that complex data dashboards can be built with pure CSS state management using radio buttons for tab switching and time-range filtering.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        The originating user prompt was:<br><br>
+        "Evaluate the project and recommend the next major app to add. It should be as substantial as the CRM. We want to build out a team of agents for this approach. Use an world class product manager to do the research and synthesis and the potential app options. Make a decision and then orchestrate the work and manage the work with a team of experts. In this case, we do not need an architect because this is purely html/css, but we do need the worlds best designer AND a UX fanatatic. Use this team to build at least 3 separate new apps and orchestrate their own sub-agents as necessary."<br><br>
+        A PM research agent analyzed all 19 existing experiments and identified data visualization as an unrepresented domain. The Analytics Observatory was selected as one of three new experiments to fill major portfolio gaps.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead &rarr; PM &rarr; Designer &rarr; UX Fanatic &rarr; Sidebar</div>
+      <div class="exp-agent-trace">
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Orchestrated full workflow, planned 3-app build, delegated to specialized agents</div>
+        </div>
+        <div class="exp-at-arrow">&darr;</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">PM / Researcher</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Analyzed all 19 experiments, identified domain gaps, recommended 3 new apps (Analytics Observatory, Design System Playground, Flight Tracker)</div>
+        </div>
+        <div class="exp-at-arrow">&darr;</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Designer</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Built complete analytics dashboard HTML/CSS (1,626 lines). Created 4-tab layout (Overview/Revenue/Usage/Cohorts), CSS-only area charts, donut charts, heatmap grids, sparklines, metric cards with time-range switching.</div>
+        </div>
+        <div class="exp-at-arrow">&darr;</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">UX Fanatic</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Enhanced interactions: hover states with translateY lifts, bar chart tooltips via ::after pseudo-elements, focus-visible styles, mobile preview rules, custom scrollbars, smooth transitions. File grew to 1,850 lines.</div>
+        </div>
+        <div class="exp-at-arrow">&darr;</div>
+        <div class="exp-at-entry sonnet">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Sidebar</span>
+            <span class="exp-at-model sonnet">Sonnet 4.5</span>
+          </div>
+          <div class="exp-at-action">Documented metadata, prompts, and agent trace</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="analytics-observatory-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — CSS-only analytics dashboard with charts, heatmaps, and cohort tables</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Experiment Content ─── -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- App state: Tabs -->
+    <input type="radio" name="tab" id="tab-overview" checked>
+    <input type="radio" name="tab" id="tab-revenue">
+    <input type="radio" name="tab" id="tab-usage">
+    <input type="radio" name="tab" id="tab-cohorts">
+
+    <!-- App state: Time ranges -->
+    <input type="radio" name="timerange" id="time-7d" checked>
+    <input type="radio" name="timerange" id="time-30d">
+    <input type="radio" name="timerange" id="time-90d">
+    <input type="radio" name="timerange" id="time-1y">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="ao-app">
+
+        <!-- ═══ TOP BAR ═══ -->
+        <div class="ao-topbar">
+          <div class="ao-logo">
+            <div class="ao-logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <span class="ao-logo-text">Observatory</span>
+          </div>
+          <div class="ao-topbar-spacer"></div>
+          <div class="ao-time-range">
+            <label for="time-7d" class="ao-time-label">7D</label>
+            <label for="time-30d" class="ao-time-label">30D</label>
+            <label for="time-90d" class="ao-time-label">90D</label>
+            <label for="time-1y" class="ao-time-label">1Y</label>
+          </div>
+          <div class="ao-avatar">CL</div>
+        </div>
+
+        <!-- ═══ TAB NAVIGATION ═══ -->
+        <div class="ao-tabs">
+          <label for="tab-overview" class="ao-tab">Overview</label>
+          <label for="tab-revenue" class="ao-tab">Revenue</label>
+          <label for="tab-usage" class="ao-tab">Usage</label>
+          <label for="tab-cohorts" class="ao-tab">Cohorts</label>
+        </div>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <div class="ao-main">
+
+          <!-- ════════════════════════════════
+               OVERVIEW TAB
+               ════════════════════════════════ -->
+          <div class="ao-tab-content ao-overview-content">
+
+            <!-- Metric Cards -->
+            <div class="ao-metrics">
+
+              <!-- MRR Card -->
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Monthly Recurring Revenue</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">
+                    <span class="ao-mv ao-mv-7d">$48,247</span>
+                    <span class="ao-mv ao-mv-30d">$46,831</span>
+                    <span class="ao-mv ao-mv-90d">$42,519</span>
+                    <span class="ao-mv ao-mv-1y">$31,204</span>
+                  </div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    <span class="ao-mv ao-mv-7d">+12.3%</span>
+                    <span class="ao-mv ao-mv-30d">+10.1%</span>
+                    <span class="ao-mv ao-mv-90d">+36.4%</span>
+                    <span class="ao-mv ao-mv-1y">+54.7%</span>
+                  </div>
+                </div>
+                <div class="ao-sparkline">
+                  <svg class="ao-sparkline-fill" viewBox="0 0 120 24" preserveAspectRatio="none">
+                    <path d="M0 20 L8 18 L16 16 L24 17 L32 14 L40 12 L48 13 L56 10 L64 8 L72 9 L80 7 L88 5 L96 6 L104 4 L112 3 L120 2 L120 24 L0 24 Z" fill="url(#sparkGrad1)" opacity="0.3"/>
+                    <path d="M0 20 L8 18 L16 16 L24 17 L32 14 L40 12 L48 13 L56 10 L64 8 L72 9 L80 7 L88 5 L96 6 L104 4 L112 3 L120 2" fill="none" stroke="#6366f1" stroke-width="1.5"/>
+                    <defs><linearGradient id="sparkGrad1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></linearGradient></defs>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Active Users Card -->
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Active Users</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">
+                    <span class="ao-mv ao-mv-7d">2,847</span>
+                    <span class="ao-mv ao-mv-30d">2,634</span>
+                    <span class="ao-mv ao-mv-90d">2,391</span>
+                    <span class="ao-mv ao-mv-1y">1,847</span>
+                  </div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    <span class="ao-mv ao-mv-7d">+8.1%</span>
+                    <span class="ao-mv ao-mv-30d">+10.2%</span>
+                    <span class="ao-mv ao-mv-90d">+19.1%</span>
+                    <span class="ao-mv ao-mv-1y">+54.1%</span>
+                  </div>
+                </div>
+                <div class="ao-sparkline">
+                  <svg class="ao-sparkline-fill" viewBox="0 0 120 24" preserveAspectRatio="none">
+                    <path d="M0 18 L8 19 L16 15 L24 16 L32 13 L40 14 L48 11 L56 12 L64 9 L72 10 L80 8 L88 6 L96 7 L104 5 L112 4 L120 3 L120 24 L0 24 Z" fill="url(#sparkGrad2)" opacity="0.3"/>
+                    <path d="M0 18 L8 19 L16 15 L24 16 L32 13 L40 14 L48 11 L56 12 L64 9 L72 10 L80 8 L88 6 L96 7 L104 5 L112 4 L120 3" fill="none" stroke="#10b981" stroke-width="1.5"/>
+                    <defs><linearGradient id="sparkGrad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Churn Rate Card -->
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Churn Rate</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">
+                    <span class="ao-mv ao-mv-7d">1.2%</span>
+                    <span class="ao-mv ao-mv-30d">1.4%</span>
+                    <span class="ao-mv ao-mv-90d">1.8%</span>
+                    <span class="ao-mv ao-mv-1y">2.3%</span>
+                  </div>
+                  <div class="ao-metric-trend down good">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 4 8 7 6 11 10"/></svg>
+                    <span class="ao-mv ao-mv-7d">-0.3%</span>
+                    <span class="ao-mv ao-mv-30d">-0.2%</span>
+                    <span class="ao-mv ao-mv-90d">-0.5%</span>
+                    <span class="ao-mv ao-mv-1y">-1.1%</span>
+                  </div>
+                </div>
+                <div class="ao-sparkline">
+                  <svg class="ao-sparkline-fill" viewBox="0 0 120 24" preserveAspectRatio="none">
+                    <path d="M0 6 L8 7 L16 8 L24 7 L32 9 L40 10 L48 9 L56 11 L64 12 L72 11 L80 13 L88 14 L96 15 L104 16 L112 17 L120 18 L120 24 L0 24 Z" fill="url(#sparkGrad3)" opacity="0.3"/>
+                    <path d="M0 6 L8 7 L16 8 L24 7 L32 9 L40 10 L48 9 L56 11 L64 12 L72 11 L80 13 L88 14 L96 15 L104 16 L112 17 L120 18" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+                    <defs><linearGradient id="sparkGrad3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></linearGradient></defs>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- NPS Card -->
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Net Promoter Score</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">
+                    <span class="ao-mv ao-mv-7d">72</span>
+                    <span class="ao-mv ao-mv-30d">70</span>
+                    <span class="ao-mv ao-mv-90d">68</span>
+                    <span class="ao-mv ao-mv-1y">61</span>
+                  </div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    <span class="ao-mv ao-mv-7d">+4</span>
+                    <span class="ao-mv ao-mv-30d">+3</span>
+                    <span class="ao-mv ao-mv-90d">+7</span>
+                    <span class="ao-mv ao-mv-1y">+11</span>
+                  </div>
+                </div>
+                <div class="ao-sparkline">
+                  <svg class="ao-sparkline-fill" viewBox="0 0 120 24" preserveAspectRatio="none">
+                    <path d="M0 16 L8 15 L16 17 L24 14 L32 13 L40 15 L48 11 L56 10 L64 12 L72 8 L80 9 L88 7 L96 5 L104 6 L112 4 L120 3 L120 24 L0 24 Z" fill="url(#sparkGrad4)" opacity="0.3"/>
+                    <path d="M0 16 L8 15 L16 17 L24 14 L32 13 L40 15 L48 11 L56 10 L64 12 L72 8 L80 9 L88 7 L96 5 L104 6 L112 4 L120 3" fill="none" stroke="#0ea5e9" stroke-width="1.5"/>
+                    <defs><linearGradient id="sparkGrad4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/></linearGradient></defs>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts Row: Area Chart + Donut -->
+            <div class="ao-charts-row">
+
+              <!-- Area Chart: Revenue Over Time -->
+              <div class="ao-chart-card">
+                <div class="ao-chart-header">
+                  <div>
+                    <div class="ao-chart-title">Revenue Over Time</div>
+                    <div class="ao-chart-subtitle">Monthly recurring revenue trend</div>
+                  </div>
+                </div>
+
+                <!-- 7D variant -->
+                <div class="ao-time-variant ao-time-7d">
+                  <div class="ao-area-chart">
+                    <div class="ao-y-axis">
+                      <span class="ao-y-label">$60K</span>
+                      <span class="ao-y-label">$45K</span>
+                      <span class="ao-y-label">$30K</span>
+                      <span class="ao-y-label">$15K</span>
+                      <span class="ao-y-label">$0</span>
+                    </div>
+                    <div class="ao-chart-area">
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <svg class="ao-area-fill" viewBox="0 0 500 240" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="areaGrad7d" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/>
+                            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.01"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M0 180 C20 175, 40 170, 70 160 C100 150, 120 155, 145 148 C170 140, 190 135, 215 130 C240 125, 260 120, 285 115 C310 110, 340 105, 360 98 C380 92, 410 88, 430 82 C450 78, 475 72, 500 65 L500 240 L0 240 Z" fill="url(#areaGrad7d)"/>
+                        <path d="M0 180 C20 175, 40 170, 70 160 C100 150, 120 155, 145 148 C170 140, 190 135, 215 130 C240 125, 260 120, 285 115 C310 110, 340 105, 360 98 C380 92, 410 88, 430 82 C450 78, 475 72, 500 65" fill="none" stroke="#6366f1" stroke-width="2.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ao-x-axis">
+                    <span class="ao-x-label">Mon</span>
+                    <span class="ao-x-label">Tue</span>
+                    <span class="ao-x-label">Wed</span>
+                    <span class="ao-x-label">Thu</span>
+                    <span class="ao-x-label">Fri</span>
+                    <span class="ao-x-label">Sat</span>
+                    <span class="ao-x-label">Sun</span>
+                  </div>
+                </div>
+
+                <!-- 30D variant -->
+                <div class="ao-time-variant ao-time-30d">
+                  <div class="ao-area-chart">
+                    <div class="ao-y-axis">
+                      <span class="ao-y-label">$60K</span>
+                      <span class="ao-y-label">$45K</span>
+                      <span class="ao-y-label">$30K</span>
+                      <span class="ao-y-label">$15K</span>
+                      <span class="ao-y-label">$0</span>
+                    </div>
+                    <div class="ao-chart-area">
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <svg class="ao-area-fill" viewBox="0 0 500 240" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="areaGrad30d" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/>
+                            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.01"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M0 195 C17 190, 33 185, 50 188 C67 192, 83 186, 100 180 C117 174, 133 178, 150 170 C167 162, 183 158, 200 165 C217 172, 233 160, 250 152 C267 144, 283 148, 300 140 C317 132, 333 128, 350 122 C367 116, 383 120, 400 110 C417 100, 433 95, 450 88 C467 82, 483 78, 500 72 L500 240 L0 240 Z" fill="url(#areaGrad30d)"/>
+                        <path d="M0 195 C17 190, 33 185, 50 188 C67 192, 83 186, 100 180 C117 174, 133 178, 150 170 C167 162, 183 158, 200 165 C217 172, 233 160, 250 152 C267 144, 283 148, 300 140 C317 132, 333 128, 350 122 C367 116, 383 120, 400 110 C417 100, 433 95, 450 88 C467 82, 483 78, 500 72" fill="none" stroke="#6366f1" stroke-width="2.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ao-x-axis">
+                    <span class="ao-x-label">Jan 12</span>
+                    <span class="ao-x-label">Jan 19</span>
+                    <span class="ao-x-label">Jan 26</span>
+                    <span class="ao-x-label">Feb 2</span>
+                    <span class="ao-x-label">Feb 9</span>
+                  </div>
+                </div>
+
+                <!-- 90D variant -->
+                <div class="ao-time-variant ao-time-90d">
+                  <div class="ao-area-chart">
+                    <div class="ao-y-axis">
+                      <span class="ao-y-label">$60K</span>
+                      <span class="ao-y-label">$45K</span>
+                      <span class="ao-y-label">$30K</span>
+                      <span class="ao-y-label">$15K</span>
+                      <span class="ao-y-label">$0</span>
+                    </div>
+                    <div class="ao-chart-area">
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <svg class="ao-area-fill" viewBox="0 0 500 240" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="areaGrad90d" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/>
+                            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.01"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M0 210 C25 205, 42 198, 63 200 C83 203, 100 195, 125 185 C150 175, 167 180, 188 170 C208 160, 225 165, 250 155 C275 145, 292 140, 313 135 C333 130, 350 125, 375 118 C400 110, 417 115, 438 105 C458 95, 475 90, 500 78 L500 240 L0 240 Z" fill="url(#areaGrad90d)"/>
+                        <path d="M0 210 C25 205, 42 198, 63 200 C83 203, 100 195, 125 185 C150 175, 167 180, 188 170 C208 160, 225 165, 250 155 C275 145, 292 140, 313 135 C333 130, 350 125, 375 118 C400 110, 417 115, 438 105 C458 95, 475 90, 500 78" fill="none" stroke="#6366f1" stroke-width="2.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ao-x-axis">
+                    <span class="ao-x-label">Nov</span>
+                    <span class="ao-x-label">Dec</span>
+                    <span class="ao-x-label">Jan</span>
+                    <span class="ao-x-label">Feb</span>
+                  </div>
+                </div>
+
+                <!-- 1Y variant -->
+                <div class="ao-time-variant ao-time-1y">
+                  <div class="ao-area-chart">
+                    <div class="ao-y-axis">
+                      <span class="ao-y-label">$60K</span>
+                      <span class="ao-y-label">$45K</span>
+                      <span class="ao-y-label">$30K</span>
+                      <span class="ao-y-label">$15K</span>
+                      <span class="ao-y-label">$0</span>
+                    </div>
+                    <div class="ao-chart-area">
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <div class="ao-grid-line"></div>
+                      <svg class="ao-area-fill" viewBox="0 0 500 240" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="areaGrad1y" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/>
+                            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.01"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M0 220 C20 218, 42 212, 63 208 C83 204, 95 200, 110 195 C125 190, 140 185, 155 182 C170 179, 185 175, 200 172 C215 168, 230 172, 245 165 C260 158, 275 155, 290 148 C305 140, 320 145, 340 135 C360 125, 375 128, 395 118 C415 108, 430 110, 450 98 C470 86, 485 80, 500 70 L500 240 L0 240 Z" fill="url(#areaGrad1y)"/>
+                        <path d="M0 220 C20 218, 42 212, 63 208 C83 204, 95 200, 110 195 C125 190, 140 185, 155 182 C170 179, 185 175, 200 172 C215 168, 230 172, 245 165 C260 158, 275 155, 290 148 C305 140, 320 145, 340 135 C360 125, 375 128, 395 118 C415 108, 430 110, 450 98 C470 86, 485 80, 500 70" fill="none" stroke="#6366f1" stroke-width="2.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ao-x-axis">
+                    <span class="ao-x-label">Mar</span>
+                    <span class="ao-x-label">May</span>
+                    <span class="ao-x-label">Jul</span>
+                    <span class="ao-x-label">Sep</span>
+                    <span class="ao-x-label">Nov</span>
+                    <span class="ao-x-label">Jan</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Donut Chart: Revenue by Plan -->
+              <div class="ao-chart-card">
+                <div class="ao-chart-header">
+                  <div>
+                    <div class="ao-chart-title">Revenue by Plan</div>
+                    <div class="ao-chart-subtitle">Distribution across pricing tiers</div>
+                  </div>
+                </div>
+                <div class="ao-donut-wrap">
+                  <div class="ao-donut" style="background: conic-gradient(#6366f1 0deg 162deg, #10b981 162deg 270deg, #f59e0b 270deg 324deg, #f43f5e 324deg 360deg);">
+                    <div class="ao-donut-center">
+                      <span class="ao-donut-total">$48,247</span>
+                      <span class="ao-donut-label">Total MRR</span>
+                    </div>
+                  </div>
+                  <div class="ao-legend">
+                    <div class="ao-legend-item">
+                      <span class="ao-legend-dot" style="background: #6366f1;"></span>
+                      <span class="ao-legend-name">Pro</span>
+                      <span class="ao-legend-val">$21,711</span>
+                      <span class="ao-legend-pct">45%</span>
+                    </div>
+                    <div class="ao-legend-item">
+                      <span class="ao-legend-dot" style="background: #10b981;"></span>
+                      <span class="ao-legend-name">Team</span>
+                      <span class="ao-legend-val">$14,474</span>
+                      <span class="ao-legend-pct">30%</span>
+                    </div>
+                    <div class="ao-legend-item">
+                      <span class="ao-legend-dot" style="background: #f59e0b;"></span>
+                      <span class="ao-legend-name">Enterprise</span>
+                      <span class="ao-legend-val">$7,237</span>
+                      <span class="ao-legend-pct">15%</span>
+                    </div>
+                    <div class="ao-legend-item">
+                      <span class="ao-legend-dot" style="background: #f43f5e;"></span>
+                      <span class="ao-legend-name">Starter</span>
+                      <span class="ao-legend-val">$4,825</span>
+                      <span class="ao-legend-pct">10%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+               REVENUE TAB
+               ════════════════════════════════ -->
+          <div class="ao-tab-content ao-revenue-content">
+
+            <!-- Revenue Metrics -->
+            <div class="ao-revenue-metrics">
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Total Revenue</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">$578,964</div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    +18.4%
+                  </div>
+                </div>
+              </div>
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">ARPU</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">$16.95</div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    +3.2%
+                  </div>
+                </div>
+              </div>
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Lifetime Value</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">$847</div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    +12.7%
+                  </div>
+                </div>
+              </div>
+              <div class="ao-metric-card">
+                <div class="ao-metric-label">Expansion Revenue</div>
+                <div class="ao-metric-row">
+                  <div class="ao-metric-value">$8,247</div>
+                  <div class="ao-metric-trend up">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 8 4 4 7 6 11 2"/></svg>
+                    +24.1%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bar Chart -->
+            <div class="ao-chart-card" style="margin-bottom: 24px;">
+              <div class="ao-chart-header">
+                <div>
+                  <div class="ao-chart-title">Monthly Revenue</div>
+                  <div class="ao-chart-subtitle">Revenue comparison by month</div>
+                </div>
+              </div>
+              <div class="ao-bar-chart">
+                <div class="ao-bar-grid">
+                  <div class="ao-bar-grid-line"></div>
+                  <div class="ao-bar-grid-line"></div>
+                  <div class="ao-bar-grid-line"></div>
+                  <div class="ao-bar-grid-line"></div>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 42%; background: #6366f1;" data-value="$38.2K"></div>
+                  <span class="ao-bar-label">Mar</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 48%; background: #6366f1;" data-value="$41.7K"></div>
+                  <span class="ao-bar-label">Apr</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 44%; background: #6366f1;" data-value="$39.4K"></div>
+                  <span class="ao-bar-label">May</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 52%; background: #10b981;" data-value="$43.8K"></div>
+                  <span class="ao-bar-label">Jun</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 58%; background: #10b981;" data-value="$45.9K"></div>
+                  <span class="ao-bar-label">Jul</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 55%; background: #10b981;" data-value="$44.6K"></div>
+                  <span class="ao-bar-label">Aug</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 62%; background: #f59e0b;" data-value="$47.1K"></div>
+                  <span class="ao-bar-label">Sep</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 68%; background: #f59e0b;" data-value="$49.3K"></div>
+                  <span class="ao-bar-label">Oct</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 65%; background: #f59e0b;" data-value="$48.2K"></div>
+                  <span class="ao-bar-label">Nov</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 72%; background: #6366f1;" data-value="$51.4K"></div>
+                  <span class="ao-bar-label">Dec</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 78%; background: #6366f1;" data-value="$54.8K"></div>
+                  <span class="ao-bar-label">Jan</span>
+                </div>
+                <div class="ao-bar-group">
+                  <div class="ao-bar" style="height: 85%; background: #6366f1;" data-value="$57.6K"></div>
+                  <span class="ao-bar-label">Feb</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Revenue Table -->
+            <div class="ao-chart-card">
+              <div class="ao-chart-header">
+                <div>
+                  <div class="ao-chart-title">Top Accounts by Revenue</div>
+                  <div class="ao-chart-subtitle">Highest MRR contributors</div>
+                </div>
+              </div>
+              <table class="ao-table">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Plan</th>
+                    <th>MRR</th>
+                    <th>Growth</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="ao-tbl-name">Acme Corporation</td>
+                    <td><span class="ao-tbl-plan enterprise">Enterprise</span></td>
+                    <td>$3,247</td>
+                    <td><span class="ao-tbl-growth positive">+15.2%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">TechFlow Inc</td>
+                    <td><span class="ao-tbl-plan enterprise">Enterprise</span></td>
+                    <td>$2,891</td>
+                    <td><span class="ao-tbl-growth positive">+8.7%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">Quantum Labs</td>
+                    <td><span class="ao-tbl-plan team">Team</span></td>
+                    <td>$1,847</td>
+                    <td><span class="ao-tbl-growth positive">+22.3%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">DataPulse</td>
+                    <td><span class="ao-tbl-plan team">Team</span></td>
+                    <td>$1,524</td>
+                    <td><span class="ao-tbl-growth positive">+5.1%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">NexGen Solutions</td>
+                    <td><span class="ao-tbl-plan pro">Pro</span></td>
+                    <td>$1,247</td>
+                    <td><span class="ao-tbl-growth negative">-2.4%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot at-risk"></span>At Risk</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">CloudBase</td>
+                    <td><span class="ao-tbl-plan pro">Pro</span></td>
+                    <td>$987</td>
+                    <td><span class="ao-tbl-growth positive">+11.8%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">Orbit Systems</td>
+                    <td><span class="ao-tbl-plan team">Team</span></td>
+                    <td>$892</td>
+                    <td><span class="ao-tbl-growth positive">+18.9%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">Prism Analytics</td>
+                    <td><span class="ao-tbl-plan pro">Pro</span></td>
+                    <td>$756</td>
+                    <td><span class="ao-tbl-growth negative">-7.2%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot churned"></span>Churned</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">Velo Dynamics</td>
+                    <td><span class="ao-tbl-plan starter">Starter</span></td>
+                    <td>$624</td>
+                    <td><span class="ao-tbl-growth positive">+31.4%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                  <tr>
+                    <td class="ao-tbl-name">Apex Digital</td>
+                    <td><span class="ao-tbl-plan pro">Pro</span></td>
+                    <td>$589</td>
+                    <td><span class="ao-tbl-growth positive">+4.6%</span></td>
+                    <td><span class="ao-tbl-status"><span class="ao-tbl-status-dot active"></span>Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+               USAGE TAB
+               ════════════════════════════════ -->
+          <div class="ao-tab-content ao-usage-content">
+
+            <div class="ao-usage-grid">
+
+              <!-- Heatmap -->
+              <div class="ao-chart-card">
+                <div class="ao-chart-header">
+                  <div>
+                    <div class="ao-chart-title">Usage Heatmap</div>
+                    <div class="ao-chart-subtitle">Activity intensity by day and hour</div>
+                  </div>
+                </div>
+                <div class="ao-heatmap">
+                  <!-- Mon -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Mon</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Tue -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Tue</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Wed -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Wed</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Thu -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Thu</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-7"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Fri -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Fri</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-6"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-5"></div><div class="ao-hm-cell ao-hm-4"></div><div class="ao-hm-cell ao-hm-3"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Sat -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Sat</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <!-- Sun -->
+                  <div class="ao-heatmap-row">
+                    <span class="ao-heatmap-label">Sun</span>
+                    <div class="ao-heatmap-cells">
+                      <div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-2"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-1"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div><div class="ao-hm-cell ao-hm-0"></div>
+                    </div>
+                  </div>
+                  <div class="ao-heatmap-hours">
+                    <span>12a</span><span></span><span></span><span>3a</span><span></span><span></span><span>6a</span><span></span><span></span><span>9a</span><span></span><span></span><span>12p</span><span></span><span></span><span>3p</span><span></span><span></span><span>6p</span><span></span><span></span><span>9p</span><span></span><span></span><span></span>
+                  </div>
+                </div>
+                <div class="ao-heatmap-scale">
+                  <span class="ao-heatmap-scale-label">Less</span>
+                  <div class="ao-heatmap-scale-cells">
+                    <span class="ao-hm-0"></span>
+                    <span class="ao-hm-1"></span>
+                    <span class="ao-hm-2"></span>
+                    <span class="ao-hm-3"></span>
+                    <span class="ao-hm-4"></span>
+                    <span class="ao-hm-5"></span>
+                    <span class="ao-hm-6"></span>
+                    <span class="ao-hm-7"></span>
+                  </div>
+                  <span class="ao-heatmap-scale-label">More</span>
+                </div>
+              </div>
+
+              <!-- Feature Adoption -->
+              <div class="ao-chart-card">
+                <div class="ao-chart-header">
+                  <div>
+                    <div class="ao-chart-title">Feature Adoption</div>
+                    <div class="ao-chart-subtitle">Active usage by feature</div>
+                  </div>
+                </div>
+                <div class="ao-feature-list">
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Dashboard</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 94%;"></div></div>
+                    <span class="ao-feature-pct">94%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Reports</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 87%;"></div></div>
+                    <span class="ao-feature-pct">87%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">API Access</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 72%;"></div></div>
+                    <span class="ao-feature-pct">72%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Webhooks</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 63%;"></div></div>
+                    <span class="ao-feature-pct">63%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Team Sharing</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 58%;"></div></div>
+                    <span class="ao-feature-pct">58%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Custom Alerts</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 45%;"></div></div>
+                    <span class="ao-feature-pct">45%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Exports</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 38%;"></div></div>
+                    <span class="ao-feature-pct">38%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">SSO</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 24%;"></div></div>
+                    <span class="ao-feature-pct">24%</span>
+                  </div>
+                  <div class="ao-feature-item">
+                    <span class="ao-feature-name">Audit Logs</span>
+                    <div class="ao-feature-bar-bg"><div class="ao-feature-bar" style="width: 19%;"></div></div>
+                    <span class="ao-feature-pct">19%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- API Calls Chart -->
+            <div class="ao-chart-card">
+              <div class="ao-chart-header">
+                <div>
+                  <div class="ao-chart-title">API Calls</div>
+                  <div class="ao-chart-subtitle">Request volume over time</div>
+                </div>
+              </div>
+              <div class="ao-area-chart">
+                <div class="ao-y-axis">
+                  <span class="ao-y-label">500K</span>
+                  <span class="ao-y-label">375K</span>
+                  <span class="ao-y-label">250K</span>
+                  <span class="ao-y-label">125K</span>
+                  <span class="ao-y-label">0</span>
+                </div>
+                <div class="ao-chart-area">
+                  <div class="ao-grid-line"></div>
+                  <div class="ao-grid-line"></div>
+                  <div class="ao-grid-line"></div>
+                  <div class="ao-grid-line"></div>
+                  <svg class="ao-area-fill" viewBox="0 0 500 240" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="apiGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.15"/>
+                        <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.01"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0 200 C15 195, 30 185, 50 190 C70 196, 85 180, 100 175 C115 170, 130 165, 150 158 C170 150, 185 155, 200 145 C215 135, 230 140, 250 130 C270 120, 285 125, 300 115 C315 105, 330 110, 350 100 C370 90, 385 95, 400 85 C415 75, 430 80, 450 70 C470 60, 485 55, 500 48 L500 240 L0 240 Z" fill="url(#apiGrad)"/>
+                    <path d="M0 200 C15 195, 30 185, 50 190 C70 196, 85 180, 100 175 C115 170, 130 165, 150 158 C170 150, 185 155, 200 145 C215 135, 230 140, 250 130 C270 120, 285 125, 300 115 C315 105, 330 110, 350 100 C370 90, 385 95, 400 85 C415 75, 430 80, 450 70 C470 60, 485 55, 500 48" fill="none" stroke="#0ea5e9" stroke-width="2.5"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="ao-x-axis">
+                <span class="ao-x-label">Jan</span>
+                <span class="ao-x-label">Feb</span>
+                <span class="ao-x-label">Mar</span>
+                <span class="ao-x-label">Apr</span>
+                <span class="ao-x-label">May</span>
+                <span class="ao-x-label">Jun</span>
+                <span class="ao-x-label">Jul</span>
+                <span class="ao-x-label">Aug</span>
+                <span class="ao-x-label">Sep</span>
+                <span class="ao-x-label">Oct</span>
+                <span class="ao-x-label">Nov</span>
+                <span class="ao-x-label">Dec</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+               COHORTS TAB
+               ════════════════════════════════ -->
+          <div class="ao-tab-content ao-cohorts-content">
+            <div class="ao-chart-card">
+              <div class="ao-chart-header">
+                <div>
+                  <div class="ao-chart-title">Cohort Retention Analysis</div>
+                  <div class="ao-chart-subtitle">Percentage of users retained by monthly cohort</div>
+                </div>
+              </div>
+              <table class="ao-cohort-table">
+                <thead>
+                  <tr>
+                    <th>Cohort</th>
+                    <th>Month 0</th>
+                    <th>Month 1</th>
+                    <th>Month 2</th>
+                    <th>Month 3</th>
+                    <th>Month 4</th>
+                    <th>Month 5</th>
+                    <th>Month 6</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Jul 2025<span class="ao-cohort-users">412 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-80">82%</td>
+                    <td class="ao-cr-70">71%</td>
+                    <td class="ao-cr-60">64%</td>
+                    <td class="ao-cr-50">58%</td>
+                    <td class="ao-cr-50">53%</td>
+                    <td class="ao-cr-40">48%</td>
+                  </tr>
+                  <tr>
+                    <td>Aug 2025<span class="ao-cohort-users">389 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-80">84%</td>
+                    <td class="ao-cr-70">73%</td>
+                    <td class="ao-cr-60">66%</td>
+                    <td class="ao-cr-60">61%</td>
+                    <td class="ao-cr-50">55%</td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                  <tr>
+                    <td>Sep 2025<span class="ao-cohort-users">445 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-80">86%</td>
+                    <td class="ao-cr-70">76%</td>
+                    <td class="ao-cr-70">70%</td>
+                    <td class="ao-cr-60">63%</td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                  <tr>
+                    <td>Oct 2025<span class="ao-cohort-users">467 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-90">88%</td>
+                    <td class="ao-cr-80">78%</td>
+                    <td class="ao-cr-70">72%</td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                  <tr>
+                    <td>Nov 2025<span class="ao-cohort-users">501 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-90">89%</td>
+                    <td class="ao-cr-80">80%</td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                  <tr>
+                    <td>Dec 2025<span class="ao-cohort-users">523 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-90">91%</td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                  <tr>
+                    <td>Jan 2026<span class="ao-cohort-users">547 users</span></td>
+                    <td class="ao-cr-100">100%</td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                    <td class="ao-cr-empty"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /ao-main -->
+      </div><!-- /ao-app -->
+    </div><!-- /window -->
+  </div><!-- /experiment-content -->
+</div><!-- /experiment-frame -->
+</body>
+</html>

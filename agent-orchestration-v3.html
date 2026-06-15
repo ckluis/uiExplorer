@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v3: Orchestra Score</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #0d0d1a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ─── Orchestra Score ─── */
+.score-container {
+  padding: 40px 30px 60px;
+  min-width: 1400px;
+}
+
+.score-title {
+  text-align: center;
+  color: #d4af37;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.score-subtitle {
+  text-align: center;
+  color: rgba(255,255,255,0.35);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+.score {
+  position: relative;
+  padding-left: 200px;
+}
+
+/* Left bracket */
+.score::before {
+  content: '';
+  position: absolute;
+  left: 188px;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+}
+.score::after {
+  content: '';
+  position: absolute;
+  left: 183px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: rgba(255,255,255,0.15);
+}
+
+/* Time signature */
+.time-sig {
+  position: absolute;
+  left: 206px;
+  top: 28px;
+  color: rgba(255,255,255,0.5);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.time-sig span { display: block; }
+
+/* ─── Staff System ─── */
+.staff-system {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.staff-label {
+  position: absolute;
+  left: -190px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: right;
+  width: 170px;
+}
+
+.staff-label .agent-name {
+  font-size: 11px;
+  font-weight: 600;
+  display: block;
+}
+
+.staff-label .instrument-name {
+  font-size: 10px;
+  opacity: 0.5;
+  display: block;
+}
+
+/* Baton icon for conductor */
+.baton-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  position: relative;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.baton-icon::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 2px;
+  background: #d4af37;
+  transform: rotate(-30deg);
+  transform-origin: left center;
+  border-radius: 1px;
+}
+.baton-icon::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: #d4af37;
+  border-radius: 50%;
+}
+
+/* Clef */
+.staff-clef {
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 32px;
+  color: rgba(255,255,255,0.25);
+  line-height: 1;
+}
+
+.staff-lines {
+  position: relative;
+  height: 52px;
+  margin-left: 30px;
+}
+
+.staff-lines .line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+.staff-lines .line:nth-child(1) { top: 6px; }
+.staff-lines .line:nth-child(2) { top: 17px; }
+.staff-lines .line:nth-child(3) { top: 28px; }
+.staff-lines .line:nth-child(4) { top: 39px; }
+.staff-lines .line:nth-child(5) { top: 50px; }
+
+/* Barlines */
+.barline {
+  position: absolute;
+  top: 4px;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.15);
+}
+
+/* ─── Notes ─── */
+.note {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.note-head {
+  width: 10px;
+  height: 8px;
+  border-radius: 50%;
+  transform: rotate(-15deg);
+}
+
+.note-head.filled { background: currentColor; }
+.note-head.hollow {
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+.note-head.whole {
+  width: 14px;
+  height: 10px;
+  background: transparent;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.note-stem {
+  width: 1.5px;
+  height: 28px;
+  background: currentColor;
+  position: absolute;
+  bottom: 6px;
+  right: -1px;
+}
+
+.note-label {
+  font-size: 8px;
+  white-space: nowrap;
+  margin-top: 4px;
+  opacity: 0.7;
+  position: absolute;
+  top: 100%;
+  font-weight: 500;
+}
+
+/* Rest symbol */
+.rest {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0.4;
+}
+
+/* Fermata */
+.fermata {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fermata-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d4af37;
+}
+
+.fermata-arc {
+  width: 22px;
+  height: 12px;
+  border: 2px solid #d4af37;
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  margin-bottom: 2px;
+}
+
+/* Spawned agent bracket */
+.spawn-bracket {
+  position: absolute;
+  border-left: 1.5px dashed rgba(46, 204, 113, 0.4);
+  border-bottom: 1.5px dashed rgba(46, 204, 113, 0.4);
+}
+
+/* ─── Colors ─── */
+.color-conductor { color: #d4af37; }
+.color-orchestrator { color: #e8d5a3; }
+.color-woodwinds { color: #5dade2; }
+.color-brass { color: #e67e22; }
+.color-percussion { color: #e74c3c; }
+.color-harp { color: #2ecc71; }
+
+/* ─── AskUser Panel ─── */
+.ask-panel {
+  position: absolute;
+  background: rgba(139, 156, 247, 0.1);
+  border: 1px solid rgba(139, 156, 247, 0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  width: 220px;
+  z-index: 10;
+}
+
+.ask-panel-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b9cf7;
+  margin-bottom: 6px;
+}
+
+.ask-panel-question {
+  font-size: 11px;
+  color: #ddd;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.ask-panel-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ask-panel-option {
+  font-size: 10px;
+  color: #999;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+}
+
+/* Double barline at end */
+.double-barline {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  border-left: 1.5px solid rgba(255,255,255,0.25);
+  border-right: 3px solid rgba(255,255,255,0.25);
+}
+
+/* ─── Crescendo Hairpin ─── */
+.hairpin {
+  position: absolute;
+  height: 0;
+  border-left: none;
+}
+.hairpin::before,
+.hairpin::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
+.hairpin::before {
+  top: 0;
+  background: currentColor;
+  opacity: 0.5;
+  transform-origin: left center;
+  transform: rotate(3deg);
+}
+.hairpin::after {
+  top: 0;
+  background: currentColor;
+  opacity: 0.5;
+  transform-origin: left center;
+  transform: rotate(-3deg);
+}
+
+/* Legend */
+.legend {
+  margin-top: 40px;
+  padding-left: 30px;
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+}
+
+.legend-note {
+  width: 8px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+}
+
+.legend-note.hollow-leg {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.5);
+}
+
+.legend-rest-sym {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+}
+
+.legend-fermata-sym {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.legend-fermata-sym .f-arc {
+  width: 12px;
+  height: 6px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.legend-fermata-sym .f-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  margin-top: 1px;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v3</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as a musical score &mdash; time flows left to right, each agent is an instrument line, and coordinated actions appear as chords. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Orchestra Score &mdash; the human is the conductor. The orchestrator is first violin. Sub-agents are woodwinds, brass, percussion. Notes represent actions, rests represent waiting, crescendos show intensifying computation. A fermata marks where the music pauses for a human question.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        Create a musical score visualization of agent orchestration where time flows horizontally, each agent occupies a staff line like an instrument, notes represent actions, and musical notation conventions (fermatas, rests, crescendos, barlines) convey coordination patterns. The conductor is the human, first violin is the orchestrator, and sub-agents are mapped to instrument families.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="score-container">
+      <div class="score-title">ORCHESTRATION IN C MAJOR</div>
+      <div class="score-subtitle">A Marketing Campaign &mdash; Op. 1</div>
+
+      <div class="score">
+        <!-- Time Signature -->
+        <div class="time-sig">
+          <span>4</span>
+          <span>4</span>
+        </div>
+
+        <!-- ═══ Staff 1: Conductor / Human ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px;">
+          <div class="staff-label">
+            <span class="agent-name color-conductor"><span class="baton-icon"></span>Conductor</span>
+            <span class="instrument-name">Human</span>
+          </div>
+          <div class="staff-clef" style="color: #d4af37;">&#119070;</div>
+          <div class="staff-lines">
+            <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+
+            <!-- Barlines -->
+            <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+            <!-- Whole note: "Build a marketing campaign" -->
+            <div class="note color-conductor" style="left: 60px; top: 22px;">
+              <div class="note-head whole"></div>
+              <span class="note-label" style="font-size: 9px; color: #d4af37; opacity: 1; width: 160px; text-align: center; left: -73px;">"Build a marketing campaign"</span>
+            </div>
+
+            <!-- Fermata at measure 4 -->
+            <div class="fermata" style="left: 802px; top: -6px;">
+              <div class="fermata-arc"></div>
+              <div class="fermata-dot"></div>
+            </div>
+            <div class="note color-conductor" style="left: 800px; top: 22px;">
+              <div class="note-head whole"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Staff 2: First Violin / Orchestrator ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px;">
+          <div class="staff-label">
+            <span class="agent-name color-orchestrator">First Violin</span>
+            <span class="instrument-name">Orchestrator Agent</span>
+          </div>
+          <div class="staff-clef" style="color: #e8d5a3;">&#119070;</div>
+          <div class="staff-lines">
+            <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+            <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+            <!-- Notes: analyze, plan, delegate, review -->
+            <div class="note color-orchestrator" style="left: 80px; top: 11px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">analyze</span>
+            </div>
+            <div class="note color-orchestrator" style="left: 160px; top: 22px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">plan</span>
+            </div>
+            <div class="note color-orchestrator" style="left: 260px; top: 0px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">delegate</span>
+            </div>
+            <div class="note color-orchestrator" style="left: 340px; top: 11px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">delegate</span>
+            </div>
+            <div class="note color-orchestrator" style="left: 420px; top: 22px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">delegate</span>
+            </div>
+            <!-- Review near end -->
+            <div class="note color-orchestrator" style="left: 920px; top: 17px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">review</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Staff 3: Woodwinds / Content Agent ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px;">
+          <div class="staff-label">
+            <span class="agent-name color-woodwinds">Woodwinds</span>
+            <span class="instrument-name">Content Agent</span>
+          </div>
+          <div class="staff-clef" style="color: #5dade2;">&#119070;</div>
+          <div class="staff-lines">
+            <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+            <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+            <!-- Rest in measure 1 -->
+            <div class="rest" style="left: 100px; top: 14px; color: #5dade2;">&#119102;</div>
+
+            <!-- Notes: draft copy, refine tone, A/B variants -->
+            <div class="note color-woodwinds" style="left: 280px; top: 11px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">draft copy</span>
+            </div>
+            <div class="note color-woodwinds" style="left: 390px; top: 22px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">refine tone</span>
+            </div>
+            <div class="note color-woodwinds" style="left: 500px; top: 6px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">A/B variants</span>
+            </div>
+            <!-- Spawn indicator for Social Media sub-agent -->
+            <div class="note color-woodwinds" style="left: 580px; top: 33px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label" style="color: #2ecc71;">spawn &darr;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Staff 4: Brass / Design Agent ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px;">
+          <div class="staff-label">
+            <span class="agent-name color-brass">Brass</span>
+            <span class="instrument-name">Design Agent</span>
+          </div>
+          <div class="staff-clef" style="color: #e67e22;">&#119070;</div>
+          <div class="staff-lines">
+            <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+            <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+            <!-- Rest in measure 1 -->
+            <div class="rest" style="left: 100px; top: 14px; color: #e67e22;">&#119102;</div>
+
+            <!-- Notes: mood board, layout concepts, color palette -->
+            <div class="note color-brass" style="left: 280px; top: 17px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">mood board</span>
+            </div>
+            <div class="note color-brass" style="left: 500px; top: 6px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">layout concepts</span>
+            </div>
+            <!-- Rest (waiting) -->
+            <div class="rest" style="left: 620px; top: 14px; color: #e67e22;">&#119102;</div>
+            <div class="note color-brass" style="left: 720px; top: 28px;">
+              <div class="note-head filled"></div>
+              <div class="note-stem"></div>
+              <span class="note-label">color palette</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Staff 5: Percussion / Analytics Agent ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px;">
+          <div class="staff-label">
+            <span class="agent-name color-percussion">Percussion</span>
+            <span class="instrument-name">Analytics Agent</span>
+          </div>
+          <div class="staff-clef" style="color: #e74c3c;">&#119070;</div>
+          <div class="staff-lines">
+            <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+            <div class="barline" style="left: 220px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 440px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 46px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 46px; top: 4px;"></div>
+
+            <!-- Quick staccato notes -->
+            <div class="note color-percussion" style="left: 260px; top: 28px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+              <span class="note-label">pull metrics</span>
+            </div>
+            <div class="note color-percussion" style="left: 320px; top: 17px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+            </div>
+            <div class="note color-percussion" style="left: 370px; top: 28px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+            </div>
+            <div class="note color-percussion" style="left: 470px; top: 11px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+              <span class="note-label">segment audiences</span>
+            </div>
+            <div class="note color-percussion" style="left: 530px; top: 22px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+            </div>
+            <div class="note color-percussion" style="left: 580px; top: 11px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+            </div>
+            <div class="note color-percussion" style="left: 700px; top: 17px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+              <span class="note-label">forecast reach</span>
+            </div>
+            <div class="note color-percussion" style="left: 760px; top: 28px;">
+              <div class="note-head filled" style="width: 8px; height: 6px;"></div>
+              <div class="note-stem" style="height: 22px;"></div>
+            </div>
+
+            <!-- Cadenza / AskUserQuestion near fermata -->
+            <div class="note color-percussion" style="left: 800px; top: 11px;">
+              <div class="note-head hollow"></div>
+              <div class="note-stem"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Staff 6: Harp / Social Media Writer (spawned) ═══ -->
+        <div class="staff-system" style="margin-bottom: 14px; opacity: 0.85;">
+          <div class="staff-label">
+            <span class="agent-name color-harp" style="font-size: 10px;">Harp</span>
+            <span class="instrument-name" style="font-size: 9px;">Social Media Writer</span>
+            <span style="font-size: 8px; color: #2ecc71; opacity: 0.7;">spawned m.3</span>
+          </div>
+          <div class="staff-clef" style="color: #2ecc71; font-size: 26px;">&#119070;</div>
+          <div class="staff-lines" style="height: 44px;">
+            <div class="line"></div><div class="line" style="top: 14px;"></div><div class="line" style="top: 22px;"></div><div class="line" style="top: 30px;"></div><div class="line" style="top: 38px;"></div>
+
+            <div class="barline" style="left: 440px; height: 34px; top: 4px;"></div>
+            <div class="barline" style="left: 660px; height: 34px; top: 4px;"></div>
+            <div class="barline" style="left: 880px; height: 34px; top: 4px;"></div>
+
+            <!-- Dashed line showing it starts at measure 3 -->
+            <div style="position: absolute; left: 0; top: 21px; width: 440px; height: 1px; border-top: 1px dashed rgba(46,204,113,0.2);"></div>
+
+            <!-- Notes after spawn point -->
+            <div class="note color-harp" style="left: 580px; top: 8px;">
+              <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+              <div class="note-stem" style="height: 20px;"></div>
+              <span class="note-label">Instagram</span>
+            </div>
+            <div class="note color-harp" style="left: 660px; top: 18px;">
+              <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+              <div class="note-stem" style="height: 20px;"></div>
+              <span class="note-label">Twitter</span>
+            </div>
+            <div class="note color-harp" style="left: 740px; top: 8px;">
+              <div class="note-head filled" style="width: 9px; height: 7px;"></div>
+              <div class="note-stem" style="height: 20px;"></div>
+              <span class="note-label">LinkedIn</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ AskUserQuestion Panel (Cadenza) ═══ -->
+        <div class="ask-panel" style="left: 830px; top: 260px;">
+          <div class="ask-panel-label">&#9835; Cadenza &mdash; AskUserQuestion</div>
+          <div class="ask-panel-question">Target demographic?</div>
+          <div class="ask-panel-options">
+            <div class="ask-panel-option">Gen-Z</div>
+            <div class="ask-panel-option">Millennials</div>
+            <div class="ask-panel-option">Gen-X</div>
+          </div>
+        </div>
+
+        <!-- Double barline at end -->
+        <div style="position: absolute; left: 1190px; top: 22px; height: 440px;">
+          <div style="position: absolute; left: 0; top: 0; width: 1.5px; height: 100%; background: rgba(255,255,255,0.2);"></div>
+          <div style="position: absolute; left: 5px; top: 0; width: 4px; height: 100%; background: rgba(255,255,255,0.25); border-radius: 1px;"></div>
+        </div>
+
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-note"></div>
+          <span>Filled note = action</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-note hollow-leg"></div>
+          <span>Hollow note = waiting</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-rest-sym">&#119102;</div>
+          <span>Rest = idle</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-fermata-sym">
+            <div class="f-arc"></div>
+            <div class="f-dot"></div>
+          </div>
+          <span>Fermata = human pause</span>
+        </div>
+        <div class="legend-item">
+          <div style="width: 20px; height: 1px; border-top: 1.5px dashed rgba(46,204,113,0.5);"></div>
+          <span>Dashed = spawned agent</span>
+        </div>
+        <div class="legend-item">
+          <span style="color: #d4af37;">&#9632;</span>
+          <span>Conductor</span>
+        </div>
+        <div class="legend-item">
+          <span style="color: #5dade2;">&#9632;</span>
+          <span>Woodwinds</span>
+        </div>
+        <div class="legend-item">
+          <span style="color: #e67e22;">&#9632;</span>
+          <span>Brass</span>
+        </div>
+        <div class="legend-item">
+          <span style="color: #e74c3c;">&#9632;</span>
+          <span>Percussion</span>
+        </div>
+        <div class="legend-item">
+          <span style="color: #2ecc71;">&#9632;</span>
+          <span>Harp</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

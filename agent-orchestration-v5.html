@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v5: Tidal Pool</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ─── Ocean Background ─── */
+.ocean {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,
+    #5ba3d9 8%,
+    #3a7bd5 15%,
+    #2563a8 20%,
+    #1b4f8a 28%,
+    #143d6e 35%,
+    #0d2f5a 42%,
+    #082347 50%,
+    #061a38 58%,
+    #04122a 65%,
+    #030d1f 72%,
+    #020916 80%,
+    #010610 88%,
+    #000408 95%,
+    #000204 100%
+  );
+}
+
+/* ─── Depth Ruler ─── */
+.depth-ruler {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  z-index: 10;
+}
+
+.depth-mark {
+  position: absolute;
+  left: 0;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.35);
+}
+
+.depth-mark::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+}
+
+.depth-mark span {
+  padding-left: 6px;
+}
+
+/* ─── Zone Labels ─── */
+.zone-label {
+  position: absolute;
+  right: 24px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  z-index: 5;
+}
+
+/* ─── Zone Dividers ─── */
+.zone-divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 3;
+}
+
+.zone-divider-1 {
+  top: calc(20% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,20 Q150,5 300,20 T600,20 T900,20 T1200,20 L1200,40 L0,40 Z' fill='rgba(15,60,110,0.3)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+.zone-divider-2 {
+  top: calc(45% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,20 Q100,8 200,18 T400,22 T600,18 T800,22 T1000,18 T1200,20 L1200,40 L0,40 Z' fill='rgba(5,20,50,0.3)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+.zone-divider-3 {
+  top: calc(75% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,22 Q180,10 360,22 T720,22 T1080,22 T1200,18 L1200,40 L0,40 Z' fill='rgba(0,5,15,0.4)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+/* ─── Sunlit Zone ─── */
+.sunlit-zone {
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 50px;
+  height: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.sun {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle, #fff5c0 20%, #ffd700 50%, transparent 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 40px 15px rgba(255, 215, 0, 0.3), 0 0 80px 30px rgba(255, 200, 0, 0.15);
+}
+
+.sunlit-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 16px;
+}
+
+.human-prompt {
+  background: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 18px 28px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 0 60px rgba(255,255,255,0.15);
+  color: #1a1a2e;
+}
+
+.human-prompt .label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #e67e22;
+  margin-bottom: 6px;
+}
+
+.human-prompt .text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1a1a2e;
+}
+
+/* Light particles */
+.light-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  z-index: 2;
+}
+
+.lp-1 { width: 3px; height: 3px; top: 5%; left: 25%; opacity: 0.6; }
+.lp-2 { width: 2px; height: 2px; top: 8%; left: 45%; opacity: 0.4; }
+.lp-3 { width: 4px; height: 4px; top: 3%; left: 70%; opacity: 0.5; }
+.lp-4 { width: 2px; height: 2px; top: 12%; left: 35%; opacity: 0.3; }
+.lp-5 { width: 3px; height: 3px; top: 7%; left: 80%; opacity: 0.45; }
+.lp-6 { width: 2px; height: 2px; top: 15%; left: 55%; opacity: 0.35; }
+.lp-7 { width: 3px; height: 3px; top: 10%; left: 15%; opacity: 0.4; }
+.lp-8 { width: 2px; height: 2px; top: 4%; left: 60%; opacity: 0.5; }
+
+/* ─── Twilight Zone ─── */
+.twilight-zone {
+  position: absolute;
+  top: 20%;
+  left: 60px;
+  right: 50px;
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.twilight-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 20px;
+}
+
+.whale {
+  position: relative;
+  width: 340px;
+  height: 90px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #16304d 100%);
+  border-radius: 50% 45% 45% 50% / 60% 55% 55% 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(100, 150, 220, 0.15), inset 0 -2px 8px rgba(0,0,0,0.3);
+}
+
+.whale::before {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: 10px;
+  width: 50px;
+  height: 40px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #16304d 100%);
+  clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+}
+
+.whale::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 28px;
+  width: 6px;
+  height: 6px;
+  background: rgba(180, 210, 255, 0.6);
+  border-radius: 50%;
+}
+
+.whale .agent-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(180, 210, 255, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.whale .agent-status {
+  font-size: 10px;
+  color: rgba(140, 170, 210, 0.6);
+  margin-top: 4px;
+}
+
+/* Marine Snow */
+.marine-snow {
+  position: absolute;
+  z-index: 4;
+}
+
+.snow-particle {
+  position: absolute;
+  background: rgba(200, 220, 255, 0.25);
+  border-radius: 50%;
+}
+
+.snow-label {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(180, 200, 230, 0.4);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Marine snow particles falling from whale */
+.ms-1 { width: 3px; height: 3px; top: 56%; left: 30%; }
+.ms-2 { width: 2px; height: 2px; top: 58%; left: 42%; }
+.ms-3 { width: 4px; height: 4px; top: 60%; left: 55%; }
+.ms-4 { width: 2px; height: 2px; top: 54%; left: 65%; }
+.ms-5 { width: 3px; height: 3px; top: 62%; left: 35%; }
+.ms-6 { width: 2px; height: 2px; top: 57%; left: 73%; }
+.ms-7 { width: 3px; height: 3px; top: 63%; left: 48%; }
+.ms-8 { width: 2px; height: 2px; top: 59%; left: 20%; }
+.ms-9 { width: 2px; height: 2px; top: 61%; left: 78%; }
+
+/* Task fragment labels falling */
+.task-fragment {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(100, 150, 220, 0.12);
+  border: 1px solid rgba(100, 150, 220, 0.15);
+  color: rgba(160, 190, 230, 0.6);
+  z-index: 6;
+}
+
+.tf-1 { top: 39%; left: 22%; }
+.tf-2 { top: 41%; left: 45%; }
+.tf-3 { top: 40%; left: 68%; }
+
+/* ─── Midnight Zone ─── */
+.midnight-zone {
+  position: absolute;
+  top: 45%;
+  left: 60px;
+  right: 50px;
+  height: 30%;
+  z-index: 5;
+}
+
+.midnight-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.18);
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 16px;
+}
+
+.squid-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 0 20px;
+}
+
+.squid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 180px;
+}
+
+.squid-body {
+  width: 130px;
+  padding: 16px 14px;
+  border-radius: 40px 40px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.squid-cyan .squid-body {
+  background: rgba(0, 220, 255, 0.06);
+  border: 1px solid rgba(0, 220, 255, 0.15);
+  box-shadow: 0 0 25px rgba(0, 220, 255, 0.1), 0 0 50px rgba(0, 220, 255, 0.05);
+}
+
+.squid-green .squid-body {
+  background: rgba(0, 255, 140, 0.06);
+  border: 1px solid rgba(0, 255, 140, 0.15);
+  box-shadow: 0 0 25px rgba(0, 255, 140, 0.1), 0 0 50px rgba(0, 255, 140, 0.05);
+}
+
+.squid-purple .squid-body {
+  background: rgba(180, 100, 255, 0.06);
+  border: 1px solid rgba(180, 100, 255, 0.15);
+  box-shadow: 0 0 25px rgba(180, 100, 255, 0.1), 0 0 50px rgba(180, 100, 255, 0.05);
+}
+
+.squid .agent-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.squid-cyan .agent-name { color: rgba(0, 220, 255, 0.9); }
+.squid-green .agent-name { color: rgba(0, 255, 140, 0.9); }
+.squid-purple .agent-name { color: rgba(180, 100, 255, 0.9); }
+
+.squid .agent-status {
+  font-size: 9px;
+  color: rgba(200, 200, 220, 0.4);
+  line-height: 1.3;
+}
+
+/* Tentacles */
+.tentacles {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tentacle {
+  width: 1px;
+  height: 50px;
+  opacity: 0.25;
+}
+
+.squid-cyan .tentacle { background: linear-gradient(180deg, rgba(0,220,255,0.4), transparent); }
+.squid-green .tentacle { background: linear-gradient(180deg, rgba(0,255,140,0.4), transparent); }
+.squid-purple .tentacle { background: linear-gradient(180deg, rgba(180,100,255,0.4), transparent); }
+
+/* ─── Abyssal Zone ─── */
+.abyssal-zone {
+  position: absolute;
+  top: 75%;
+  left: 60px;
+  right: 50px;
+  height: 25%;
+  z-index: 5;
+}
+
+.abyssal-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.12);
+  text-align: center;
+  margin-top: 14px;
+  margin-bottom: 20px;
+}
+
+.abyssal-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 0 10px;
+}
+
+.abyssal-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.anglerfish {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.angler-lure {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.angler-cyan .angler-lure {
+  background: #00dcff;
+  box-shadow: 0 0 8px #00dcff, 0 0 16px rgba(0,220,255,0.4);
+}
+
+.angler-green .angler-lure {
+  background: #00ff8c;
+  box-shadow: 0 0 8px #00ff8c, 0 0 16px rgba(0,255,140,0.4);
+}
+
+.angler-amber .angler-lure {
+  background: #ffb830;
+  box-shadow: 0 0 8px #ffb830, 0 0 16px rgba(255,184,48,0.4);
+}
+
+.anglerfish .agent-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(200,200,220,0.5);
+  white-space: nowrap;
+}
+
+/* ─── Bioluminescent Signal Chain ─── */
+.signal-chain {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.signal-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffb830;
+  box-shadow: 0 0 6px #ffb830, 0 0 14px rgba(255,184,48,0.5);
+}
+
+.signal-dot.large {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 10px #ffb830, 0 0 20px rgba(255,184,48,0.6);
+}
+
+.signal-line {
+  position: absolute;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(255,184,48,0.5), rgba(255,184,48,0.1));
+}
+
+/* Signal capsule */
+.signal-capsule {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  background: rgba(255, 184, 48, 0.08);
+  border: 1px solid rgba(255, 184, 48, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  max-width: 220px;
+  box-shadow: 0 0 20px rgba(255, 184, 48, 0.12), 0 0 40px rgba(255, 184, 48, 0.06);
+}
+
+.signal-capsule .capsule-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffb830;
+  margin-bottom: 4px;
+}
+
+.signal-capsule .capsule-text {
+  font-size: 10px;
+  color: rgba(255, 220, 160, 0.8);
+  line-height: 1.4;
+}
+
+/* ─── Depth Ruler Marks ─── */
+.depth-ruler .dm-0    { top: 0; }
+.depth-ruler .dm-200  { top: 20%; }
+.depth-ruler .dm-500  { top: 32%; }
+.depth-ruler .dm-1000 { top: 45%; }
+.depth-ruler .dm-2000 { top: 57%; }
+.depth-ruler .dm-3000 { top: 65%; }
+.depth-ruler .dm-4000 { top: 75%; }
+.depth-ruler .dm-5000 { top: 85%; }
+.depth-ruler .dm-6000 { top: 95%; }
+
+/* Zone labels on right edge */
+.zl-sunlit   { top: 8%;  right: 16px; color: rgba(255,255,255,0.3); }
+.zl-twilight { top: 30%; right: 16px; color: rgba(255,255,255,0.2); }
+.zl-midnight { top: 58%; right: 16px; color: rgba(255,255,255,0.13); }
+.zl-abyssal  { top: 84%; right: 16px; color: rgba(255,255,255,0.08); }
+
+/* ─── Ambient particles in deeper zones ─── */
+.deep-particle {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.dp-1  { width: 2px; height: 2px; top: 48%; left: 15%; background: rgba(0,220,255,0.15); }
+.dp-2  { width: 2px; height: 2px; top: 52%; left: 82%; background: rgba(180,100,255,0.12); }
+.dp-3  { width: 3px; height: 3px; top: 55%; left: 40%; background: rgba(0,255,140,0.1); }
+.dp-4  { width: 2px; height: 2px; top: 62%; left: 70%; background: rgba(0,220,255,0.1); }
+.dp-5  { width: 2px; height: 2px; top: 68%; left: 25%; background: rgba(180,100,255,0.08); }
+.dp-6  { width: 2px; height: 2px; top: 78%; left: 50%; background: rgba(255,184,48,0.1); }
+.dp-7  { width: 2px; height: 2px; top: 82%; left: 18%; background: rgba(0,220,255,0.08); }
+.dp-8  { width: 2px; height: 2px; top: 88%; left: 65%; background: rgba(0,255,140,0.06); }
+.dp-9  { width: 3px; height: 3px; top: 50%; left: 55%; background: rgba(200,200,255,0.06); }
+.dp-10 { width: 2px; height: 2px; top: 72%; left: 88%; background: rgba(200,200,255,0.05); }
+.dp-11 { width: 2px; height: 2px; top: 90%; left: 35%; background: rgba(255,184,48,0.06); }
+.dp-12 { width: 2px; height: 2px; top: 85%; left: 78%; background: rgba(0,220,255,0.05); }
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Exploring agent orchestration as ocean depth zones &mdash; the human at the sunlit surface, orchestrator in the twilight zone, sub-agents in the midnight zone, deep specialists in the abyss. Part of a 10-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Tidal Pool &mdash; vertical cross-section of ocean. Agents are sea creatures appropriate to their depth. Resources flow down as &ldquo;marine snow&rdquo; (task decomposition) and results rise as &ldquo;thermal vents&rdquo; (completed work). Bioluminescent signal chains carry questions upward.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent&rsquo;s intent, not a verbatim human prompt.<br><br>
+        Create an ocean depth zone metaphor for agent orchestration. The human sits in the sunlit zone at the surface, the orchestrator whale swims in the twilight zone decomposing tasks into marine snow, sub-agent squids with bioluminescent glows work in the midnight zone, and anglerfish deep specialists operate in the abyss. A bioluminescent signal chain carries an AskUserQuestion from the deepest agent up to the surface.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="ocean">
+
+      <!-- Depth Ruler -->
+      <div class="depth-ruler">
+        <div class="depth-mark dm-0"><span>0m</span></div>
+        <div class="depth-mark dm-200"><span>200m</span></div>
+        <div class="depth-mark dm-500"><span>500m</span></div>
+        <div class="depth-mark dm-1000"><span>1000m</span></div>
+        <div class="depth-mark dm-2000"><span>2000m</span></div>
+        <div class="depth-mark dm-3000"><span>3000m</span></div>
+        <div class="depth-mark dm-4000"><span>4000m</span></div>
+        <div class="depth-mark dm-5000"><span>5000m</span></div>
+        <div class="depth-mark dm-6000"><span>6000m</span></div>
+      </div>
+
+      <!-- Zone Labels (right side, vertical) -->
+      <div class="zone-label zl-sunlit">Sunlit Zone</div>
+      <div class="zone-label zl-twilight">Twilight Zone</div>
+      <div class="zone-label zl-midnight">Midnight Zone</div>
+      <div class="zone-label zl-abyssal">Abyssal Zone</div>
+
+      <!-- Zone Dividers -->
+      <div class="zone-divider zone-divider-1"></div>
+      <div class="zone-divider zone-divider-2"></div>
+      <div class="zone-divider zone-divider-3"></div>
+
+      <!-- Light Particles (surface) -->
+      <div class="light-particle lp-1"></div>
+      <div class="light-particle lp-2"></div>
+      <div class="light-particle lp-3"></div>
+      <div class="light-particle lp-4"></div>
+      <div class="light-particle lp-5"></div>
+      <div class="light-particle lp-6"></div>
+      <div class="light-particle lp-7"></div>
+      <div class="light-particle lp-8"></div>
+
+      <!-- Deep Particles -->
+      <div class="deep-particle dp-1"></div>
+      <div class="deep-particle dp-2"></div>
+      <div class="deep-particle dp-3"></div>
+      <div class="deep-particle dp-4"></div>
+      <div class="deep-particle dp-5"></div>
+      <div class="deep-particle dp-6"></div>
+      <div class="deep-particle dp-7"></div>
+      <div class="deep-particle dp-8"></div>
+      <div class="deep-particle dp-9"></div>
+      <div class="deep-particle dp-10"></div>
+      <div class="deep-particle dp-11"></div>
+      <div class="deep-particle dp-12"></div>
+
+      <!-- ═══ SUNLIT ZONE ═══ -->
+      <div class="sunlit-zone">
+        <div class="sun"></div>
+        <div class="zone-title">Sunlit Zone &middot; 0&ndash;200m &middot; Human Layer</div>
+        <div class="human-prompt">
+          <div class="label">Human Prompt</div>
+          <div class="text">&ldquo;Design a new mobile app for fitness tracking&rdquo;</div>
+        </div>
+      </div>
+
+      <!-- ═══ TWILIGHT ZONE ═══ -->
+      <div class="twilight-zone">
+        <div class="zone-title">Twilight Zone &middot; 200&ndash;1000m &middot; Orchestrator</div>
+        <div class="whale">
+          <div class="agent-name">Orchestrator Agent</div>
+          <div class="agent-status">Decomposing into 3 swim lanes&hellip;</div>
+        </div>
+      </div>
+
+      <!-- Marine Snow particles -->
+      <div class="snow-particle ms-1"></div>
+      <div class="snow-particle ms-2"></div>
+      <div class="snow-particle ms-3"></div>
+      <div class="snow-particle ms-4"></div>
+      <div class="snow-particle ms-5"></div>
+      <div class="snow-particle ms-6"></div>
+      <div class="snow-particle ms-7"></div>
+      <div class="snow-particle ms-8"></div>
+      <div class="snow-particle ms-9"></div>
+
+      <!-- Task fragments falling -->
+      <div class="task-fragment tf-1">UI Design</div>
+      <div class="task-fragment tf-2">Backend API</div>
+      <div class="task-fragment tf-3">Data Model</div>
+
+      <!-- ═══ MIDNIGHT ZONE ═══ -->
+      <div class="midnight-zone">
+        <div class="zone-title">Midnight Zone &middot; 1000&ndash;4000m &middot; Sub-Agents</div>
+        <div class="squid-row">
+          <!-- UI Design Squid -->
+          <div class="squid squid-cyan">
+            <div class="squid-body">
+              <div class="agent-name">UI Design Agent</div>
+              <div class="agent-status">Wireframing 5 key screens&hellip;</div>
+            </div>
+            <div class="tentacles">
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+            </div>
+          </div>
+
+          <!-- Backend API Squid -->
+          <div class="squid squid-green">
+            <div class="squid-body">
+              <div class="agent-name">Backend API Agent</div>
+              <div class="agent-status">Designing REST endpoints&hellip;</div>
+            </div>
+            <div class="tentacles">
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+            </div>
+          </div>
+
+          <!-- Data Model Squid -->
+          <div class="squid squid-purple">
+            <div class="squid-body">
+              <div class="agent-name">Data Model Agent</div>
+              <div class="agent-status">Modeling user schemas&hellip;</div>
+            </div>
+            <div class="tentacles">
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+              <div class="tentacle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ABYSSAL ZONE ═══ -->
+      <div class="abyssal-zone">
+        <div class="zone-title">Abyssal Zone &middot; 4000m+ &middot; Deep Specialists</div>
+        <div class="abyssal-row">
+          <!-- Under UI Design -->
+          <div class="abyssal-group">
+            <div class="anglerfish angler-cyan">
+              <div class="angler-lure"></div>
+              <div class="agent-name">Animation Specialist</div>
+            </div>
+            <div class="anglerfish angler-cyan">
+              <div class="angler-lure"></div>
+              <div class="agent-name">Accessibility Auditor</div>
+            </div>
+          </div>
+
+          <!-- Under Backend -->
+          <div class="abyssal-group">
+            <div class="anglerfish angler-amber">
+              <div class="angler-lure"></div>
+              <div class="agent-name">Auth Flow Agent</div>
+            </div>
+          </div>
+
+          <!-- Empty group for balance under Data Model -->
+          <div class="abyssal-group"></div>
+        </div>
+      </div>
+
+      <!-- ═══ BIOLUMINESCENT SIGNAL CHAIN ═══ -->
+      <div class="signal-chain">
+        <!-- Signal dots rising from Auth Flow Agent to surface -->
+        <!-- Abyss dots -->
+        <div class="signal-dot large" style="left: 50%; top: 86%;"></div>
+        <div class="signal-dot" style="left: 50.2%; top: 83%;"></div>
+        <div class="signal-dot" style="left: 49.8%; top: 80%;"></div>
+
+        <!-- Through midnight zone -->
+        <div class="signal-dot" style="left: 50.1%; top: 76%;"></div>
+        <div class="signal-dot" style="left: 49.9%; top: 72%;"></div>
+        <div class="signal-dot" style="left: 50.3%; top: 68%;"></div>
+        <div class="signal-dot" style="left: 49.7%; top: 64%;"></div>
+        <div class="signal-dot" style="left: 50%; top: 60%;"></div>
+
+        <!-- Signal line segments -->
+        <div class="signal-line" style="left: 50%; top: 46%; height: 40%;"></div>
+
+        <!-- Through twilight zone -->
+        <div class="signal-dot" style="left: 50.2%; top: 56%;"></div>
+        <div class="signal-dot" style="left: 49.8%; top: 52%;"></div>
+        <div class="signal-dot" style="left: 50.1%; top: 48%;"></div>
+
+        <!-- Into sunlit zone -->
+        <div class="signal-dot" style="left: 50%; top: 44%;"></div>
+        <div class="signal-dot large" style="left: 49.9%; top: 40%;"></div>
+
+        <!-- Signal Capsule - the AskUserQuestion -->
+        <div class="signal-capsule" style="left: 53%; top: 58%;">
+          <div class="capsule-label">AskUserQuestion &uarr;</div>
+          <div class="capsule-text">&ldquo;Biometric auth (FaceID/fingerprint) or traditional login?&rdquo;</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

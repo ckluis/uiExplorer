@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — Origination Prompt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+
+.experiment-sidebar .exp-origin-badge {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Variant Navigation Grid ─── */
+.experiment-sidebar .exp-variant-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.experiment-sidebar .exp-variant-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b9cf7;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.experiment-sidebar .exp-variant-nav a:hover {
+  background: rgba(139, 156, 247, 0.15);
+  border-color: rgba(139, 156, 247, 0.3);
+  text-decoration: none;
+}
+
+/* ─── Origin Content ─── */
+.experiment-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #0a0a14;
+  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.origin-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 40px 80px;
+}
+
+.origin-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+}
+
+.origin-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 32px 0 12px 0;
+}
+
+.origin-content p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #bbb;
+  margin: 0 0 16px 0;
+}
+
+.origin-prompt-block {
+  background: rgba(46, 204, 113, 0.06);
+  border: 1px solid rgba(46, 204, 113, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 24px 0 32px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #ccc;
+}
+
+.origin-prompt-block .label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2ecc71;
+  margin-bottom: 12px;
+}
+
+.research-domains {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 32px;
+}
+
+.research-domain {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.research-domain h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 6px 0;
+}
+
+.research-domain p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #999;
+  margin: 0;
+}
+
+.variant-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 32px;
+}
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.variant-row:hover {
+  background: rgba(139, 156, 247, 0.08);
+  border-color: rgba(139, 156, 247, 0.2);
+  text-decoration: none;
+}
+
+.variant-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ecc71;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.variant-info {
+  flex: 1;
+}
+
+.variant-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.variant-desc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.variant-tagline {
+  font-size: 11px;
+  color: #8b9cf7;
+  font-style: italic;
+}
+
+.execution-model {
+  background: rgba(139, 156, 247, 0.06);
+  border: 1px solid rgba(139, 156, 247, 0.15);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.execution-model .step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.execution-model .step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(139, 156, 247, 0.15);
+  color: #8b9cf7;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.execution-model .arrow {
+  text-align: center;
+  color: #555;
+  font-size: 16px;
+  padding: 4px 0;
+}
+
+/* ─── AskUserQuestion Visualization ─── */
+.origin-ask {
+  background: rgba(139, 156, 247, 0.08);
+  border: 1px solid rgba(139, 156, 247, 0.2);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+.origin-ask-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b9cf7;
+  margin-bottom: 8px;
+}
+.origin-ask-question {
+  font-size: 13px;
+  color: #ddd;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.origin-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.origin-ask-option {
+  font-size: 12px;
+  color: #999;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.06);
+  line-height: 1.4;
+}
+.origin-ask-option.selected {
+  color: #fff;
+  background: rgba(139, 156, 247, 0.18);
+  border-color: rgba(139, 156, 247, 0.4);
+  font-weight: 600;
+}
+.origin-ask-answer {
+  font-size: 13px;
+  color: #ccc;
+  padding: 8px 10px;
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  border-radius: 5px;
+  line-height: 1.5;
+}
+.origin-ask-answer strong {
+  color: #2ecc71;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-origin-badge">Origination Prompt</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>This is the origination prompt for a 10-variant research series exploring radically different CRM interface paradigms for real estate agents.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Execution Model</h2>
+      <p>Research Agent &rarr; 10 Parallel Build Agents &rarr; Validation Agent</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variants</h2>
+      <div class="exp-variant-nav">
+        <a href="crm-dashboard-v1.html">01</a>
+        <a href="crm-dashboard-v2.html">02</a>
+        <a href="crm-dashboard-v3.html">03</a>
+        <a href="crm-dashboard-v4.html">04</a>
+        <a href="crm-dashboard-v5.html">05</a>
+        <a href="crm-dashboard-v6.html">06</a>
+        <a href="crm-dashboard-v7.html">07</a>
+        <a href="crm-dashboard-v8.html">08</a>
+        <a href="crm-dashboard-v9.html">09</a>
+        <a href="crm-dashboard-v10.html">10</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <div class="origin-content">
+
+      <h2>Origination Prompt</h2>
+      <p>This page documents the master prompt and research context that generated 10 autonomous CRM dashboard variants, each exploring a fundamentally different interface paradigm for real estate agents.</p>
+
+      <div class="origin-prompt-block">
+        <div class="label">Verbatim Origination Prompt</div>
+        We need to build a new pattern. We will have an "origination prompt" which will tell the agents what to build on and then all the versions for the tool. This is the "origination prompt" for a new experiment.<br><br>
+        I want you to deep research and understand the state of the art in user experience, science fiction, psychlogy, entrepreneurship and simulate different users and consider what they would want to see from a CRM.<br><br>
+        You will then build 10 different UIs that have a toggle to switch between different types of users (or businesses or both). Keep in mind that some modern CRMs may appear invisible (hidden in slack, email, etc) while others become the system of record from which you do everything.<br><br>
+        You also need to add the concept of an origination prompt to the "autonomous" versioning experiments. This will let the viewers of this site see what generated the experiment.<br><br>
+        Now the actual execution plan for these "origination prompt" (which will need to be reflected in the claude.md or in a new dedicated markdown file and referenced in claude.md:<br><br>
+        After doing the research &amp; evaluating options, you will generate 10 prompts that reference claude.md and these 10 prompts will be given to sub-agents to execute. The origination prompt will show up in the experiments.html and then the 10 versions.<br><br>
+        An additional sub-agent should run after the 10 complete and make sure that all the links follow our patterns and that everything is hunky dory.
+      </div>
+
+      <h3>AskUserQuestion Interactions</h3>
+      <p>After receiving the origination prompt, the agent asked three clarifying questions. The answers shaped the final direction of all 10 variants.</p>
+
+      <div class="origin-ask">
+        <div class="origin-ask-label">AskUserQuestion #1</div>
+        <div class="origin-ask-question">For the 10 CRM variants, should they be 10 different CRM <em>types</em> (e.g., sales CRM, recruiting CRM, real estate CRM) or 10 different UI <em>approaches</em> to the same generic CRM (e.g., kanban view, timeline view, conversational view, invisible/ambient CRM)?</div>
+        <div class="origin-ask-options">
+          <div class="origin-ask-option">Different CRM types &mdash; Each variant is a different industry/use-case CRM (sales, recruiting, real estate, freelancer, etc.)</div>
+          <div class="origin-ask-option">Different UI approaches &mdash; Same CRM concept but radically different interface paradigms (kanban, conversational, ambient, sci-fi, etc.)</div>
+          <div class="origin-ask-option">Mix of both &mdash; Vary both the user type AND the UI approach across the 10 variants</div>
+          <div class="origin-ask-option selected">Other (selected)</div>
+        </div>
+        <div class="origin-ask-answer"><strong>Answer:</strong> let's go with different UI approaches, but lets target a single niche like real estate agents</div>
+      </div>
+
+      <div class="origin-ask">
+        <div class="origin-ask-label">AskUserQuestion #2</div>
+        <div class="origin-ask-question">The origination prompt markdown file links from experiments.html &mdash; since this is pure HTML/CSS and .md files won't render nicely in a browser, should the origination prompt live in an HTML page instead?</div>
+        <div class="origin-ask-options">
+          <div class="origin-ask-option selected">HTML page (Recommended) &mdash; Create crm-dashboard-origin.html with the same sidebar pattern, displaying the research and prompt content</div>
+          <div class="origin-ask-option">Keep as .md file &mdash; Link to the raw markdown file, viewers see plain text</div>
+        </div>
+        <div class="origin-ask-answer"><strong>Answer:</strong> HTML page (Recommended)</div>
+      </div>
+
+      <div class="origin-ask">
+        <div class="origin-ask-label">AskUserQuestion #3</div>
+        <div class="origin-ask-question">For the user/business type toggle within each experiment, what mechanism do you prefer given the no-JS constraint?</div>
+        <div class="origin-ask-options">
+          <div class="origin-ask-option">CSS radio buttons &mdash; Hidden radio inputs + labels that swap visible content sections via :checked selectors</div>
+          <div class="origin-ask-option">CSS tabs with anchors &mdash; Use :target pseudo-class with anchor links to switch views</div>
+          <div class="origin-ask-option selected">Your call &mdash; Let the agent pick the best pure-CSS approach per variant</div>
+        </div>
+        <div class="origin-ask-answer"><strong>Answer:</strong> Your call</div>
+      </div>
+
+      <h3>Research Domains</h3>
+      <div class="research-domains">
+        <div class="research-domain">
+          <h4>Modern CRM UX</h4>
+          <p>HubSpot, Salesforce, Close, Attio, Folk, Copper, Streak, Clay &mdash; pipeline views, activity feeds, relationship intelligence patterns.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Real Estate CRMs</h4>
+          <p>Follow Up Boss, kvCORE, LionDesk, Rechat &mdash; agent workflows, lead routing, showing management, transaction coordination.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Sci-Fi &amp; Speculative Interfaces</h4>
+          <p>Spatial UIs, ambient computing, conversational interfaces, minority-report-style gestural paradigms, neural network visualizations.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Psychology &amp; Cognition</h4>
+          <p>Cognitive load theory, information foraging, flow states, Zeigarnik effect, progressive disclosure, Hick's Law, decision fatigue.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Entrepreneurship</h4>
+          <p>Solo operator workflows, team scaling patterns, brokerage management, the spectrum from individual contributor to executive.</p>
+        </div>
+        <div class="research-domain">
+          <h4>Real Estate Agent Workflows</h4>
+          <p>Lead generation, nurturing cadences, showing scheduling, offer management, closing coordination, post-close relationship maintenance.</p>
+        </div>
+      </div>
+
+      <h3>The 10 Variants</h3>
+      <div class="variant-grid">
+        <a href="crm-dashboard-v1.html" class="variant-row">
+          <span class="variant-num">01</span>
+          <div class="variant-info">
+            <div class="variant-name">Deal Flow Board</div>
+            <div class="variant-desc">Pipeline Kanban &mdash; visual deal stages with property thumbnail cards</div>
+            <div class="variant-tagline">"See every deal move from lead to close."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v2.html" class="variant-row">
+          <span class="variant-num">02</span>
+          <div class="variant-info">
+            <div class="variant-name">Chat Flow</div>
+            <div class="variant-desc">Conversational CRM &mdash; Slack-like interface where CRM actions happen inline</div>
+            <div class="variant-tagline">"Your CRM talks back."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v3.html" class="variant-row">
+          <span class="variant-num">03</span>
+          <div class="variant-info">
+            <div class="variant-name">Stream</div>
+            <div class="variant-desc">Timeline/Activity Feed &mdash; chronological stream of all interactions</div>
+            <div class="variant-tagline">"Everything that happened, as it happened."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v4.html" class="variant-row">
+          <span class="variant-num">04</span>
+          <div class="variant-info">
+            <div class="variant-name">Territory</div>
+            <div class="variant-desc">Map-Centric CRM &mdash; geographic view as the primary interface</div>
+            <div class="variant-tagline">"Your market, visualized."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v5.html" class="variant-row">
+          <span class="variant-num">05</span>
+          <div class="variant-info">
+            <div class="variant-name">Context Layer</div>
+            <div class="variant-desc">Ambient/Invisible CRM &mdash; CRM intelligence surfaces on top of email</div>
+            <div class="variant-tagline">"The CRM you never open."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v6.html" class="variant-row">
+          <span class="variant-num">06</span>
+          <div class="variant-info">
+            <div class="variant-name">Terminal</div>
+            <div class="variant-desc">Command-Line CRM &mdash; keyboard-driven, information-dense power user interface</div>
+            <div class="variant-tagline">"For agents who think faster than they click."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v7.html" class="variant-row">
+          <span class="variant-num">07</span>
+          <div class="variant-info">
+            <div class="variant-name">Web</div>
+            <div class="variant-desc">Relationship Graph &mdash; network visualization of contacts, properties, and deals</div>
+            <div class="variant-tagline">"See who knows who."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v8.html" class="variant-row">
+          <span class="variant-num">08</span>
+          <div class="variant-info">
+            <div class="variant-name">Forecast</div>
+            <div class="variant-desc">AI Assistant/Predictive &mdash; prediction-driven dashboard with suggested next actions</div>
+            <div class="variant-tagline">"Know what to do before you think to ask."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v9.html" class="variant-row">
+          <span class="variant-num">09</span>
+          <div class="variant-info">
+            <div class="variant-name">Schedule</div>
+            <div class="variant-desc">Calendar-First CRM &mdash; time as the primary organizing dimension</div>
+            <div class="variant-tagline">"Time is your only real resource."</div>
+          </div>
+        </a>
+        <a href="crm-dashboard-v10.html" class="variant-row">
+          <span class="variant-num">10</span>
+          <div class="variant-info">
+            <div class="variant-name">Triage</div>
+            <div class="variant-desc">Card Stack/Mobile-First &mdash; swipe-through card triage metaphor</div>
+            <div class="variant-tagline">"Swipe through your pipeline."</div>
+          </div>
+        </a>
+      </div>
+
+      <h3>Execution Model</h3>
+      <div class="execution-model">
+        <div class="step">
+          <span class="step-num">1</span>
+          Research Agent &mdash; Deep research across CRM UX, real estate workflows, psychology, and sci-fi interfaces
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">2</span>
+          10 Build Agents (parallel) &mdash; Each agent receives a detailed prompt and builds one variant autonomously
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="step">
+          <span class="step-num">3</span>
+          Validation Agent &mdash; Verifies all links, patterns, and consistency across the series
+        </div>
+      </div>
+
+      <h3>Design Constraints</h3>
+      <p>Every variant follows the UI Explorations framework rules: pure HTML/CSS, no JavaScript, no external dependencies beyond Google Fonts. Each includes the standard experiment sidebar, a device preview switcher, and a CSS radio-button toggle for switching between Solo Agent, Team Lead, and Brokerage Admin views.</p>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

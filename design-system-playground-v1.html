@@ -1,0 +1,2392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System Playground — v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+  /* ─── Theme Custom Properties ─── */
+  :root {
+    --ds-bg: #fafaf9;
+    --ds-bg-card: #ffffff;
+    --ds-bg-nav: #f5f5f3;
+    --ds-bg-panel: #ffffff;
+    --ds-border: rgba(0,0,0,0.08);
+    --ds-border-bright: rgba(0,0,0,0.14);
+    --ds-text: #1a1a2e;
+    --ds-text-muted: #6b6b80;
+    --ds-text-dim: #9b9baf;
+    --ds-accent: #6366f1;
+    --ds-accent-hover: #5558e6;
+    --ds-accent-active: #4f46e5;
+    --ds-accent-bg: rgba(99,102,241,0.08);
+    --ds-accent-border: rgba(99,102,241,0.2);
+    --ds-green: #16a34a;
+    --ds-green-bg: rgba(22,163,74,0.1);
+    --ds-amber: #d97706;
+    --ds-amber-bg: rgba(217,119,6,0.1);
+    --ds-red: #dc2626;
+    --ds-red-bg: rgba(220,38,38,0.08);
+    --ds-ghost-hover: rgba(0,0,0,0.04);
+    --ds-ghost-active: rgba(0,0,0,0.08);
+    --ds-ring: 0 0 0 3px rgba(99,102,241,0.18);
+    --ds-dot-color: rgba(0,0,0,0.06);
+    --ds-specimen-label: #9b9baf;
+    --ds-progress-bg: rgba(0,0,0,0.06);
+    --ds-toggle-track: #d4d4d8;
+    --ds-toggle-track-on: var(--ds-accent);
+    --ds-card-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --ds-elevated-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+    --ds-input-bg: #ffffff;
+    --ds-input-border: #d4d4d8;
+    --ds-skeleton-from: #e5e5e5;
+    --ds-skeleton-to: #f0f0f0;
+  }
+
+  /* ─── Experiment Info Sidebar ─── */
+  .experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+  .experiment-sidebar {
+    width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+    padding: 24px 20px; overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px;
+  }
+  .experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+  .experiment-sidebar a:hover { text-decoration: underline; }
+  .experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+  .experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+  .experiment-sidebar .exp-version {
+    display: inline-block; background: rgba(139,156,247,0.15); color: #8b9cf7;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+  }
+  .experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+  .experiment-sidebar .exp-section h2 {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #888; margin: 0 0 8px 0;
+  }
+  .experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+  .experiment-sidebar .exp-prompt {
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+    font-size: 12px; color: #bbb; font-style: italic;
+  }
+  .experiment-sidebar .exp-model {
+    display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 4px; margin-top: 4px; margin-left: 6px;
+  }
+  .experiment-sidebar .exp-model.opus { background: rgba(229,166,59,0.15); color: #e5a63b; }
+  .experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.15); color: #8b9cf7; }
+  .experiment-sidebar .exp-model.haiku { background: rgba(94,196,212,0.15); color: #5ec4d4; }
+  .experiment-sidebar .exp-autonomous {
+    display: inline-block; background: rgba(243,156,18,0.15); color: #f39c12;
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    margin-top: 4px; margin-left: 6px;
+  }
+
+  /* ─── Agent Trace ─── */
+  .experiment-sidebar .exp-at-workflow {
+    font-size: 10px; color: #888; font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 4px;
+    margin-bottom: 8px; letter-spacing: 0.02em;
+  }
+  .experiment-sidebar .exp-agent-trace { display: flex; flex-direction: column; gap: 6px; }
+  .experiment-sidebar .exp-at-entry { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px 10px; border-left: 3px solid #555; }
+  .experiment-sidebar .exp-at-entry.opus { border-left-color: #e5a63b; }
+  .experiment-sidebar .exp-at-entry.sonnet { border-left-color: #8b9cf7; }
+  .experiment-sidebar .exp-at-entry.haiku { border-left-color: #5ec4d4; }
+  .experiment-sidebar .exp-at-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .experiment-sidebar .exp-at-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #ddd; }
+  .experiment-sidebar .exp-at-model { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin-left: auto; }
+  .experiment-sidebar .exp-at-model.opus { background: rgba(229,166,59,0.15); color: #e5a63b; }
+  .experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: #8b9cf7; }
+  .experiment-sidebar .exp-at-action { font-size: 11px; color: #bbb; line-height: 1.4; }
+  .experiment-sidebar .exp-at-prompt { font-size: 10px; color: #888; font-style: italic; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); line-height: 1.4; }
+  .experiment-sidebar .exp-at-arrow { text-align: center; color: #555; font-size: 10px; line-height: 1; }
+
+  /* ─── Sidebar Versions Card ─── */
+  .experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+  .experiment-sidebar .exp-vc-entry {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px;
+    text-decoration: none; color: inherit; transition: background 0.15s;
+  }
+  .experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+  .experiment-sidebar .exp-vc-entry.current { background: rgba(139,156,247,0.12); border: 1px solid rgba(139,156,247,0.25); }
+  .experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+  .experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+  .experiment-sidebar .exp-vc-model { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin-left: auto; flex-shrink: 0; }
+  .experiment-sidebar .exp-vc-model.opus { background: rgba(229,166,59,0.12); color: #e5a63b; }
+
+  /* ─── Device Preview Switcher ─── */
+  .experiment-content {
+    flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+  .preview-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+  }
+  .preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+  .preview-btn svg { width: 20px; height: 20px; }
+  #preview-web:checked ~ .preview-bar label[for="preview-web"],
+  #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+  #preview-full:checked ~ .preview-bar label[for="preview-full"] {
+    background: rgba(255,255,255,0.2); color: white;
+  }
+  .window {
+    width: 1360px; height: 820px; background: var(--ds-bg);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+    position: relative;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  #preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+  #preview-full:checked ~ .preview-bar {
+    position: absolute; top: 8px; z-index: 100;
+    background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+  }
+  #preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+  /* ═══════════════════════════════════════════
+     DESIGN SYSTEM PLAYGROUND — APP SHELL
+     ═══════════════════════════════════════════ */
+
+  .ds-shell {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    color: var(--ds-text);
+    -webkit-font-smoothing: antialiased;
+    background: var(--ds-bg);
+  }
+
+  /* ─── Component Nav (Left Panel) ─── */
+  .ds-nav {
+    width: 200px;
+    min-width: 200px;
+    background: var(--ds-bg-nav);
+    border-right: 1px solid var(--ds-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+
+  .ds-nav-header {
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--ds-border);
+    margin-bottom: 8px;
+  }
+
+  .ds-nav-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ds-text);
+    letter-spacing: -0.3px;
+  }
+
+  .ds-nav-subtitle {
+    font-size: 10px;
+    color: var(--ds-text-dim);
+    font-weight: 500;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ds-nav-category {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ds-text-dim);
+    padding: 14px 16px 6px;
+  }
+
+  .ds-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    cursor: pointer;
+    color: var(--ds-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, font-weight 0.15s ease;
+    border-left: 2px solid transparent;
+  }
+
+  .ds-nav-item:hover {
+    background: var(--ds-ghost-hover);
+    color: var(--ds-text);
+    border-left-color: var(--ds-border-bright);
+  }
+
+  .ds-nav-item:active {
+    background: var(--ds-ghost-active);
+    transition-duration: 0.05s;
+  }
+
+  .ds-nav-item svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  /* Nav active state driven by radio buttons */
+  #comp-button:checked ~ .window .ds-nav-item[data-comp="button"],
+  #comp-badge:checked ~ .window .ds-nav-item[data-comp="badge"],
+  #comp-card:checked ~ .window .ds-nav-item[data-comp="card"],
+  #comp-input:checked ~ .window .ds-nav-item[data-comp="input"],
+  #comp-toggle:checked ~ .window .ds-nav-item[data-comp="toggle"],
+  #comp-progress:checked ~ .window .ds-nav-item[data-comp="progress"] {
+    background: var(--ds-accent-bg);
+    color: var(--ds-accent);
+    border-left-color: var(--ds-accent);
+    font-weight: 600;
+  }
+
+  #comp-button:checked ~ .window .ds-nav-item[data-comp="button"] svg,
+  #comp-badge:checked ~ .window .ds-nav-item[data-comp="badge"] svg,
+  #comp-card:checked ~ .window .ds-nav-item[data-comp="card"] svg,
+  #comp-input:checked ~ .window .ds-nav-item[data-comp="input"] svg,
+  #comp-toggle:checked ~ .window .ds-nav-item[data-comp="toggle"] svg,
+  #comp-progress:checked ~ .window .ds-nav-item[data-comp="progress"] svg {
+    opacity: 1;
+  }
+
+  /* ─── Specimen Area (Center) ─── */
+  .ds-specimen-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .ds-specimen-header {
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--ds-border);
+    padding-bottom: 20px;
+    background: var(--ds-bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .ds-specimen-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ds-text);
+    letter-spacing: -0.4px;
+  }
+
+  .ds-specimen-desc {
+    font-size: 12px;
+    color: var(--ds-text-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .ds-specimen-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ds-text-dim);
+  }
+
+  .ds-specimen-stats span {
+    background: var(--ds-accent-bg);
+    color: var(--ds-accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  /* Dot grid background for specimen body */
+  .ds-specimen-body {
+    flex: 1;
+    padding: 28px 32px;
+    background-image: radial-gradient(var(--ds-dot-color) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-position: 8px 8px;
+  }
+
+  /* Specimen section groups */
+  .ds-specimen-section {
+    margin-bottom: 32px;
+  }
+
+  .ds-specimen-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ds-text-dim);
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Specimen card - white card for each specimen group */
+  .ds-specimen-card {
+    background: var(--ds-bg-card);
+    border: 1px solid var(--ds-border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--ds-card-shadow);
+  }
+
+  .ds-specimen-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ds-specimen-row + .ds-specimen-row {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--ds-border);
+  }
+
+  .ds-specimen-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ds-specimen-label);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .ds-specimen-items {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Component visibility - show/hide based on nav selection */
+  .ds-comp-section { display: none; }
+  #comp-button:checked ~ .window .ds-comp-button,
+  #comp-badge:checked ~ .window .ds-comp-badge,
+  #comp-card:checked ~ .window .ds-comp-card,
+  #comp-input:checked ~ .window .ds-comp-input,
+  #comp-toggle:checked ~ .window .ds-comp-toggle,
+  #comp-progress:checked ~ .window .ds-comp-progress { display: block; }
+
+  /* Header text changes per component */
+  .ds-header-text { display: none; }
+  #comp-button:checked ~ .window .ds-header-button,
+  #comp-badge:checked ~ .window .ds-header-badge,
+  #comp-card:checked ~ .window .ds-header-card,
+  #comp-input:checked ~ .window .ds-header-input,
+  #comp-toggle:checked ~ .window .ds-header-toggle,
+  #comp-progress:checked ~ .window .ds-header-progress { display: block; }
+
+  /* ─── Property Panel (Right) ─── */
+  .ds-panel {
+    width: 240px;
+    min-width: 240px;
+    background: var(--ds-bg-panel);
+    border-left: 1px solid var(--ds-border);
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ds-panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ds-text-dim);
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .ds-panel-group {
+    border-bottom: 1px solid var(--ds-border);
+    padding-bottom: 16px;
+  }
+
+  .ds-panel-group:last-child { border-bottom: none; }
+
+  .ds-panel-options {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ds-panel-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ds-text-muted);
+    transition: background 0.18s ease, color 0.18s ease, font-weight 0.18s ease;
+  }
+
+  .ds-panel-option:hover {
+    background: var(--ds-ghost-hover);
+    color: var(--ds-text);
+  }
+
+  .ds-panel-option:active {
+    background: var(--ds-ghost-active);
+    transition-duration: 0.05s;
+  }
+
+  .ds-panel-radio {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--ds-border-bright);
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+  }
+
+  .ds-panel-radio::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ds-accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .ds-panel-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Panel active states for Variant */
+  #var-primary:checked ~ .window .ds-panel-option[data-var="primary"] .ds-panel-radio,
+  #var-secondary:checked ~ .window .ds-panel-option[data-var="secondary"] .ds-panel-radio,
+  #var-ghost:checked ~ .window .ds-panel-option[data-var="ghost"] .ds-panel-radio,
+  #var-destructive:checked ~ .window .ds-panel-option[data-var="destructive"] .ds-panel-radio {
+    border-color: var(--ds-accent);
+  }
+  #var-primary:checked ~ .window .ds-panel-option[data-var="primary"] .ds-panel-radio::after,
+  #var-secondary:checked ~ .window .ds-panel-option[data-var="secondary"] .ds-panel-radio::after,
+  #var-ghost:checked ~ .window .ds-panel-option[data-var="ghost"] .ds-panel-radio::after,
+  #var-destructive:checked ~ .window .ds-panel-option[data-var="destructive"] .ds-panel-radio::after { opacity: 1; }
+
+  #var-primary:checked ~ .window .ds-panel-option[data-var="primary"],
+  #var-secondary:checked ~ .window .ds-panel-option[data-var="secondary"],
+  #var-ghost:checked ~ .window .ds-panel-option[data-var="ghost"],
+  #var-destructive:checked ~ .window .ds-panel-option[data-var="destructive"] {
+    background: var(--ds-accent-bg); color: var(--ds-accent); font-weight: 600;
+  }
+
+  /* Panel active states for Size */
+  #size-sm:checked ~ .window .ds-panel-option[data-size="sm"] .ds-panel-radio,
+  #size-md:checked ~ .window .ds-panel-option[data-size="md"] .ds-panel-radio,
+  #size-lg:checked ~ .window .ds-panel-option[data-size="lg"] .ds-panel-radio {
+    border-color: var(--ds-accent);
+  }
+  #size-sm:checked ~ .window .ds-panel-option[data-size="sm"] .ds-panel-radio::after,
+  #size-md:checked ~ .window .ds-panel-option[data-size="md"] .ds-panel-radio::after,
+  #size-lg:checked ~ .window .ds-panel-option[data-size="lg"] .ds-panel-radio::after { opacity: 1; }
+
+  #size-sm:checked ~ .window .ds-panel-option[data-size="sm"],
+  #size-md:checked ~ .window .ds-panel-option[data-size="md"],
+  #size-lg:checked ~ .window .ds-panel-option[data-size="lg"] {
+    background: var(--ds-accent-bg); color: var(--ds-accent); font-weight: 600;
+  }
+
+  /* Panel active states for State */
+  #state-default:checked ~ .window .ds-panel-option[data-state="default"] .ds-panel-radio,
+  #state-hover:checked ~ .window .ds-panel-option[data-state="hover"] .ds-panel-radio,
+  #state-active:checked ~ .window .ds-panel-option[data-state="active"] .ds-panel-radio,
+  #state-disabled:checked ~ .window .ds-panel-option[data-state="disabled"] .ds-panel-radio {
+    border-color: var(--ds-accent);
+  }
+  #state-default:checked ~ .window .ds-panel-option[data-state="default"] .ds-panel-radio::after,
+  #state-hover:checked ~ .window .ds-panel-option[data-state="hover"] .ds-panel-radio::after,
+  #state-active:checked ~ .window .ds-panel-option[data-state="active"] .ds-panel-radio::after,
+  #state-disabled:checked ~ .window .ds-panel-option[data-state="disabled"] .ds-panel-radio::after { opacity: 1; }
+
+  #state-default:checked ~ .window .ds-panel-option[data-state="default"],
+  #state-hover:checked ~ .window .ds-panel-option[data-state="hover"],
+  #state-active:checked ~ .window .ds-panel-option[data-state="active"],
+  #state-disabled:checked ~ .window .ds-panel-option[data-state="disabled"] {
+    background: var(--ds-accent-bg); color: var(--ds-accent); font-weight: 600;
+  }
+
+  /* Panel active states for Theme */
+  #theme-light:checked ~ .window .ds-panel-option[data-theme="light"] .ds-panel-radio,
+  #theme-dark:checked ~ .window .ds-panel-option[data-theme="dark"] .ds-panel-radio,
+  #theme-hc:checked ~ .window .ds-panel-option[data-theme="hc"] .ds-panel-radio {
+    border-color: var(--ds-accent);
+  }
+  #theme-light:checked ~ .window .ds-panel-option[data-theme="light"] .ds-panel-radio::after,
+  #theme-dark:checked ~ .window .ds-panel-option[data-theme="dark"] .ds-panel-radio::after,
+  #theme-hc:checked ~ .window .ds-panel-option[data-theme="hc"] .ds-panel-radio::after { opacity: 1; }
+
+  #theme-light:checked ~ .window .ds-panel-option[data-theme="light"],
+  #theme-dark:checked ~ .window .ds-panel-option[data-theme="dark"],
+  #theme-hc:checked ~ .window .ds-panel-option[data-theme="hc"] {
+    background: var(--ds-accent-bg); color: var(--ds-accent); font-weight: 600;
+  }
+
+  /* ═══════════════════════════════════════════
+     THEME SWITCHING
+     ═══════════════════════════════════════════ */
+
+  /* Dark Theme */
+  #theme-dark:checked ~ .window .ds-shell {
+    --ds-bg: #18181b;
+    --ds-bg-card: #27272a;
+    --ds-bg-nav: #1f1f23;
+    --ds-bg-panel: #1f1f23;
+    --ds-border: rgba(255,255,255,0.08);
+    --ds-border-bright: rgba(255,255,255,0.15);
+    --ds-text: #f4f4f5;
+    --ds-text-muted: #a1a1aa;
+    --ds-text-dim: #71717a;
+    --ds-accent: #818cf8;
+    --ds-accent-hover: #93a0fb;
+    --ds-accent-active: #6d7bf5;
+    --ds-accent-bg: rgba(129,140,248,0.12);
+    --ds-accent-border: rgba(129,140,248,0.25);
+    --ds-green: #4ade80;
+    --ds-green-bg: rgba(74,222,128,0.12);
+    --ds-amber: #fbbf24;
+    --ds-amber-bg: rgba(251,191,36,0.12);
+    --ds-red: #f87171;
+    --ds-red-bg: rgba(248,113,113,0.12);
+    --ds-ghost-hover: rgba(255,255,255,0.06);
+    --ds-ghost-active: rgba(255,255,255,0.1);
+    --ds-ring: 0 0 0 3px rgba(129,140,248,0.25);
+    --ds-dot-color: rgba(255,255,255,0.04);
+    --ds-specimen-label: #71717a;
+    --ds-progress-bg: rgba(255,255,255,0.08);
+    --ds-toggle-track: #3f3f46;
+    --ds-card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --ds-elevated-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+    --ds-input-bg: #27272a;
+    --ds-input-border: #3f3f46;
+    --ds-skeleton-from: #3f3f46;
+    --ds-skeleton-to: #52525b;
+    background: #18181b;
+  }
+
+  /* High Contrast Theme */
+  #theme-hc:checked ~ .window .ds-shell {
+    --ds-bg: #000000;
+    --ds-bg-card: #0a0a0a;
+    --ds-bg-nav: #050505;
+    --ds-bg-panel: #050505;
+    --ds-border: rgba(255,255,255,0.25);
+    --ds-border-bright: rgba(255,255,255,0.4);
+    --ds-text: #ffffff;
+    --ds-text-muted: #d4d4d4;
+    --ds-text-dim: #a0a0a0;
+    --ds-accent: #a5b4fc;
+    --ds-accent-hover: #c7d2fe;
+    --ds-accent-active: #818cf8;
+    --ds-accent-bg: rgba(165,180,252,0.15);
+    --ds-accent-border: rgba(165,180,252,0.35);
+    --ds-green: #86efac;
+    --ds-green-bg: rgba(134,239,172,0.15);
+    --ds-amber: #fcd34d;
+    --ds-amber-bg: rgba(252,211,77,0.15);
+    --ds-red: #fca5a5;
+    --ds-red-bg: rgba(252,165,165,0.15);
+    --ds-ghost-hover: rgba(255,255,255,0.1);
+    --ds-ghost-active: rgba(255,255,255,0.16);
+    --ds-ring: 0 0 0 3px rgba(165,180,252,0.35);
+    --ds-dot-color: rgba(255,255,255,0.08);
+    --ds-specimen-label: #a0a0a0;
+    --ds-progress-bg: rgba(255,255,255,0.12);
+    --ds-toggle-track: #525252;
+    --ds-card-shadow: 0 0 0 1px rgba(255,255,255,0.15);
+    --ds-elevated-shadow: 0 0 0 2px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.5);
+    --ds-input-bg: #0a0a0a;
+    --ds-input-border: rgba(255,255,255,0.3);
+    --ds-skeleton-from: #262626;
+    --ds-skeleton-to: #404040;
+    background: #000000;
+  }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: BUTTON
+     ═══════════════════════════════════════════ */
+
+  .ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    border: none;
+    outline: none;
+  }
+
+  /* Button Sizes */
+  .ds-btn-sm { height: 30px; padding: 0 12px; font-size: 12px; border-radius: 6px; }
+  .ds-btn-md { height: 36px; padding: 0 16px; font-size: 13px; }
+  .ds-btn-lg { height: 42px; padding: 0 22px; font-size: 14px; border-radius: 10px; }
+
+  /* Primary */
+  .ds-btn-primary {
+    background: var(--ds-accent);
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  }
+  .ds-btn-primary.ds-btn-hover { background: var(--ds-accent-hover); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  .ds-btn-primary.ds-btn-active { background: var(--ds-accent-active); box-shadow: none; transform: translateY(0.5px); }
+  .ds-btn-primary.ds-btn-disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Secondary */
+  .ds-btn-secondary {
+    background: transparent;
+    color: var(--ds-text);
+    border: 1.5px solid var(--ds-border-bright);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .ds-btn-secondary.ds-btn-hover { background: var(--ds-ghost-hover); border-color: var(--ds-text-dim); }
+  .ds-btn-secondary.ds-btn-active { background: var(--ds-ghost-active); }
+  .ds-btn-secondary.ds-btn-disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Ghost */
+  .ds-btn-ghost {
+    background: transparent;
+    color: var(--ds-text-muted);
+  }
+  .ds-btn-ghost.ds-btn-hover { background: var(--ds-ghost-hover); color: var(--ds-text); }
+  .ds-btn-ghost.ds-btn-active { background: var(--ds-ghost-active); color: var(--ds-text); }
+  .ds-btn-ghost.ds-btn-disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Destructive */
+  .ds-btn-destructive {
+    background: var(--ds-red);
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(220,38,38,0.3);
+  }
+  .ds-btn-destructive.ds-btn-hover { filter: brightness(1.1); box-shadow: 0 2px 6px rgba(220,38,38,0.3); }
+  .ds-btn-destructive.ds-btn-active { filter: brightness(0.92); box-shadow: none; }
+  .ds-btn-destructive.ds-btn-disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+  /* Focused ring for all buttons */
+  .ds-btn-focused { box-shadow: var(--ds-ring) !important; }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: BADGE
+     ═══════════════════════════════════════════ */
+
+  .ds-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .ds-badge-sm { height: 20px; padding: 0 8px; font-size: 10px; }
+  .ds-badge-md { height: 24px; padding: 0 10px; font-size: 11px; }
+  .ds-badge-lg { height: 28px; padding: 0 12px; font-size: 12px; }
+
+  .ds-badge-default { background: rgba(0,0,0,0.06); color: var(--ds-text-muted); }
+  .ds-badge-success { background: var(--ds-green-bg); color: var(--ds-green); }
+  .ds-badge-warning { background: var(--ds-amber-bg); color: var(--ds-amber); }
+  .ds-badge-error { background: var(--ds-red-bg); color: var(--ds-red); }
+
+  .ds-badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .ds-badge-default .ds-badge-dot { background: var(--ds-text-dim); }
+  .ds-badge-success .ds-badge-dot { background: var(--ds-green); }
+  .ds-badge-warning .ds-badge-dot { background: var(--ds-amber); }
+  .ds-badge-error .ds-badge-dot { background: var(--ds-red); }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: CARD
+     ═══════════════════════════════════════════ */
+
+  .ds-card {
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+    width: 260px;
+    transition: all 0.2s ease;
+  }
+
+  .ds-card-default {
+    background: var(--ds-bg-card);
+    border: 1px solid var(--ds-border);
+  }
+
+  .ds-card-elevated {
+    background: var(--ds-bg-card);
+    border: 1px solid var(--ds-border);
+    box-shadow: var(--ds-elevated-shadow);
+  }
+
+  .ds-card-ghost {
+    background: transparent;
+    border: 1px solid transparent;
+  }
+
+  .ds-card-interactive {
+    background: var(--ds-bg-card);
+    border: 1px solid var(--ds-border);
+    cursor: pointer;
+  }
+
+  .ds-card-interactive:hover {
+    border-color: var(--ds-accent-border);
+    box-shadow: 0 4px 12px rgba(99,102,241,0.08);
+  }
+
+  .ds-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ds-text);
+    margin-bottom: 6px;
+  }
+
+  .ds-card-desc {
+    font-size: 12px;
+    color: var(--ds-text-muted);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .ds-card-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ds-border);
+  }
+
+  .ds-card-action {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ds-accent);
+    cursor: pointer;
+  }
+
+  .ds-card-action-muted {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ds-text-dim);
+    cursor: pointer;
+  }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: TEXT INPUT
+     ═══════════════════════════════════════════ */
+
+  .ds-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 280px;
+  }
+
+  .ds-input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ds-text);
+  }
+
+  .ds-input-wrapper {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    border-radius: 8px;
+    border: 1.5px solid var(--ds-input-border);
+    background: var(--ds-input-bg);
+    padding: 0 12px;
+    gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .ds-input-wrapper.ds-input-focused {
+    border-color: var(--ds-accent);
+    box-shadow: var(--ds-ring);
+  }
+
+  .ds-input-wrapper.ds-input-error-state {
+    border-color: var(--ds-red);
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+  }
+
+  .ds-input-wrapper.ds-input-disabled-state {
+    opacity: 0.5;
+    background: var(--ds-ghost-hover);
+    cursor: not-allowed;
+  }
+
+  .ds-input-text {
+    font-size: 13px;
+    color: var(--ds-text);
+    font-family: 'Inter', sans-serif;
+    flex: 1;
+  }
+
+  .ds-input-placeholder {
+    font-size: 13px;
+    color: var(--ds-text-dim);
+    font-family: 'Inter', sans-serif;
+    flex: 1;
+  }
+
+  .ds-input-icon {
+    color: var(--ds-text-dim);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .ds-input-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ds-input-helper {
+    font-size: 11px;
+    color: var(--ds-text-dim);
+  }
+
+  .ds-input-error-text {
+    font-size: 11px;
+    color: var(--ds-red);
+    font-weight: 500;
+  }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: TOGGLE / SWITCH
+     ═══════════════════════════════════════════ */
+
+  .ds-toggle {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  .ds-toggle-track {
+    border-radius: 100px;
+    background: var(--ds-toggle-track);
+    transition: background 0.2s ease;
+    position: relative;
+  }
+
+  .ds-toggle-thumb {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    top: 50%;
+  }
+
+  /* Toggle Sizes */
+  .ds-toggle-sm .ds-toggle-track { width: 28px; height: 16px; }
+  .ds-toggle-sm .ds-toggle-thumb { width: 12px; height: 12px; left: 2px; margin-top: -6px; }
+
+  .ds-toggle-md .ds-toggle-track { width: 36px; height: 20px; }
+  .ds-toggle-md .ds-toggle-thumb { width: 16px; height: 16px; left: 2px; margin-top: -8px; }
+
+  .ds-toggle-lg .ds-toggle-track { width: 44px; height: 24px; }
+  .ds-toggle-lg .ds-toggle-thumb { width: 20px; height: 20px; left: 2px; margin-top: -10px; }
+
+  /* Toggle ON state */
+  .ds-toggle-on .ds-toggle-track { background: var(--ds-toggle-track-on); }
+  .ds-toggle-sm.ds-toggle-on .ds-toggle-thumb { transform: translateX(12px); }
+  .ds-toggle-md.ds-toggle-on .ds-toggle-thumb { transform: translateX(16px); }
+  .ds-toggle-lg.ds-toggle-on .ds-toggle-thumb { transform: translateX(20px); }
+
+  .ds-toggle-disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Real interactive toggles via checkbox */
+  .ds-toggle-real {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .ds-toggle-real-track {
+    position: relative;
+    border-radius: 100px;
+    background: var(--ds-toggle-track);
+    transition: background 0.2s ease;
+  }
+
+  .ds-toggle-real-thumb {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    top: 50%;
+  }
+
+  .ds-toggle-real-sm .ds-toggle-real-track { width: 28px; height: 16px; }
+  .ds-toggle-real-sm .ds-toggle-real-thumb { width: 12px; height: 12px; left: 2px; margin-top: -6px; }
+
+  .ds-toggle-real-md .ds-toggle-real-track { width: 36px; height: 20px; }
+  .ds-toggle-real-md .ds-toggle-real-thumb { width: 16px; height: 16px; left: 2px; margin-top: -8px; }
+
+  .ds-toggle-real-lg .ds-toggle-real-track { width: 44px; height: 24px; }
+  .ds-toggle-real-lg .ds-toggle-real-thumb { width: 20px; height: 20px; left: 2px; margin-top: -10px; }
+
+  /* Checkbox-driven toggle ON state */
+  #toggle-demo-1:checked ~ .window .ds-toggle-for-1 .ds-toggle-real-track { background: var(--ds-toggle-track-on); }
+  #toggle-demo-1:checked ~ .window .ds-toggle-for-1.ds-toggle-real-sm .ds-toggle-real-thumb { transform: translateX(12px); }
+  #toggle-demo-1:checked ~ .window .ds-toggle-for-1.ds-toggle-real-md .ds-toggle-real-thumb { transform: translateX(16px); }
+  #toggle-demo-1:checked ~ .window .ds-toggle-for-1.ds-toggle-real-lg .ds-toggle-real-thumb { transform: translateX(20px); }
+
+  #toggle-demo-2:checked ~ .window .ds-toggle-for-2 .ds-toggle-real-track { background: var(--ds-toggle-track-on); }
+  #toggle-demo-2:checked ~ .window .ds-toggle-for-2.ds-toggle-real-sm .ds-toggle-real-thumb { transform: translateX(12px); }
+  #toggle-demo-2:checked ~ .window .ds-toggle-for-2.ds-toggle-real-md .ds-toggle-real-thumb { transform: translateX(16px); }
+  #toggle-demo-2:checked ~ .window .ds-toggle-for-2.ds-toggle-real-lg .ds-toggle-real-thumb { transform: translateX(20px); }
+
+  #toggle-demo-3:checked ~ .window .ds-toggle-for-3 .ds-toggle-real-track { background: var(--ds-toggle-track-on); }
+  #toggle-demo-3:checked ~ .window .ds-toggle-for-3.ds-toggle-real-sm .ds-toggle-real-thumb { transform: translateX(12px); }
+  #toggle-demo-3:checked ~ .window .ds-toggle-for-3.ds-toggle-real-md .ds-toggle-real-thumb { transform: translateX(16px); }
+  #toggle-demo-3:checked ~ .window .ds-toggle-for-3.ds-toggle-real-lg .ds-toggle-real-thumb { transform: translateX(20px); }
+
+  .ds-toggle-label-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ds-text);
+  }
+
+  /* ═══════════════════════════════════════════
+     COMPONENT: PROGRESS BAR
+     ═══════════════════════════════════════════ */
+
+  .ds-progress {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ds-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ds-progress-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ds-text);
+  }
+
+  .ds-progress-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ds-text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .ds-progress-track {
+    width: 100%;
+    height: 6px;
+    border-radius: 100px;
+    background: var(--ds-progress-bg);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ds-progress-track-lg {
+    height: 8px;
+  }
+
+  .ds-progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ds-progress-fill-accent { background: var(--ds-accent); }
+  .ds-progress-fill-green { background: var(--ds-green); }
+  .ds-progress-fill-amber { background: var(--ds-amber); }
+  .ds-progress-fill-red { background: var(--ds-red); }
+
+  /* Indeterminate animation */
+  @keyframes ds-indeterminate {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .ds-progress-indeterminate .ds-progress-fill {
+    width: 100% !important;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--ds-accent),
+      var(--ds-accent) 8px,
+      rgba(99,102,241,0.5) 8px,
+      rgba(99,102,241,0.5) 16px
+    );
+    background-size: 200% 100%;
+    animation: ds-indeterminate 2s linear infinite;
+  }
+
+  /* Skeleton shimmer animation */
+  @keyframes ds-skeleton-shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+  }
+
+  .ds-skeleton {
+    background: linear-gradient(90deg, var(--ds-skeleton-from) 0px, var(--ds-skeleton-to) 100px, var(--ds-skeleton-from) 200px);
+    background-size: 400px 100%;
+    animation: ds-skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
+  }
+
+  /* ═══════════════════════════════════════════
+     MOBILE RESPONSIVE
+     ═══════════════════════════════════════════ */
+
+  #preview-mobile:checked ~ .window .ds-nav { display: none; }
+  #preview-mobile:checked ~ .window .ds-panel { display: none; }
+  #preview-mobile:checked ~ .window .ds-specimen-header { padding: 16px 16px 14px; }
+  #preview-mobile:checked ~ .window .ds-specimen-body { padding: 16px; }
+  #preview-mobile:checked ~ .window .ds-specimen-name { font-size: 16px; }
+  #preview-mobile:checked ~ .window .ds-specimen-row { flex-direction: column; align-items: flex-start; }
+  #preview-mobile:checked ~ .window .ds-specimen-card { padding: 16px; }
+  #preview-mobile:checked ~ .window .ds-card { width: 100%; }
+  #preview-mobile:checked ~ .window .ds-input-group { width: 100%; }
+
+  /* ═══════════════════════════════════════════
+     UTILITY & POLISH
+     ═══════════════════════════════════════════ */
+
+  .ds-gap-8 { gap: 8px; }
+  .ds-gap-12 { gap: 12px; }
+  .ds-gap-16 { gap: 16px; }
+  .ds-gap-24 { gap: 24px; }
+  .ds-mt-16 { margin-top: 16px; }
+  .ds-flex { display: flex; }
+  .ds-flex-col { flex-direction: column; }
+  .ds-flex-wrap { flex-wrap: wrap; }
+  .ds-items-center { align-items: center; }
+  .ds-items-start { align-items: flex-start; }
+
+  /* Code token style */
+  .ds-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--ds-accent-bg);
+    color: var(--ds-accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  /* Panel section header with icon */
+  .ds-panel-section-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    opacity: 0.5;
+    vertical-align: -1px;
+  }
+
+  /* ═══════════════════════════════════════════
+     CUSTOM SCROLLBARS
+     ═══════════════════════════════════════════ */
+
+  .ds-nav::-webkit-scrollbar,
+  .ds-specimen-area::-webkit-scrollbar,
+  .ds-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .ds-nav::-webkit-scrollbar-track,
+  .ds-specimen-area::-webkit-scrollbar-track,
+  .ds-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .ds-nav::-webkit-scrollbar-thumb,
+  .ds-specimen-area::-webkit-scrollbar-thumb,
+  .ds-panel::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.12);
+    border-radius: 100px;
+  }
+
+  .ds-nav::-webkit-scrollbar-thumb:hover,
+  .ds-specimen-area::-webkit-scrollbar-thumb:hover,
+  .ds-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.22);
+  }
+
+  /* Dark theme scrollbar overrides */
+  #theme-dark:checked ~ .window .ds-nav::-webkit-scrollbar-thumb,
+  #theme-dark:checked ~ .window .ds-specimen-area::-webkit-scrollbar-thumb,
+  #theme-dark:checked ~ .window .ds-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+  }
+
+  #theme-dark:checked ~ .window .ds-nav::-webkit-scrollbar-thumb:hover,
+  #theme-dark:checked ~ .window .ds-specimen-area::-webkit-scrollbar-thumb:hover,
+  #theme-dark:checked ~ .window .ds-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  #theme-hc:checked ~ .window .ds-nav::-webkit-scrollbar-thumb,
+  #theme-hc:checked ~ .window .ds-specimen-area::-webkit-scrollbar-thumb,
+  #theme-hc:checked ~ .window .ds-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+  }
+
+  #theme-hc:checked ~ .window .ds-nav::-webkit-scrollbar-thumb:hover,
+  #theme-hc:checked ~ .window .ds-specimen-area::-webkit-scrollbar-thumb:hover,
+  #theme-hc:checked ~ .window .ds-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+  }
+
+  /* Firefox scrollbar styling */
+  .ds-nav,
+  .ds-specimen-area,
+  .ds-panel {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+
+  /* ═══════════════════════════════════════════
+     FOCUS-VISIBLE STATES
+     ═══════════════════════════════════════════ */
+
+  .ds-nav-item:focus-visible {
+    outline: none;
+    box-shadow: inset var(--ds-ring);
+    background: var(--ds-accent-bg);
+    color: var(--ds-accent);
+  }
+
+  .ds-panel-option:focus-visible {
+    outline: none;
+    box-shadow: var(--ds-ring);
+  }
+
+  .ds-toggle-real:focus-visible {
+    outline: none;
+  }
+
+  .ds-toggle-real:focus-visible .ds-toggle-real-track {
+    box-shadow: var(--ds-ring);
+  }
+
+  .preview-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
+  }
+
+  /* ═══════════════════════════════════════════
+     ENHANCED HOVER & INTERACTION POLISH
+     ═══════════════════════════════════════════ */
+
+  /* Nav item - richer hover with smooth icon transition */
+  .ds-nav-item svg {
+    transition: opacity 0.15s ease;
+  }
+
+  .ds-nav-item:hover svg {
+    opacity: 0.8;
+  }
+
+  /* Specimen card subtle hover lift */
+  .ds-specimen-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .ds-specimen-card:hover {
+    box-shadow: var(--ds-elevated-shadow);
+    transform: translateY(-1px);
+  }
+
+  /* Interactive card enhanced hover */
+  .ds-card-interactive {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .ds-card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.12), 0 2px 6px rgba(99,102,241,0.06);
+  }
+
+  /* Toggle real hover - subtle track glow */
+  .ds-toggle-real:hover .ds-toggle-real-track {
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+  }
+
+  /* Badge hover micro-interaction */
+  .ds-badge {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ds-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Card action hover underline */
+  .ds-card-action {
+    transition: color 0.15s ease;
+    position: relative;
+  }
+
+  .ds-card-action::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--ds-accent);
+    transition: width 0.2s ease;
+  }
+
+  .ds-card-action:hover::after {
+    width: 100%;
+  }
+
+  .ds-card-action-muted {
+    transition: color 0.15s ease;
+  }
+
+  .ds-card-action-muted:hover {
+    color: var(--ds-text-muted);
+  }
+
+  /* ═══════════════════════════════════════════
+     RADIO DOT SCALE ANIMATION
+     ═══════════════════════════════════════════ */
+
+  .ds-panel-radio::after {
+    transform: scale(0);
+    transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Override existing opacity rules — use scale+opacity together for a pop-in */
+  #var-primary:checked ~ .window .ds-panel-option[data-var="primary"] .ds-panel-radio::after,
+  #var-secondary:checked ~ .window .ds-panel-option[data-var="secondary"] .ds-panel-radio::after,
+  #var-ghost:checked ~ .window .ds-panel-option[data-var="ghost"] .ds-panel-radio::after,
+  #var-destructive:checked ~ .window .ds-panel-option[data-var="destructive"] .ds-panel-radio::after,
+  #size-sm:checked ~ .window .ds-panel-option[data-size="sm"] .ds-panel-radio::after,
+  #size-md:checked ~ .window .ds-panel-option[data-size="md"] .ds-panel-radio::after,
+  #size-lg:checked ~ .window .ds-panel-option[data-size="lg"] .ds-panel-radio::after,
+  #state-default:checked ~ .window .ds-panel-option[data-state="default"] .ds-panel-radio::after,
+  #state-hover:checked ~ .window .ds-panel-option[data-state="hover"] .ds-panel-radio::after,
+  #state-active:checked ~ .window .ds-panel-option[data-state="active"] .ds-panel-radio::after,
+  #state-disabled:checked ~ .window .ds-panel-option[data-state="disabled"] .ds-panel-radio::after,
+  #theme-light:checked ~ .window .ds-panel-option[data-theme="light"] .ds-panel-radio::after,
+  #theme-dark:checked ~ .window .ds-panel-option[data-theme="dark"] .ds-panel-radio::after,
+  #theme-hc:checked ~ .window .ds-panel-option[data-theme="hc"] .ds-panel-radio::after {
+    transform: scale(1);
+  }
+
+  /* ═══════════════════════════════════════════
+     PROGRESS BAR FILL POLISH
+     ═══════════════════════════════════════════ */
+
+  /* Subtle gloss overlay on progress fills for depth */
+  .ds-progress-fill {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ds-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%, rgba(0,0,0,0.06) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════
+     ENHANCED MOBILE PREVIEW
+     ═══════════════════════════════════════════ */
+
+  /* Mobile: add a compact top bar to replace hidden nav */
+  #preview-mobile:checked ~ .window .ds-shell {
+    flex-direction: column;
+  }
+
+  #preview-mobile:checked ~ .window .ds-specimen-header {
+    position: relative;
+    z-index: auto;
+  }
+
+  #preview-mobile:checked ~ .window .ds-specimen-stats {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #preview-mobile:checked ~ .window .ds-specimen-section-title {
+    font-size: 9px;
+  }
+
+  #preview-mobile:checked ~ .window .ds-specimen-card {
+    border-radius: 8px;
+  }
+
+  #preview-mobile:checked ~ .window .ds-progress {
+    width: 100%;
+  }
+
+  #preview-mobile:checked ~ .window .ds-toggle-real {
+    gap: 8px;
+  }
+
+  #preview-mobile:checked ~ .window .ds-badge {
+    margin-bottom: 4px;
+  }
+
+  /* ═══════════════════════════════════════════
+     CODE SNIPPET POLISH
+     ═══════════════════════════════════════════ */
+
+  .ds-code {
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ds-code:hover {
+    background: var(--ds-accent-bg);
+    box-shadow: 0 0 0 1px var(--ds-accent-border);
+  }
+
+  /* ═══════════════════════════════════════════
+     THEME TRANSITION SMOOTHING
+     ═══════════════════════════════════════════ */
+
+  /* Smooth color transitions for theme switching on structural surfaces.
+     Individual component transitions (transform, width, etc.) are defined
+     on their own rules and won't be overridden since we only add
+     color-related properties here. */
+  .ds-shell {
+    transition: background-color 0.25s ease;
+  }
+
+  .ds-nav,
+  .ds-panel,
+  .ds-specimen-header,
+  .ds-specimen-body {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  }
+
+  .ds-specimen-name,
+  .ds-specimen-desc,
+  .ds-panel-title,
+  .ds-nav-category,
+  .ds-specimen-section-title,
+  .ds-specimen-label,
+  .ds-input-label,
+  .ds-progress-label,
+  .ds-progress-value,
+  .ds-toggle-label-text,
+  .ds-card-title,
+  .ds-card-desc {
+    transition: color 0.25s ease;
+  }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <!-- ════════════════════════════════════════
+       EXPERIMENT SIDEBAR (placeholder for Sidebar agent)
+       ════════════════════════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Design System Playground</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-model opus">Opus 4.6</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A Storybook-meets-Radix interactive component specimen gallery where you browse UI components and toggle through variants, sizes, states, and themes in real time. Features a three-column layout (component nav, specimen area, property panel) with deep CSS custom property cascade enabling instant theme switching between Light, Dark, and High Contrast modes — all without JavaScript. A living design system that IS the interface.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        The originating user prompt was:<br><br>
+        "Evaluate the project and recommend the next major app to add. It should be as substantial as the CRM. We want to build out a team of agents for this approach. Use an world class product manager to do the research and synthesis and the potential app options. Make a decision and then orchestrate the work and manage the work with a team of experts. In this case, we do not need an architect because this is purely html/css, but we do need the worlds best designer AND a UX fanatatic. Use this team to build at least 3 separate new apps and orchestrate their own sub-agents as necessary."<br><br>
+        A PM research agent analyzed all 19 existing experiments and identified design tooling as an unrepresented domain. The Design System Playground was selected as one of three new experiments — a meta-experiment where the design system itself becomes the interface.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead → PM → Designer → UX Fanatic → Sidebar</div>
+      <div class="exp-agent-trace">
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Orchestrated full workflow, planned 3-app build, delegated to specialized agents</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">PM / Researcher</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Analyzed all 19 experiments, identified domain gaps, recommended 3 new apps (Analytics Observatory, Design System Playground, Flight Tracker)</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Designer</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Built complete component browser HTML/CSS (2,034 lines). Created three-column layout with component navigation, specimen area, and property panel. Implemented 6 components (Button, Badge, Card, Text Input, Toggle, Progress Bar) with variant/size/state/theme switching via CSS custom property cascade.</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">UX Fanatic</span>
+            <span class="exp-at-model opus">Opus 4.6</span>
+          </div>
+          <div class="exp-at-action">Enhanced interactions: custom scrollbars for light/dark/hc themes, focus-visible styles, radio dot scale animations, theme transition smoothing, specimen card hover lifts, badge micro-interactions, progress bar gloss overlay, code snippet hover effects, mobile preview rules. File grew to 2,345 lines.</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry sonnet">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Sidebar</span>
+            <span class="exp-at-model sonnet">Sonnet 4.5</span>
+          </div>
+          <div class="exp-at-action">Documented metadata, prompts, and agent trace</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="design-system-playground-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — Interactive component browser with theme switching and live specimens</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════════════════
+       EXPERIMENT CONTENT WITH DEVICE PREVIEW
+       ════════════════════════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <!-- Component selection state -->
+    <input type="radio" name="comp" id="comp-button" checked>
+    <input type="radio" name="comp" id="comp-badge">
+    <input type="radio" name="comp" id="comp-card">
+    <input type="radio" name="comp" id="comp-input">
+    <input type="radio" name="comp" id="comp-toggle">
+    <input type="radio" name="comp" id="comp-progress">
+
+    <!-- Property panel: Variant -->
+    <input type="radio" name="variant" id="var-primary" checked>
+    <input type="radio" name="variant" id="var-secondary">
+    <input type="radio" name="variant" id="var-ghost">
+    <input type="radio" name="variant" id="var-destructive">
+
+    <!-- Property panel: Size -->
+    <input type="radio" name="size" id="size-sm">
+    <input type="radio" name="size" id="size-md" checked>
+    <input type="radio" name="size" id="size-lg">
+
+    <!-- Property panel: State -->
+    <input type="radio" name="state" id="state-default" checked>
+    <input type="radio" name="state" id="state-hover">
+    <input type="radio" name="state" id="state-active">
+    <input type="radio" name="state" id="state-disabled">
+
+    <!-- Property panel: Theme -->
+    <input type="radio" name="theme" id="theme-light" checked>
+    <input type="radio" name="theme" id="theme-dark">
+    <input type="radio" name="theme" id="theme-hc">
+
+    <!-- Interactive toggle demos -->
+    <input type="checkbox" id="toggle-demo-1">
+    <input type="checkbox" id="toggle-demo-2" checked>
+    <input type="checkbox" id="toggle-demo-3">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="ds-shell">
+
+        <!-- ══════════════════════
+             COMPONENT NAV (Left)
+             ══════════════════════ -->
+        <nav class="ds-nav">
+          <div class="ds-nav-header">
+            <div class="ds-nav-title">Components</div>
+            <div class="ds-nav-subtitle">Design System</div>
+          </div>
+
+          <div class="ds-nav-category">Inputs</div>
+          <label for="comp-button" class="ds-nav-item" data-comp="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="18" height="12" rx="4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Button
+          </label>
+          <label for="comp-input" class="ds-nav-item" data-comp="input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="3"/><line x1="7" y1="12" x2="7" y2="12" stroke-width="2"/></svg>
+            Text Input
+          </label>
+          <label for="comp-toggle" class="ds-nav-item" data-comp="toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="10" rx="5"/><circle cx="16" cy="12" r="3"/></svg>
+            Toggle
+          </label>
+
+          <div class="ds-nav-category">Feedback</div>
+          <label for="comp-badge" class="ds-nav-item" data-comp="badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="10" rx="5"/></svg>
+            Badge
+          </label>
+          <label for="comp-progress" class="ds-nav-item" data-comp="progress">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="10" width="20" height="4" rx="2"/><rect x="2" y="10" width="12" height="4" rx="2" fill="currentColor" opacity="0.3"/></svg>
+            Progress Bar
+          </label>
+
+          <div class="ds-nav-category">Layout</div>
+          <label for="comp-card" class="ds-nav-item" data-comp="card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+            Card
+          </label>
+        </nav>
+
+        <!-- ══════════════════════
+             SPECIMEN AREA (Center)
+             ══════════════════════ -->
+        <div class="ds-specimen-area">
+
+          <!-- Header changes per component -->
+          <div class="ds-specimen-header">
+            <div class="ds-header-text ds-header-button">
+              <div class="ds-specimen-name">Button</div>
+              <div class="ds-specimen-desc">Trigger actions and events. The most fundamental interactive element.</div>
+              <div class="ds-specimen-stats">
+                <span>4 variants</span> <span>3 sizes</span> <span>4 states</span>
+              </div>
+            </div>
+            <div class="ds-header-text ds-header-badge">
+              <div class="ds-specimen-name">Badge</div>
+              <div class="ds-specimen-desc">Compact status indicators and labels for metadata annotation.</div>
+              <div class="ds-specimen-stats">
+                <span>4 variants</span> <span>3 sizes</span>
+              </div>
+            </div>
+            <div class="ds-header-text ds-header-card">
+              <div class="ds-specimen-name">Card</div>
+              <div class="ds-specimen-desc">Container for grouping related content and actions together.</div>
+              <div class="ds-specimen-stats">
+                <span>4 variants</span>
+              </div>
+            </div>
+            <div class="ds-header-text ds-header-input">
+              <div class="ds-specimen-name">Text Input</div>
+              <div class="ds-specimen-desc">Single-line text entry field with labels, icons, and validation states.</div>
+              <div class="ds-specimen-stats">
+                <span>4 variants</span> <span>4 states</span>
+              </div>
+            </div>
+            <div class="ds-header-text ds-header-toggle">
+              <div class="ds-specimen-name">Toggle</div>
+              <div class="ds-specimen-desc">Binary on/off switch for instant settings changes. CSS-only interactivity.</div>
+              <div class="ds-specimen-stats">
+                <span>3 sizes</span> <span>3 states</span> <span>interactive</span>
+              </div>
+            </div>
+            <div class="ds-header-text ds-header-progress">
+              <div class="ds-specimen-name">Progress Bar</div>
+              <div class="ds-specimen-desc">Visual indicator of task completion or loading state with animated variants.</div>
+              <div class="ds-specimen-stats">
+                <span>4 variants</span> <span>4 levels</span> <span>animated</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ds-specimen-body">
+
+            <!-- ═══ BUTTON SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-button">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">All Variants</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Primary</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-sm">Save</div>
+                      <div class="ds-btn ds-btn-primary ds-btn-md">Submit</div>
+                      <div class="ds-btn ds-btn-primary ds-btn-lg">Continue</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Secondary</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-secondary ds-btn-sm">Cancel</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-md">Edit</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-lg">Configure</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Ghost</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-ghost ds-btn-sm">Skip</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-md">Learn More</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-lg">View Details</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Destructive</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-destructive ds-btn-sm">Remove</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-md">Delete</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-lg">Delete Account</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">States</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Default</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-md">Submit</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-md">Cancel</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-md">Skip</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-md">Delete</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Hover</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-md ds-btn-hover">Submit</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-md ds-btn-hover">Cancel</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-md ds-btn-hover">Skip</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-md ds-btn-hover">Delete</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Active</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-md ds-btn-active">Submit</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-md ds-btn-active">Cancel</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-md ds-btn-active">Skip</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-md ds-btn-active">Delete</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Disabled</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-md ds-btn-disabled">Submit</div>
+                      <div class="ds-btn ds-btn-secondary ds-btn-md ds-btn-disabled">Cancel</div>
+                      <div class="ds-btn ds-btn-ghost ds-btn-md ds-btn-disabled">Skip</div>
+                      <div class="ds-btn ds-btn-destructive ds-btn-md ds-btn-disabled">Delete</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Size Comparison</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Small</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-sm">Save</div>
+                      <span class="ds-code">height: 30px</span>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Medium</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-md">Save Changes</div>
+                      <span class="ds-code">height: 36px</span>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Large</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-btn ds-btn-primary ds-btn-lg">Save All Changes</div>
+                      <span class="ds-code">height: 42px</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ BADGE SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-badge">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">All Variants</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Default</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-default ds-badge-sm">Draft</div>
+                      <div class="ds-badge ds-badge-default ds-badge-md">Draft</div>
+                      <div class="ds-badge ds-badge-default ds-badge-lg">Draft</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Success</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-success ds-badge-sm"><span class="ds-badge-dot"></span>Active</div>
+                      <div class="ds-badge ds-badge-success ds-badge-md"><span class="ds-badge-dot"></span>Active</div>
+                      <div class="ds-badge ds-badge-success ds-badge-lg"><span class="ds-badge-dot"></span>Active</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Warning</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-warning ds-badge-sm">Beta</div>
+                      <div class="ds-badge ds-badge-warning ds-badge-md">Beta</div>
+                      <div class="ds-badge ds-badge-warning ds-badge-lg">Beta</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Error</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-error ds-badge-sm">Deprecated</div>
+                      <div class="ds-badge ds-badge-error ds-badge-md">Deprecated</div>
+                      <div class="ds-badge ds-badge-error ds-badge-lg">Deprecated</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Real-World Usage</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Status</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-success ds-badge-md"><span class="ds-badge-dot"></span>Published</div>
+                      <div class="ds-badge ds-badge-warning ds-badge-md"><span class="ds-badge-dot"></span>Pending Review</div>
+                      <div class="ds-badge ds-badge-error ds-badge-md"><span class="ds-badge-dot"></span>Failed</div>
+                      <div class="ds-badge ds-badge-default ds-badge-md">Archived</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Labels</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-default ds-badge-md">New</div>
+                      <div class="ds-badge ds-badge-warning ds-badge-md">Beta</div>
+                      <div class="ds-badge ds-badge-error ds-badge-md">Deprecated</div>
+                      <div class="ds-badge ds-badge-success ds-badge-md">v2.1</div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Counts</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-badge ds-badge-default ds-badge-sm">12</div>
+                      <div class="ds-badge ds-badge-success ds-badge-sm">99+</div>
+                      <div class="ds-badge ds-badge-error ds-badge-sm">3</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ CARD SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-card">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">All Variants</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="ds-card ds-card-default">
+                      <div class="ds-card-title">Default Card</div>
+                      <div class="ds-card-desc">A simple bordered container for grouping related content together.</div>
+                      <div class="ds-card-actions">
+                        <span class="ds-card-action">View</span>
+                        <span class="ds-card-action-muted">Dismiss</span>
+                      </div>
+                    </div>
+                    <div class="ds-card ds-card-elevated">
+                      <div class="ds-card-title">Elevated Card</div>
+                      <div class="ds-card-desc">Uses shadow depth to create visual hierarchy and draw attention.</div>
+                      <div class="ds-card-actions">
+                        <span class="ds-card-action">Open</span>
+                        <span class="ds-card-action-muted">Later</span>
+                      </div>
+                    </div>
+                    <div class="ds-card ds-card-ghost">
+                      <div class="ds-card-title">Ghost Card</div>
+                      <div class="ds-card-desc">Transparent background for subtle grouping without visual weight.</div>
+                      <div class="ds-card-actions">
+                        <span class="ds-card-action">Details</span>
+                      </div>
+                    </div>
+                    <div class="ds-card ds-card-interactive">
+                      <div class="ds-card-title">Interactive Card</div>
+                      <div class="ds-card-desc">Responds to hover with accent border glow. Hover me to see the effect.</div>
+                      <div class="ds-card-actions">
+                        <span class="ds-card-action">Select</span>
+                        <span class="ds-card-action-muted">Skip</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Content Examples</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="ds-card ds-card-elevated" style="width: 280px;">
+                      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--ds-accent-bg); display: flex; align-items: center; justify-content: center;">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ds-accent)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <div>
+                          <div class="ds-card-title" style="margin-bottom: 0;">API Usage</div>
+                          <div style="font-size: 10px; color: var(--ds-text-dim);">Last 30 days</div>
+                        </div>
+                      </div>
+                      <div style="font-size: 28px; font-weight: 700; color: var(--ds-text); letter-spacing: -1px;">14,283</div>
+                      <div style="font-size: 11px; color: var(--ds-green); font-weight: 600; margin-top: 4px;">+12.4% from last month</div>
+                    </div>
+                    <div class="ds-card ds-card-default" style="width: 280px;">
+                      <div class="ds-card-title">Team Members</div>
+                      <div class="ds-card-desc">Manage who has access to this workspace and their permissions.</div>
+                      <div style="display: flex; gap: -4px; margin-top: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #6366f1; border: 2px solid var(--ds-bg-card);"></div>
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #ec4899; border: 2px solid var(--ds-bg-card); margin-left: -6px;"></div>
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: #14b8a6; border: 2px solid var(--ds-bg-card); margin-left: -6px;"></div>
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--ds-ghost-hover); border: 2px solid var(--ds-bg-card); margin-left: -6px; font-size: 9px; font-weight: 700; color: var(--ds-text-dim); display: flex; align-items: center; justify-content: center;">+5</div>
+                      </div>
+                      <div class="ds-card-actions">
+                        <span class="ds-card-action">Manage</span>
+                        <span class="ds-card-action-muted">Invite</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ TEXT INPUT SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-input">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Input Variants</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Email Address</div>
+                      <div class="ds-input-wrapper">
+                        <span class="ds-input-placeholder">you@example.com</span>
+                      </div>
+                      <div class="ds-input-helper">We'll never share your email.</div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Search</div>
+                      <div class="ds-input-wrapper">
+                        <span class="ds-input-icon">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <span class="ds-input-placeholder">Search components...</span>
+                      </div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Website</div>
+                      <div class="ds-input-wrapper">
+                        <span class="ds-input-icon" style="font-size: 12px; color: var(--ds-text-dim); font-weight: 500;">https://</span>
+                        <span class="ds-input-text">example.com</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">States</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Default</div>
+                      <div class="ds-input-wrapper">
+                        <span class="ds-input-placeholder">Enter text...</span>
+                      </div>
+                      <div class="ds-input-helper">Helper text goes here.</div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Filled</div>
+                      <div class="ds-input-wrapper">
+                        <span class="ds-input-text">John Doe</span>
+                      </div>
+                      <div class="ds-input-helper">Looking good!</div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Focused</div>
+                      <div class="ds-input-wrapper ds-input-focused">
+                        <span class="ds-input-text">Typing...</span>
+                      </div>
+                      <div class="ds-input-helper">Input is focused.</div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Disabled</div>
+                      <div class="ds-input-wrapper ds-input-disabled-state">
+                        <span class="ds-input-placeholder">Cannot edit</span>
+                      </div>
+                      <div class="ds-input-helper">This field is locked.</div>
+                    </div>
+                    <div class="ds-input-group">
+                      <div class="ds-input-label">Error</div>
+                      <div class="ds-input-wrapper ds-input-error-state">
+                        <span class="ds-input-text">invalid-email</span>
+                      </div>
+                      <div class="ds-input-error-text">Please enter a valid email address.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ TOGGLE SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-toggle">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Static Specimens</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Off</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-sm">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <div class="ds-toggle ds-toggle-md">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <div class="ds-toggle ds-toggle-lg">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">On</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-sm ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <div class="ds-toggle ds-toggle-md ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <div class="ds-toggle ds-toggle-lg ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Disabled</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-md ds-toggle-disabled">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <div class="ds-toggle ds-toggle-md ds-toggle-on ds-toggle-disabled">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Interactive Demo (Click to toggle!)</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Small</div>
+                    <div class="ds-specimen-items">
+                      <label for="toggle-demo-1" class="ds-toggle-real ds-toggle-real-sm ds-toggle-for-1">
+                        <div class="ds-toggle-real-track"><div class="ds-toggle-real-thumb"></div></div>
+                        <span class="ds-toggle-label-text">Notifications</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Medium</div>
+                    <div class="ds-specimen-items">
+                      <label for="toggle-demo-2" class="ds-toggle-real ds-toggle-real-md ds-toggle-for-2">
+                        <div class="ds-toggle-real-track"><div class="ds-toggle-real-thumb"></div></div>
+                        <span class="ds-toggle-label-text">Dark Mode</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Large</div>
+                    <div class="ds-specimen-items">
+                      <label for="toggle-demo-3" class="ds-toggle-real ds-toggle-real-lg ds-toggle-for-3">
+                        <div class="ds-toggle-real-track"><div class="ds-toggle-real-thumb"></div></div>
+                        <span class="ds-toggle-label-text">Auto-Save</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Size Reference</div>
+                <div class="ds-specimen-card">
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Small</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-sm ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <span class="ds-code">28 x 16</span>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Medium</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-md ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <span class="ds-code">36 x 20</span>
+                    </div>
+                  </div>
+                  <div class="ds-specimen-row">
+                    <div class="ds-specimen-label">Large</div>
+                    <div class="ds-specimen-items">
+                      <div class="ds-toggle ds-toggle-lg ds-toggle-on">
+                        <div class="ds-toggle-track"><div class="ds-toggle-thumb"></div></div>
+                      </div>
+                      <span class="ds-code">44 x 24</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ PROGRESS BAR SPECIMENS ═══ -->
+            <div class="ds-comp-section ds-comp-progress">
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Completion Levels</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Getting started</span>
+                        <span class="ds-progress-value">25%</span>
+                      </div>
+                      <div class="ds-progress-track">
+                        <div class="ds-progress-fill ds-progress-fill-accent" style="width: 25%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">In progress</span>
+                        <span class="ds-progress-value">50%</span>
+                      </div>
+                      <div class="ds-progress-track">
+                        <div class="ds-progress-fill ds-progress-fill-accent" style="width: 50%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Almost there</span>
+                        <span class="ds-progress-value">75%</span>
+                      </div>
+                      <div class="ds-progress-track">
+                        <div class="ds-progress-fill ds-progress-fill-accent" style="width: 75%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Complete</span>
+                        <span class="ds-progress-value">100%</span>
+                      </div>
+                      <div class="ds-progress-track">
+                        <div class="ds-progress-fill ds-progress-fill-green" style="width: 100%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Color Variants</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Default (Accent)</span>
+                        <span class="ds-progress-value">65%</span>
+                      </div>
+                      <div class="ds-progress-track ds-progress-track-lg">
+                        <div class="ds-progress-fill ds-progress-fill-accent" style="width: 65%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Success</span>
+                        <span class="ds-progress-value">82%</span>
+                      </div>
+                      <div class="ds-progress-track ds-progress-track-lg">
+                        <div class="ds-progress-fill ds-progress-fill-green" style="width: 82%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Warning</span>
+                        <span class="ds-progress-value">45%</span>
+                      </div>
+                      <div class="ds-progress-track ds-progress-track-lg">
+                        <div class="ds-progress-fill ds-progress-fill-amber" style="width: 45%;"></div>
+                      </div>
+                    </div>
+                    <div class="ds-progress">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Error</span>
+                        <span class="ds-progress-value">12%</span>
+                      </div>
+                      <div class="ds-progress-track ds-progress-track-lg">
+                        <div class="ds-progress-fill ds-progress-fill-red" style="width: 12%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Indeterminate (Animated)</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="ds-progress ds-progress-indeterminate">
+                      <div class="ds-progress-header">
+                        <span class="ds-progress-label">Loading...</span>
+                      </div>
+                      <div class="ds-progress-track ds-progress-track-lg">
+                        <div class="ds-progress-fill ds-progress-fill-accent"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ds-specimen-section">
+                <div class="ds-specimen-section-title">Skeleton Loading</div>
+                <div class="ds-specimen-card">
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="ds-skeleton" style="width: 140px; height: 14px;"></div>
+                    <div class="ds-skeleton" style="width: 100%; height: 10px;"></div>
+                    <div class="ds-skeleton" style="width: 85%; height: 10px;"></div>
+                    <div style="display: flex; gap: 12px; margin-top: 8px;">
+                      <div class="ds-skeleton" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                      <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+                        <div class="ds-skeleton" style="width: 120px; height: 10px;"></div>
+                        <div class="ds-skeleton" style="width: 80px; height: 8px;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /ds-specimen-body -->
+        </div><!-- /ds-specimen-area -->
+
+        <!-- ══════════════════════
+             PROPERTY PANEL (Right)
+             ══════════════════════ -->
+        <aside class="ds-panel">
+          <div class="ds-panel-group">
+            <div class="ds-panel-title">Variant</div>
+            <div class="ds-panel-options">
+              <label for="var-primary" class="ds-panel-option" data-var="primary">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: #6366f1;"></div>
+                Primary
+              </label>
+              <label for="var-secondary" class="ds-panel-option" data-var="secondary">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: transparent; border: 1.5px solid #a1a1aa;"></div>
+                Secondary
+              </label>
+              <label for="var-ghost" class="ds-panel-option" data-var="ghost">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: transparent; border: 1.5px dashed #d4d4d8;"></div>
+                Ghost
+              </label>
+              <label for="var-destructive" class="ds-panel-option" data-var="destructive">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: #dc2626;"></div>
+                Destructive
+              </label>
+            </div>
+          </div>
+
+          <div class="ds-panel-group">
+            <div class="ds-panel-title">Size</div>
+            <div class="ds-panel-options">
+              <label for="size-sm" class="ds-panel-option" data-size="sm">
+                <div class="ds-panel-radio"></div>
+                Small
+                <span class="ds-code" style="margin-left: auto;">sm</span>
+              </label>
+              <label for="size-md" class="ds-panel-option" data-size="md">
+                <div class="ds-panel-radio"></div>
+                Medium
+                <span class="ds-code" style="margin-left: auto;">md</span>
+              </label>
+              <label for="size-lg" class="ds-panel-option" data-size="lg">
+                <div class="ds-panel-radio"></div>
+                Large
+                <span class="ds-code" style="margin-left: auto;">lg</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="ds-panel-group">
+            <div class="ds-panel-title">State</div>
+            <div class="ds-panel-options">
+              <label for="state-default" class="ds-panel-option" data-state="default">
+                <div class="ds-panel-radio"></div>
+                Default
+              </label>
+              <label for="state-hover" class="ds-panel-option" data-state="hover">
+                <div class="ds-panel-radio"></div>
+                Hover
+              </label>
+              <label for="state-active" class="ds-panel-option" data-state="active">
+                <div class="ds-panel-radio"></div>
+                Active
+              </label>
+              <label for="state-disabled" class="ds-panel-option" data-state="disabled">
+                <div class="ds-panel-radio"></div>
+                Disabled
+              </label>
+            </div>
+          </div>
+
+          <div class="ds-panel-group">
+            <div class="ds-panel-title">Theme</div>
+            <div class="ds-panel-options">
+              <label for="theme-light" class="ds-panel-option" data-theme="light">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: #fafaf9; border: 1px solid #d4d4d8;"></div>
+                Light
+              </label>
+              <label for="theme-dark" class="ds-panel-option" data-theme="dark">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: #18181b;"></div>
+                Dark
+              </label>
+              <label for="theme-hc" class="ds-panel-option" data-theme="hc">
+                <div class="ds-panel-radio"></div>
+                <div class="ds-panel-swatch" style="background: #000; border: 2px solid #fff;"></div>
+                High Contrast
+              </label>
+            </div>
+          </div>
+
+          <!-- Token reference -->
+          <div class="ds-panel-group" style="border-bottom: none;">
+            <div class="ds-panel-title">Quick Reference</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted);">
+                <span>Accent</span>
+                <span class="ds-code">#6366f1</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted);">
+                <span>Green</span>
+                <span class="ds-code" style="color: var(--ds-green); background: var(--ds-green-bg);">#16a34a</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted);">
+                <span>Amber</span>
+                <span class="ds-code" style="color: var(--ds-amber); background: var(--ds-amber-bg);">#d97706</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted);">
+                <span>Red</span>
+                <span class="ds-code" style="color: var(--ds-red); background: var(--ds-red-bg);">#dc2626</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted); margin-top: 8px;">
+                <span>Radius</span>
+                <span class="ds-code">8px</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: var(--ds-text-muted);">
+                <span>Font</span>
+                <span class="ds-code">Inter</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </div><!-- /ds-shell -->
+    </div><!-- /window -->
+  </div><!-- /experiment-content -->
+</div><!-- /experiment-frame -->
+</body>
+</html>

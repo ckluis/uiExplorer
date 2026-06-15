@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Dashboard — v5: Context Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar { width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0; padding: 24px 20px; overflow-y: auto; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 20px; }
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-variant { display: inline-block; background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+.experiment-sidebar .exp-autonomous { display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px; }
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0; }
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px; font-size: 12px; color: #bbb; font-style: italic; }
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+.experiment-sidebar .exp-vc-origin { display: block; font-size: 11px; font-weight: 600; color: #2ecc71; text-decoration: none; padding: 5px 10px; margin-bottom: 4px; }
+.experiment-sidebar .exp-vc-origin:hover { text-decoration: underline; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s; }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] { background: rgba(255,255,255,0.2); color: white; }
+.window { width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1); position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar { position: absolute; top: 8px; z-index: 100; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; }
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ═══════════════════════════════════════════════
+   CRM VARIANT 05 — CONTEXT LAYER / AMBIENT CRM
+   ═══════════════════════════════════════════════ */
+
+.inbox-app { display: flex; height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; color: #1f1f1f; background: #fff; }
+
+/* ─── Email Folder Sidebar ─── */
+.folder-sidebar { width: 200px; min-width: 200px; background: #f6f8fc; border-right: 1px solid #e5e8ed; display: flex; flex-direction: column; padding: 12px 0; }
+.compose-btn { margin: 4px 16px 16px; padding: 12px 20px; background: #1a73e8; color: #fff; border-radius: 16px; font-size: 14px; font-weight: 600; text-align: center; cursor: default; display: flex; align-items: center; gap: 8px; }
+.compose-btn::before { content: '+'; font-size: 18px; font-weight: 300; }
+.folder-item { display: flex; align-items: center; gap: 12px; padding: 8px 20px; font-size: 13px; font-weight: 500; color: #444; cursor: default; border-radius: 0 20px 20px 0; margin-right: 12px; }
+.folder-item:hover { background: rgba(0,0,0,0.04); }
+.folder-item.active { background: #d3e3fd; color: #1a73e8; font-weight: 600; }
+.folder-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 15px; opacity: 0.7; }
+.folder-count { margin-left: auto; font-size: 11px; font-weight: 600; color: #1a73e8; }
+.folder-divider { height: 1px; background: #e5e8ed; margin: 8px 20px; }
+
+/* ─── Main Inbox Area ─── */
+.inbox-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* Toolbar */
+.inbox-toolbar { height: 48px; border-bottom: 1px solid #e5e8ed; display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; }
+.toolbar-check { width: 18px; height: 18px; border: 2px solid #c4c7cc; border-radius: 3px; flex-shrink: 0; }
+.toolbar-search { flex: 1; max-width: 560px; height: 36px; background: #eef3fc; border-radius: 8px; display: flex; align-items: center; padding: 0 14px; gap: 8px; color: #666; font-size: 13px; }
+.toolbar-search::before { content: ''; width: 16px; height: 16px; border: 2px solid #999; border-radius: 50%; flex-shrink: 0; }
+.toolbar-actions { display: flex; gap: 4px; margin-left: auto; }
+.toolbar-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #666; cursor: default; }
+.toolbar-btn:hover { background: rgba(0,0,0,0.06); }
+
+/* Ghost notification banner */
+.ghost-banner { padding: 8px 16px; background: #fef9ee; border-bottom: 1px solid #f5e6c8; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #8a6d3b; flex-shrink: 0; }
+.ghost-icon { font-size: 14px; }
+.ghost-dismiss { margin-left: auto; font-size: 18px; cursor: default; opacity: 0.5; }
+
+/* Role toggle */
+.role-bar { height: 36px; background: #f6f8fc; border-bottom: 1px solid #e5e8ed; display: flex; align-items: center; padding: 0 16px; gap: 6px; flex-shrink: 0; }
+.role-label-btn { padding: 4px 14px; border-radius: 14px; font-size: 11px; font-weight: 600; color: #666; cursor: pointer; transition: all 0.2s; }
+.role-label-btn:hover { background: rgba(0,0,0,0.05); }
+
+/* Role toggle state */
+#role-solo:checked ~ .window .role-bar label[for="role-solo"],
+#role-team:checked ~ .window .role-bar label[for="role-team"],
+#role-admin:checked ~ .window .role-bar label[for="role-admin"] {
+  background: #e8eaf6; color: #3f51b5;
+}
+
+/* Tab headers */
+.tab-row { display: flex; border-bottom: 1px solid #e5e8ed; flex-shrink: 0; }
+.tab-item { padding: 10px 16px; font-size: 12px; font-weight: 600; color: #666; border-bottom: 2px solid transparent; cursor: default; }
+.tab-item.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+.tab-count { font-weight: 400; color: #999; margin-left: 4px; }
+
+/* Email list */
+.email-list { flex: 1; overflow-y: auto; }
+
+.email-row { display: flex; align-items: center; padding: 0 16px; height: 44px; border-bottom: 1px solid #f0f1f3; cursor: default; position: relative; }
+.email-row:hover { background: #f8f9fa; box-shadow: inset 0 -1px 0 #e5e8ed; }
+.email-row-check { width: 18px; height: 18px; border: 2px solid #dadce0; border-radius: 3px; flex-shrink: 0; margin-right: 12px; }
+.email-star { width: 18px; font-size: 16px; color: #dadce0; margin-right: 12px; flex-shrink: 0; text-align: center; }
+.email-star.starred { color: #f4b400; }
+
+.email-sender { width: 180px; min-width: 140px; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+
+/* CRM enrichment badges */
+.crm-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.02em; flex-shrink: 0; }
+.crm-badge.showing { background: #e8eaf6; color: #5c6bc0; }
+.crm-badge.offer { background: #e0f2f1; color: #00897b; }
+.crm-badge.contract { background: #fff3e0; color: #ef6c00; }
+.crm-badge.closed { background: #e8f5e9; color: #43a047; }
+.crm-badge.new-lead { background: #fce4ec; color: #e91e63; }
+.crm-badge.nurture { background: #f3e5f5; color: #8e24aa; }
+
+/* Temperature indicators */
+.temp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.temp-hot { background: #ff5722; box-shadow: 0 0 4px rgba(255,87,34,0.4); }
+.temp-warm { background: #ff9800; }
+.temp-cold { background: #90a4ae; }
+
+/* Priority left border */
+.email-row.priority-hot { border-left: 3px solid #ff5722; padding-left: 13px; }
+.email-row.priority-warm { border-left: 3px solid #ff9800; padding-left: 13px; }
+
+.email-subject { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #333; padding: 0 12px; }
+.email-subject .preview { color: #888; font-weight: 400; }
+.email-subject .subject-text { font-weight: 600; }
+
+/* Meeting/calendar badge */
+.meeting-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; background: #e3f2fd; color: #1565c0; flex-shrink: 0; margin-right: 6px; }
+
+/* Agent initials (Team Lead mode) */
+.agent-tag { display: none; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700; background: #ede7f6; color: #5e35b1; flex-shrink: 0; margin-left: 4px; }
+#role-team:checked ~ .window .agent-tag,
+#role-admin:checked ~ .window .agent-tag { display: inline-block; }
+
+.email-time { font-size: 11px; color: #888; min-width: 52px; text-align: right; flex-shrink: 0; }
+
+/* Unread */
+.email-row.unread .email-sender { color: #1f1f1f; }
+.email-row.unread .email-subject .subject-text { font-weight: 700; color: #111; }
+.email-row:not(.unread) .email-sender { font-weight: 500; color: #666; }
+
+/* ─── Contact Intelligence Sidebar (CRM overlay) ─── */
+.crm-panel { width: 0; overflow: hidden; border-left: 1px solid #e5e8ed; background: #fafbfd; transition: width 0.3s ease; flex-shrink: 0; display: flex; flex-direction: column; }
+
+/* Each email row has a radio; when checked, show CRM panel */
+/* We use a single checkbox approach: label on each row toggles */
+#crm-toggle:checked ~ .inbox-app .crm-panel { width: 300px; }
+
+.crm-panel-inner { width: 300px; min-width: 300px; padding: 20px 16px; overflow-y: auto; flex: 1; }
+
+/* Contact card */
+.contact-card { text-align: center; padding-bottom: 16px; border-bottom: 1px solid #e8eaed; margin-bottom: 16px; }
+.contact-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 700; }
+.contact-name { font-size: 16px; font-weight: 700; color: #1f1f1f; }
+.contact-role { font-size: 12px; color: #888; margin-top: 2px; }
+.contact-badges { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+.contact-stat { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+.contact-stat.score { background: #e8f5e9; color: #2e7d32; }
+.contact-stat.stage { background: #e8eaf6; color: #3f51b5; }
+
+/* Relationship timeline */
+.crm-section { margin-bottom: 16px; }
+.crm-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 8px; }
+.timeline-item { display: flex; gap: 10px; padding: 6px 0; font-size: 12px; position: relative; }
+.timeline-dot { width: 8px; height: 8px; border-radius: 50%; background: #c5cae9; margin-top: 4px; flex-shrink: 0; }
+.timeline-dot.recent { background: #5c6bc0; }
+.timeline-text { color: #555; line-height: 1.4; }
+.timeline-date { font-size: 10px; color: #aaa; }
+
+/* Properties */
+.property-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #fff; border: 1px solid #eee; border-radius: 6px; margin-bottom: 6px; font-size: 12px; }
+.property-addr { font-weight: 600; color: #333; }
+.property-status { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
+.property-status.active { background: #e0f2f1; color: #00897b; }
+.property-status.pending { background: #fff3e0; color: #ef6c00; }
+
+/* Action buttons */
+.crm-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.crm-action-btn { padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-align: center; cursor: default; }
+.crm-action-btn.primary { background: #1a73e8; color: #fff; }
+.crm-action-btn.secondary { background: #e8eaf6; color: #3f51b5; }
+.crm-action-btn.tertiary { background: #f5f5f5; color: #666; }
+
+/* Suggested action */
+.suggested-action { background: #f0f7ff; border: 1px solid #c2deff; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.suggested-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #1a73e8; letter-spacing: 0.04em; margin-bottom: 4px; }
+.suggested-text { font-size: 12px; color: #333; line-height: 1.4; }
+
+/* Team tab (Team Lead mode) */
+.crm-team-tab { display: none; }
+#role-team:checked ~ .window .crm-team-tab,
+#role-admin:checked ~ .window .crm-team-tab { display: block; }
+
+.team-activity-item { display: flex; gap: 8px; padding: 6px 0; font-size: 11px; border-bottom: 1px solid #f0f1f3; }
+.team-initials { width: 24px; height: 24px; border-radius: 50%; background: #ede7f6; color: #5e35b1; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.team-action-text { color: #555; line-height: 1.4; }
+
+/* Admin routing button */
+.routing-btn { display: none; }
+#role-admin:checked ~ .window .routing-btn { display: block; }
+
+/* Admin overlay banner */
+.admin-banner { display: none; height: 32px; background: #e8eaf6; border-bottom: 1px solid #c5cae9; padding: 0 16px; font-size: 11px; font-weight: 600; color: #3f51b5; align-items: center; gap: 8px; }
+#role-admin:checked ~ .window .admin-banner { display: flex; }
+
+/* Ghost notification variations by role */
+.ghost-team { display: none; }
+.ghost-admin { display: none; }
+.ghost-solo { display: block; }
+#role-team:checked ~ .window .ghost-solo { display: none; }
+#role-team:checked ~ .window .ghost-team { display: block; }
+#role-admin:checked ~ .window .ghost-solo { display: none; }
+#role-admin:checked ~ .window .ghost-admin { display: block; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .folder-sidebar { display: none; }
+#preview-mobile:checked ~ .window .crm-panel { display: none; }
+#preview-mobile:checked ~ .window .email-sender { width: 100px; min-width: 80px; }
+#preview-mobile:checked ~ .window .crm-badge { display: none; }
+#preview-mobile:checked ~ .window .agent-tag { display: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>CRM Dashboard</h1>
+      <span class="exp-variant">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Explore an ambient/invisible CRM paradigm where CRM intelligence surfaces contextually within a familiar Gmail-like email inbox, rather than existing as a separate destination. The CRM you never open.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p><strong>"Context Layer"</strong> &mdash; Email-first CRM overlay. CRM data appears as inline enrichment badges, contact intelligence sidebars, smart priority highlighting, and ghost notifications. The inbox looks entirely familiar; the CRM is the invisible layer.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent — it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        <strong>v5: "Context Layer" — Ambient/Invisible CRM</strong><br><br>
+        Tagline: "The CRM you never open."<br>
+        Core metaphor: A heads-up display — CRM intelligence surfaces on top of email rather than being a separate destination.<br><br>
+        Layout: Simulates a standard email inbox (Gmail-like) taking up the full window. CRM data appears as contextual overlays: right sidebar panel (~280px) showing contact intelligence when an email is selected, inline badges on email rows (deal stage, lead score), and subtle highlights on emails needing attention.<br><br>
+        Key UI elements: Email row enrichment badges (deal stage, temperature). Contact intelligence sidebar on selection. Smart priority highlighting (warm left-border). Inline action buttons. Ghost notifications ("You haven't contacted Sarah Chen in 12 days"). Email compose enrichment. Meeting detection badges. Standard email UI chrome.<br><br>
+        Color/mood: Standard neutral email interface. CRM overlays use soft indigo/teal accent. Ghost notifications in desaturated warm tones. Invisible until needed, then quietly helpful.<br><br>
+        Role toggle: Solo Agent sees personal history and reminders. Team Lead gains "Team Activity" tab and team alerts. Brokerage Admin gets audit view with routing button and operational alerts.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination</h2>
+      <a href="crm-dashboard.html" class="exp-prev">&larr; Origination Prompt</a>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="crm-dashboard.html" class="exp-vc-origin">Origination Prompt &rarr;</a>
+        <a href="crm-dashboard-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Card Stack Triage</span>
+        </a>
+        <a href="crm-dashboard-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Calendar First</span>
+        </a>
+        <a href="crm-dashboard-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">AI Forecast</span>
+        </a>
+        <a href="crm-dashboard-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Relationship Web</span>
+        </a>
+        <a href="crm-dashboard-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Terminal CRM</span>
+        </a>
+        <a href="crm-dashboard-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Context Layer</span>
+        </a>
+        <a href="crm-dashboard-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Territory Map</span>
+        </a>
+        <a href="crm-dashboard-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Stream Timeline</span>
+        </a>
+        <a href="crm-dashboard-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Chat Flow</span>
+        </a>
+        <a href="crm-dashboard-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Deal Flow Board</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Role toggle radios (must be siblings of .window for CSS selectors) -->
+    <input type="radio" name="role" id="role-solo" checked>
+    <input type="radio" name="role" id="role-team">
+    <input type="radio" name="role" id="role-admin">
+
+    <!-- CRM panel toggle -->
+    <input type="checkbox" id="crm-toggle" checked>
+
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <div class="inbox-app">
+
+        <!-- ─── Folder Sidebar ─── -->
+        <div class="folder-sidebar">
+          <div class="compose-btn">Compose</div>
+          <div class="folder-item active">
+            <span class="folder-icon">&#9993;</span> Inbox <span class="folder-count">24</span>
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#9733;</span> Starred
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#9203;</span> Snoozed
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#10148;</span> Sent
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#9998;</span> Drafts <span class="folder-count">3</span>
+          </div>
+          <div class="folder-divider"></div>
+          <div class="folder-item">
+            <span class="folder-icon">&#127968;</span> Listings
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#128101;</span> Clients
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#128196;</span> Contracts
+          </div>
+          <div class="folder-item">
+            <span class="folder-icon">&#128181;</span> Closings
+          </div>
+        </div>
+
+        <!-- ─── Main Inbox ─── -->
+        <div class="inbox-main">
+
+          <!-- Admin banner -->
+          <div class="admin-banner">
+            &#128200; Daily Lead Intake: <strong>47 leads</strong> &nbsp;|&nbsp; 12 unassigned &nbsp;|&nbsp; Avg response: 4.2 min
+          </div>
+
+          <!-- Toolbar -->
+          <div class="inbox-toolbar">
+            <div class="toolbar-check"></div>
+            <div class="toolbar-search">Search mail &amp; CRM contacts...</div>
+            <div class="toolbar-actions">
+              <div class="toolbar-btn" title="Refresh">&#8635;</div>
+              <div class="toolbar-btn" title="More">&#8943;</div>
+            </div>
+          </div>
+
+          <!-- Ghost notification -->
+          <div class="ghost-banner">
+            <span class="ghost-icon">&#128172;</span>
+            <span class="ghost-solo">You haven't contacted <strong>Sarah Chen</strong> in 12 days &mdash; she's viewing homes in Westlake this weekend.</span>
+            <span class="ghost-team">&#9888; <strong>Mike R.</strong> has 3 leads with no follow-up in 48+ hours. <strong>Jen P.</strong> closed 2 deals this week.</span>
+            <span class="ghost-admin">&#128680; 12 unassigned leads in queue. Round-robin paused &mdash; <strong>David K.</strong> at capacity (18 active).</span>
+            <span class="ghost-dismiss">&times;</span>
+          </div>
+
+          <!-- Role toggle bar -->
+          <div class="role-bar">
+            <span style="font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-right:6px;">View:</span>
+            <label for="role-solo" class="role-label-btn">Solo Agent</label>
+            <label for="role-team" class="role-label-btn">Team Lead</label>
+            <label for="role-admin" class="role-label-btn">Brokerage Admin</label>
+            <span style="margin-left:auto;font-size:10px;color:#bbb;">CRM overlay</span>
+            <label for="crm-toggle" style="font-size:10px;color:#5c6bc0;font-weight:600;cursor:pointer;padding:3px 10px;background:#e8eaf6;border-radius:10px;">Panel</label>
+          </div>
+
+          <!-- Tab row -->
+          <div class="tab-row">
+            <div class="tab-item active">Primary<span class="tab-count">18</span></div>
+            <div class="tab-item">Promotions<span class="tab-count">4</span></div>
+            <div class="tab-item">Updates<span class="tab-count">2</span></div>
+          </div>
+
+          <!-- Email list -->
+          <div class="email-list">
+
+            <div class="email-row unread priority-hot">
+              <div class="email-row-check"></div>
+              <div class="email-star starred">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-hot"></span>
+                Sarah Chen
+                <span class="agent-tag">MR</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge showing">SHOWING</span>
+                <span class="meeting-badge">&#128197; Thu 2pm</span>
+                <span class="subject-text">Re: 742 Westlake Dr — </span>
+                <span class="preview">Loved the backyard! Can we see the Elm St property too?</span>
+              </div>
+              <div class="email-time">10:24am</div>
+            </div>
+
+            <div class="email-row unread priority-hot">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-hot"></span>
+                Marcus & Diana Williams
+                <span class="agent-tag">JP</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge offer">OFFER</span>
+                <span class="subject-text">Offer accepted!!! — </span>
+                <span class="preview">Just got the call from the listing agent, they accepted our full price</span>
+              </div>
+              <div class="email-time">9:51am</div>
+            </div>
+
+            <div class="email-row unread priority-warm">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                James Realty Title Co
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge contract">CONTRACT</span>
+                <span class="subject-text">Title report ready — 1890 Oak Hollow</span>
+                <span class="preview"> — Attached is the preliminary title report for the Rodriguez closing</span>
+              </div>
+              <div class="email-time">9:30am</div>
+            </div>
+
+            <div class="email-row unread">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                Kevin Pham
+                <span class="agent-tag">MR</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge showing">SHOWING</span>
+                <span class="subject-text">Question about the HOA fees — </span>
+                <span class="preview">For the Maple Ridge condo, what are the monthly HOA dues?</span>
+              </div>
+              <div class="email-time">9:12am</div>
+            </div>
+
+            <div class="email-row priority-warm">
+              <div class="email-row-check"></div>
+              <div class="email-star starred">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                Elena Rodriguez
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge contract">CONTRACT</span>
+                <span class="subject-text">Inspection report concerns — </span>
+                <span class="preview">The inspector found some foundation issues we need to discuss</span>
+              </div>
+              <div class="email-time">Yesterday</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-cold"></span>
+                Tom & Lisa Park
+                <span class="agent-tag">JP</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge nurture">NURTURE</span>
+                <span class="subject-text">Re: Market update for Riverside — </span>
+                <span class="preview">Thanks for sending this! We're still 6 months out but keeping an eye</span>
+              </div>
+              <div class="email-time">Yesterday</div>
+            </div>
+
+            <div class="email-row unread">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-hot"></span>
+                Zillow Leads
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge new-lead">NEW LEAD</span>
+                <span class="subject-text">New inquiry: 2204 Birch Lane — </span>
+                <span class="preview">A buyer is interested in your listing. Budget: $650K-$750K</span>
+              </div>
+              <div class="email-time">Yesterday</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                Patricia Nguyen
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge showing">SHOWING</span>
+                <span class="meeting-badge">&#128197; Sat 11am</span>
+                <span class="subject-text">Confirming Saturday showings — </span>
+                <span class="preview">Hi! Just want to confirm we're still on for the 3 properties</span>
+              </div>
+              <div class="email-time">Yesterday</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-cold"></span>
+                Brian Cooper
+                <span class="agent-tag">DK</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge nurture">NURTURE</span>
+                <span class="subject-text">Pre-approval question — </span>
+                <span class="preview">My lender said I should be able to get approved for $580K. What areas</span>
+              </div>
+              <div class="email-time">Mon</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star starred">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                First American Title
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge closed">CLOSED</span>
+                <span class="subject-text">Closing documents ready — Park Family</span>
+                <span class="preview"> — Final HUD statement and deed attached for your records</span>
+              </div>
+              <div class="email-time">Mon</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-cold"></span>
+                Realtor.com
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge new-lead">NEW LEAD</span>
+                <span class="subject-text">Lead: 445 Sunset Blvd listing — </span>
+                <span class="preview">New buyer inquiry from your Realtor.com listing, budget $800K+</span>
+              </div>
+              <div class="email-time">Sun</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-cold"></span>
+                Amanda Foster
+                <span class="agent-tag">MR</span>
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge nurture">NURTURE</span>
+                <span class="subject-text">Thanks for the housewarming gift! — </span>
+                <span class="preview">So thoughtful of you. We love the new place and will definitely refer</span>
+              </div>
+              <div class="email-time">Sun</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-warm"></span>
+                David Kim
+              </div>
+              <div class="email-subject">
+                <span class="crm-badge offer">OFFER</span>
+                <span class="subject-text">Counter-offer strategy — </span>
+                <span class="preview">They came back at $715K. I think we should counter at $735K and include</span>
+              </div>
+              <div class="email-time">Sat</div>
+            </div>
+
+            <div class="email-row">
+              <div class="email-row-check"></div>
+              <div class="email-star">&#9733;</div>
+              <div class="email-sender">
+                <span class="temp-dot temp-cold"></span>
+                MLS Notifications
+              </div>
+              <div class="email-subject">
+                <span class="subject-text">5 new listings match your saved searches — </span>
+                <span class="preview">Westlake (2), Downtown (1), Riverside (2) — View matches</span>
+              </div>
+              <div class="email-time">Sat</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ─── CRM Contact Intelligence Panel ─── -->
+        <div class="crm-panel">
+          <div class="crm-panel-inner">
+
+            <!-- Contact card -->
+            <div class="contact-card">
+              <div class="contact-avatar">SC</div>
+              <div class="contact-name">Sarah Chen</div>
+              <div class="contact-role">Buyer &middot; First-time homeowner</div>
+              <div class="contact-badges">
+                <span class="contact-stat score">Score: 92</span>
+                <span class="contact-stat stage">Showing</span>
+              </div>
+            </div>
+
+            <!-- Suggested action -->
+            <div class="suggested-action">
+              <div class="suggested-label">Suggested Next Action</div>
+              <div class="suggested-text">Schedule second showing at 158 Elm St &mdash; Sarah mentioned interest in the backyard. Confirm for Saturday.</div>
+            </div>
+
+            <!-- Relationship timeline -->
+            <div class="crm-section">
+              <div class="crm-section-title">Relationship Timeline</div>
+              <div class="timeline-item">
+                <div class="timeline-dot recent"></div>
+                <div>
+                  <div class="timeline-text">Showing: 742 Westlake Dr</div>
+                  <div class="timeline-date">Today, 2:00 PM</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot recent"></div>
+                <div>
+                  <div class="timeline-text">Sent 4 listings via email</div>
+                  <div class="timeline-date">Jan 28</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-text">Initial call &mdash; discussed budget ($600-750K)</div>
+                  <div class="timeline-date">Jan 22</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-text">Lead captured from Zillow</div>
+                  <div class="timeline-date">Jan 20</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active properties -->
+            <div class="crm-section">
+              <div class="crm-section-title">Active Properties</div>
+              <div class="property-item">
+                <span class="property-addr">742 Westlake Dr</span>
+                <span class="property-status active">Showing</span>
+              </div>
+              <div class="property-item">
+                <span class="property-addr">158 Elm St</span>
+                <span class="property-status pending">Interested</span>
+              </div>
+              <div class="property-item">
+                <span class="property-addr">2204 Birch Ln</span>
+                <span class="property-status active">Saved</span>
+              </div>
+            </div>
+
+            <!-- Team activity (visible in Team/Admin mode) -->
+            <div class="crm-team-tab">
+              <div class="crm-section">
+                <div class="crm-section-title">Team Activity</div>
+                <div class="team-activity-item">
+                  <div class="team-initials">MR</div>
+                  <div class="team-action-text">Mike R. called Sarah Chen &mdash; no answer <br><span class="timeline-date">2 days ago</span></div>
+                </div>
+                <div class="team-activity-item">
+                  <div class="team-initials">JP</div>
+                  <div class="team-action-text">Jen P. added note: "Prefers modern kitchens" <br><span class="timeline-date">3 days ago</span></div>
+                </div>
+                <div class="team-activity-item">
+                  <div class="team-initials">DK</div>
+                  <div class="team-action-text">David K. shared listing 742 Westlake <br><span class="timeline-date">5 days ago</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="crm-actions">
+              <div class="crm-action-btn primary">Log as Follow-up</div>
+              <div class="crm-action-btn secondary">Move to Under Contract</div>
+              <div class="crm-action-btn tertiary">Schedule Callback</div>
+              <div class="crm-action-btn tertiary routing-btn" style="background:#ede7f6;color:#5e35b1;">&#128260; Route to Agent</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

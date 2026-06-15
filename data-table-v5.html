@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Table — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+.experiment-sidebar {
+  width: 280px; min-width: 280px; background: #1a1a2e; color: #e0e0e0;
+  padding: 24px 20px; overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.experiment-sidebar a { color: #8b9cf7; text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+.experiment-sidebar .exp-back { font-size: 12px; opacity: 0.7; display: block; margin-bottom: 8px; }
+.experiment-sidebar h1 { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+.experiment-sidebar .exp-version {
+  display: inline-block; background: rgba(139, 156, 247, 0.15); color: #8b9cf7;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+}
+.experiment-sidebar .exp-autonomous {
+  display: inline-block; background: rgba(243, 156, 18, 0.15); color: #f39c12;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 4px; margin-left: 6px;
+}
+.experiment-sidebar .exp-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #888; margin: 0 0 8px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: #ccc; }
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04); border-radius: 6px; padding: 12px;
+  font-size: 12px; color: #bbb; font-style: italic;
+}
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-entry { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: inherit; transition: background 0.15s; }
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current { background: rgba(139, 156, 247, 0.12); border: 1px solid rgba(139, 156, 247, 0.25); }
+.experiment-sidebar .exp-vc-v { font-size: 11px; font-weight: 700; color: #8b9cf7; min-width: 24px; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: #fff; }
+.experiment-sidebar .exp-vc-desc { font-size: 11px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: #ccc; }
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-bar { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px; }
+.preview-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2); color: white;
+}
+.window {
+  width: 1360px; height: 820px; background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative; transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+#preview-full:checked ~ .preview-bar {
+  position: absolute; top: 8px; z-index: 100;
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px;
+}
+#preview-full:checked ~ .window { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+
+/* ─── Table Page ─── */
+.table-page {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 100%; display: flex; flex-direction: column; background: #fafbfc;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 28px; background: #fff; border-bottom: 1px solid #e2e5ea;
+  flex-wrap: wrap;
+}
+.toolbar h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-right: 4px; }
+.toolbar .record-count {
+  font-size: 12px; color: #94a3b8; font-weight: 500;
+  background: #f1f5f9; padding: 2px 8px; border-radius: 9999px; margin-right: auto;
+}
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; min-width: 240px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box:hover { border-color: #cbd5e1; }
+.search-box svg { width: 16px; height: 16px; color: #94a3b8; }
+.search-box span { color: #94a3b8; }
+.toolbar-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  background: #f8fafc; color: #475569; cursor: pointer; border: 1px solid #e2e8f0;
+  transition: all 0.15s;
+}
+.toolbar-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.toolbar-btn svg { width: 15px; height: 15px; }
+.toolbar-btn-primary {
+  background: #4f46e5; color: #fff; border-color: #4f46e5;
+}
+.toolbar-btn-primary:hover { background: #4338ca; border-color: #4338ca; }
+
+/* View toggle */
+.view-toggle {
+  display: flex; background: #f1f5f9; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;
+}
+.view-opt {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 34px; cursor: pointer; color: #94a3b8; transition: all 0.15s;
+}
+.view-opt:hover { color: #475569; }
+.view-opt svg { width: 16px; height: 16px; }
+#view-table:checked ~ .window .view-toggle label[for="view-table"],
+#view-card:checked ~ .window .view-toggle label[for="view-card"] {
+  background: #fff; color: #4f46e5; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* View switching */
+.table-view { flex: 1; overflow: auto; }
+.card-view { display: none; flex: 1; overflow: auto; padding: 20px 28px; }
+#view-table:checked ~ .window .table-view { display: block; }
+#view-table:checked ~ .window .card-view { display: none; }
+#view-card:checked ~ .window .table-view { display: none; }
+#view-card:checked ~ .window .card-view { display: block; }
+
+/* ─── Table ─── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { position: sticky; top: 0; z-index: 10; }
+thead th {
+  background: #f8fafc; text-align: left;
+  padding: 11px 16px; font-weight: 600; color: #475569; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+/* Frozen header shadow on scroll */
+thead::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.04), transparent);
+  pointer-events: none;
+}
+
+.sort-col { cursor: pointer; user-select: none; transition: color 0.15s; }
+.sort-col:hover { color: #1e293b; }
+.sort-col::after {
+  content: ''; display: inline-block; width: 0; height: 0; margin-left: 6px;
+  vertical-align: middle; border-left: 3.5px solid transparent; border-right: 3.5px solid transparent;
+  border-bottom: 4px solid #cbd5e1; transition: border-color 0.15s;
+}
+.sort-col:hover::after { border-bottom-color: #64748b; }
+.sort-col.sort-asc::after { border-bottom: 4px solid #4f46e5; }
+.sort-col.sort-desc::after { border-bottom: none; border-top: 4px solid #4f46e5; }
+
+/* Stripe pattern */
+tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+tbody tr:nth-child(even) { background: #fafbfd; }
+tbody tr:hover { background: #eff4ff; }
+tbody td { padding: 12px 16px; color: #334155; vertical-align: middle; }
+
+/* Checkbox column */
+.row-check-label {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 4px;
+  cursor: pointer; transition: all 0.15s;
+}
+.row-check-label:hover { border-color: #4f46e5; }
+
+/* Bulk select visual */
+#sel-r1:checked ~ .window .sel-label-r1,
+#sel-r2:checked ~ .window .sel-label-r2,
+#sel-r3:checked ~ .window .sel-label-r3,
+#sel-r4:checked ~ .window .sel-label-r4,
+#sel-r5:checked ~ .window .sel-label-r5,
+#sel-r6:checked ~ .window .sel-label-r6,
+#sel-r7:checked ~ .window .sel-label-r7,
+#sel-r8:checked ~ .window .sel-label-r8,
+#sel-r9:checked ~ .window .sel-label-r9,
+#sel-r10:checked ~ .window .sel-label-r10 {
+  background: #4f46e5; border-color: #4f46e5;
+}
+#sel-r1:checked ~ .window .sel-label-r1::after,
+#sel-r2:checked ~ .window .sel-label-r2::after,
+#sel-r3:checked ~ .window .sel-label-r3::after,
+#sel-r4:checked ~ .window .sel-label-r4::after,
+#sel-r5:checked ~ .window .sel-label-r5::after,
+#sel-r6:checked ~ .window .sel-label-r6::after,
+#sel-r7:checked ~ .window .sel-label-r7::after,
+#sel-r8:checked ~ .window .sel-label-r8::after,
+#sel-r9:checked ~ .window .sel-label-r9::after,
+#sel-r10:checked ~ .window .sel-label-r10::after {
+  content: ''; display: block; width: 5px; height: 9px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px;
+}
+
+/* Selected row highlight */
+#sel-r1:checked ~ .window .row-r1,
+#sel-r2:checked ~ .window .row-r2,
+#sel-r3:checked ~ .window .row-r3,
+#sel-r4:checked ~ .window .row-r4,
+#sel-r5:checked ~ .window .row-r5,
+#sel-r6:checked ~ .window .row-r6,
+#sel-r7:checked ~ .window .row-r7,
+#sel-r8:checked ~ .window .row-r8,
+#sel-r9:checked ~ .window .row-r9,
+#sel-r10:checked ~ .window .row-r10 { background: #eef2ff !important; }
+
+/* Bulk action bar */
+.bulk-bar {
+  display: none; align-items: center; gap: 12px;
+  padding: 10px 28px; background: linear-gradient(135deg, #eef2ff, #e8e0ff);
+  border-bottom: 1px solid #c7d2fe; font-size: 12px; color: #3730a3; font-weight: 500;
+  animation: slideDown 0.2s ease;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.bulk-action {
+  padding: 5px 12px; border-radius: 6px; background: #4f46e5; color: #fff;
+  cursor: pointer; font-size: 11px; font-weight: 600; transition: background 0.15s;
+}
+.bulk-action:hover { background: #4338ca; }
+.bulk-action-outline {
+  padding: 5px 12px; border-radius: 6px; background: transparent; color: #4f46e5;
+  cursor: pointer; font-size: 11px; font-weight: 600; border: 1px solid #c7d2fe;
+  transition: all 0.15s;
+}
+.bulk-action-outline:hover { background: rgba(79,70,229,0.08); }
+
+#sel-r1:checked ~ .window .bulk-bar,
+#sel-r2:checked ~ .window .bulk-bar,
+#sel-r3:checked ~ .window .bulk-bar,
+#sel-r4:checked ~ .window .bulk-bar,
+#sel-r5:checked ~ .window .bulk-bar,
+#sel-r6:checked ~ .window .bulk-bar,
+#sel-r7:checked ~ .window .bulk-bar,
+#sel-r8:checked ~ .window .bulk-bar,
+#sel-r9:checked ~ .window .bulk-bar,
+#sel-r10:checked ~ .window .bulk-bar { display: flex; }
+
+/* Expandable rows */
+.expand-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+  color: #94a3b8; transition: all 0.15s;
+}
+.expand-btn:hover { background: #f1f5f9; color: #475569; }
+.expand-btn svg { width: 14px; height: 14px; transition: transform 0.2s; }
+.detail-row { display: none; }
+.detail-row td {
+  padding: 0 16px 16px 58px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+}
+.detail-content {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  font-size: 12px; color: #64748b;
+}
+.detail-content dt { font-weight: 600; color: #334155; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.detail-content dd { margin: 0 0 8px; }
+
+#expand-r1:checked ~ .window .detail-r1,
+#expand-r2:checked ~ .window .detail-r2,
+#expand-r3:checked ~ .window .detail-r3,
+#expand-r4:checked ~ .window .detail-r4,
+#expand-r5:checked ~ .window .detail-r5,
+#expand-r6:checked ~ .window .detail-r6,
+#expand-r7:checked ~ .window .detail-r7,
+#expand-r8:checked ~ .window .detail-r8,
+#expand-r9:checked ~ .window .detail-r9,
+#expand-r10:checked ~ .window .detail-r10 { display: table-row; }
+
+#expand-r1:checked ~ .window .expand-btn-r1 svg,
+#expand-r2:checked ~ .window .expand-btn-r2 svg,
+#expand-r3:checked ~ .window .expand-btn-r3 svg,
+#expand-r4:checked ~ .window .expand-btn-r4 svg,
+#expand-r5:checked ~ .window .expand-btn-r5 svg,
+#expand-r6:checked ~ .window .expand-btn-r6 svg,
+#expand-r7:checked ~ .window .expand-btn-r7 svg,
+#expand-r8:checked ~ .window .expand-btn-r8 svg,
+#expand-r9:checked ~ .window .expand-btn-r9 svg,
+#expand-r10:checked ~ .window .expand-btn-r10 svg { transform: rotate(90deg); }
+
+/* Avatar */
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 600; font-size: 12px;
+  color: #fff; margin-right: 12px; vertical-align: middle;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0,0,0,0.06);
+}
+.emp-name { font-weight: 600; color: #0f172a; }
+.emp-email { font-size: 12px; color: #94a3b8; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600;
+}
+.badge::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+}
+.badge-active { background: #dcfce7; color: #166534; }
+.badge-active::before { background: #22c55e; }
+.badge-pending { background: #fef9c3; color: #854d0e; }
+.badge-pending::before { background: #eab308; }
+.badge-inactive { background: #fee2e2; color: #991b1b; }
+.badge-inactive::before { background: #ef4444; }
+
+/* ─── Card View ─── */
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
+}
+.emp-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 20px; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.emp-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed); opacity: 0;
+  transition: opacity 0.2s;
+}
+.emp-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #c7d2fe; transform: translateY(-1px); }
+.emp-card:hover::before { opacity: 1; }
+.emp-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.emp-card-avatar {
+  width: 48px; height: 48px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.emp-card-name { font-weight: 700; font-size: 14px; color: #0f172a; }
+.emp-card-email { font-size: 12px; color: #94a3b8; }
+.emp-card-details { display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: #64748b; }
+.emp-card-row { display: flex; justify-content: space-between; align-items: center; }
+.emp-card-label { font-weight: 500; color: #475569; }
+
+/* ─── Pagination ─── */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 28px; background: #fff; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;
+}
+.page-buttons { display: flex; gap: 4px; }
+.page-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  color: #475569; cursor: pointer; transition: all 0.15s;
+}
+.page-btn:hover { background: #f1f5f9; }
+.page-nav {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  color: #64748b; cursor: pointer; transition: all 0.15s;
+}
+.page-nav:hover { background: #f1f5f9; color: #334155; }
+
+.page-content { display: none; }
+#page1:checked ~ .window .table-wrap .page-1,
+#page2:checked ~ .window .table-wrap .page-2 { display: table-row-group; }
+#page1:checked ~ .window .pagination label[for="page1"],
+#page2:checked ~ .window .pagination label[for="page2"] { background: #4f46e5; color: #fff; }
+
+/* ─── Mobile overrides ─── */
+#preview-mobile:checked ~ .window .toolbar { padding: 12px 14px; }
+#preview-mobile:checked ~ .window .toolbar h2 { font-size: 15px; width: 100%; }
+#preview-mobile:checked ~ .window .search-box { min-width: 0; flex: 1; font-size: 12px; padding: 6px 10px; }
+#preview-mobile:checked ~ .window .toolbar-btn span { display: none; }
+#preview-mobile:checked ~ .window .view-toggle { display: none; }
+#preview-mobile:checked ~ .window .table-view { display: none !important; }
+#preview-mobile:checked ~ .window .card-view { display: block !important; padding: 12px; }
+#preview-mobile:checked ~ .window .card-grid { grid-template-columns: 1fr; gap: 10px; }
+#preview-mobile:checked ~ .window .emp-card { padding: 16px; }
+#preview-mobile:checked ~ .window .pagination { padding: 10px 14px; font-size: 11px; }
+#preview-mobile:checked ~ .window .bulk-bar { padding: 8px 14px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Data Table</h1>
+      <span class="exp-version">v5</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Production-quality polish: frozen header with scroll shadow, stripe patterns, refined animations, status badge dots, card hover effects, and a comprehensive feature set combining the best of v1-v4.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously. The prompt shown is a summary of the agent's intent, not a verbatim human prompt.<br><br>
+        v5: Frozen header on scroll, refined animations, stripe patterns, production quality. Combine all features from previous versions into a polished production-ready table. Add sticky header with scroll shadow via ::after pseudo-element. Add zebra stripe rows. Refine badge design with colored dots. Add card hover animations with top accent bar. Improve color palette to use Slate scale. Add avatar ring styling. Include expandable rows, bulk select, view toggle, and pagination.
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="data-table-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Frozen header</span>
+        </a>
+        <a href="data-table-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Table/card view</span>
+        </a>
+        <a href="data-table-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Density toggle</span>
+        </a>
+        <a href="data-table-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Expandable rows</span>
+        </a>
+        <a href="data-table-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial data table</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></label>
+    </div>
+
+    <!-- View toggle -->
+    <input type="radio" name="view" id="view-table" checked>
+    <input type="radio" name="view" id="view-card">
+    <!-- Pages -->
+    <input type="radio" name="page" id="page1" checked>
+    <input type="radio" name="page" id="page2">
+    <!-- Bulk select -->
+    <input type="checkbox" id="sel-r1"><input type="checkbox" id="sel-r2">
+    <input type="checkbox" id="sel-r3"><input type="checkbox" id="sel-r4">
+    <input type="checkbox" id="sel-r5"><input type="checkbox" id="sel-r6">
+    <input type="checkbox" id="sel-r7"><input type="checkbox" id="sel-r8">
+    <input type="checkbox" id="sel-r9"><input type="checkbox" id="sel-r10">
+    <!-- Expand toggles -->
+    <input type="checkbox" id="expand-r1"><input type="checkbox" id="expand-r2">
+    <input type="checkbox" id="expand-r3"><input type="checkbox" id="expand-r4">
+    <input type="checkbox" id="expand-r5"><input type="checkbox" id="expand-r6">
+    <input type="checkbox" id="expand-r7"><input type="checkbox" id="expand-r8">
+    <input type="checkbox" id="expand-r9"><input type="checkbox" id="expand-r10">
+
+    <div class="window">
+      <div class="table-page">
+        <div class="toolbar">
+          <h2>Employee Directory</h2>
+          <span class="record-count">18 records</span>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Search employees...</span>
+          </div>
+          <div class="toolbar-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span>Filter</span>
+          </div>
+          <div class="toolbar-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export</span>
+          </div>
+          <div class="view-toggle">
+            <label for="view-table" class="view-opt" title="Table view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </label>
+            <label for="view-card" class="view-opt" title="Card view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </label>
+          </div>
+          <div class="toolbar-btn toolbar-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add Employee</span>
+          </div>
+        </div>
+
+        <div class="bulk-bar">
+          <span>Rows selected</span>
+          <span class="bulk-action">Delete</span>
+          <span class="bulk-action-outline">Export</span>
+          <span class="bulk-action-outline">Archive</span>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-view table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"></th>
+                <th style="width:28px"></th>
+                <th class="sort-col sort-asc">Name</th>
+                <th class="sort-col col-dept">Department</th>
+                <th class="sort-col">Status</th>
+                <th class="sort-col col-start">Start Date</th>
+                <th class="sort-col col-salary">Salary</th>
+              </tr>
+            </thead>
+            <tbody class="page-content page-1">
+              <tr class="row-r1">
+                <td><label for="sel-r1" class="row-check-label sel-label-r1"></label></td>
+                <td><label for="expand-r1" class="expand-btn expand-btn-r1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#4f46e5">AL</span><span class="emp-name">Alice Lawson</span><br><span class="emp-email">alice.lawson@company.com</span></td>
+                <td class="col-dept">Engineering</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Jan 15, 2021</td>
+                <td class="col-salary">$128,000</td>
+              </tr>
+              <tr class="detail-row detail-r1">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 234-5678</dd></div>
+                    <div><dt>Location</dt><dd>San Francisco, CA</dd></div>
+                    <div><dt>Manager</dt><dd>Sarah Thompson</dd></div>
+                    <div><dt>Team</dt><dd>Platform Engineering</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1042</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r2">
+                <td><label for="sel-r2" class="row-check-label sel-label-r2"></label></td>
+                <td><label for="expand-r2" class="expand-btn expand-btn-r2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#0891b2">BM</span><span class="emp-name">Bob Martinez</span><br><span class="emp-email">bob.martinez@company.com</span></td>
+                <td class="col-dept">Design</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Mar 3, 2020</td>
+                <td class="col-salary">$112,000</td>
+              </tr>
+              <tr class="detail-row detail-r2">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 345-6789</dd></div>
+                    <div><dt>Location</dt><dd>New York, NY</dd></div>
+                    <div><dt>Manager</dt><dd>Lisa Park</dd></div>
+                    <div><dt>Team</dt><dd>Product Design</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-0987</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r3">
+                <td><label for="sel-r3" class="row-check-label sel-label-r3"></label></td>
+                <td><label for="expand-r3" class="expand-btn expand-btn-r3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#7c3aed">CK</span><span class="emp-name">Carol Kim</span><br><span class="emp-email">carol.kim@company.com</span></td>
+                <td class="col-dept">Product</td>
+                <td><span class="badge badge-pending">Pending</span></td>
+                <td class="col-start">Nov 20, 2023</td>
+                <td class="col-salary">$105,000</td>
+              </tr>
+              <tr class="detail-row detail-r3">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 456-7890</dd></div>
+                    <div><dt>Location</dt><dd>Austin, TX</dd></div>
+                    <div><dt>Manager</dt><dd>Mark Rivera</dd></div>
+                    <div><dt>Team</dt><dd>Product Strategy</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1201</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r4">
+                <td><label for="sel-r4" class="row-check-label sel-label-r4"></label></td>
+                <td><label for="expand-r4" class="expand-btn expand-btn-r4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#dc2626">DR</span><span class="emp-name">David Reyes</span><br><span class="emp-email">david.reyes@company.com</span></td>
+                <td class="col-dept">Engineering</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Jul 8, 2019</td>
+                <td class="col-salary">$145,000</td>
+              </tr>
+              <tr class="detail-row detail-r4">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 567-8901</dd></div>
+                    <div><dt>Location</dt><dd>Seattle, WA</dd></div>
+                    <div><dt>Manager</dt><dd>Sarah Thompson</dd></div>
+                    <div><dt>Team</dt><dd>Infrastructure</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-0854</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r5">
+                <td><label for="sel-r5" class="row-check-label sel-label-r5"></label></td>
+                <td><label for="expand-r5" class="expand-btn expand-btn-r5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#059669">EC</span><span class="emp-name">Emma Chen</span><br><span class="emp-email">emma.chen@company.com</span></td>
+                <td class="col-dept">Marketing</td>
+                <td><span class="badge badge-inactive">Inactive</span></td>
+                <td class="col-start">Sep 1, 2022</td>
+                <td class="col-salary">$95,000</td>
+              </tr>
+              <tr class="detail-row detail-r5">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 678-9012</dd></div>
+                    <div><dt>Location</dt><dd>Chicago, IL</dd></div>
+                    <div><dt>Manager</dt><dd>Tom Hughes</dd></div>
+                    <div><dt>Team</dt><dd>Brand Marketing</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1105</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r6">
+                <td><label for="sel-r6" class="row-check-label sel-label-r6"></label></td>
+                <td><label for="expand-r6" class="expand-btn expand-btn-r6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#d97706">FP</span><span class="emp-name">Frank Patel</span><br><span class="emp-email">frank.patel@company.com</span></td>
+                <td class="col-dept">Sales</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Feb 14, 2021</td>
+                <td class="col-salary">$108,000</td>
+              </tr>
+              <tr class="detail-row detail-r6">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 789-0123</dd></div>
+                    <div><dt>Location</dt><dd>Denver, CO</dd></div>
+                    <div><dt>Manager</dt><dd>Julia West</dd></div>
+                    <div><dt>Team</dt><dd>Enterprise Sales</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1048</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r7">
+                <td><label for="sel-r7" class="row-check-label sel-label-r7"></label></td>
+                <td><label for="expand-r7" class="expand-btn expand-btn-r7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#4f46e5">GW</span><span class="emp-name">Grace Wong</span><br><span class="emp-email">grace.wong@company.com</span></td>
+                <td class="col-dept">Engineering</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">May 22, 2020</td>
+                <td class="col-salary">$135,000</td>
+              </tr>
+              <tr class="detail-row detail-r7">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 890-1234</dd></div>
+                    <div><dt>Location</dt><dd>San Francisco, CA</dd></div>
+                    <div><dt>Manager</dt><dd>Sarah Thompson</dd></div>
+                    <div><dt>Team</dt><dd>Frontend Engineering</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-0965</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r8">
+                <td><label for="sel-r8" class="row-check-label sel-label-r8"></label></td>
+                <td><label for="expand-r8" class="expand-btn expand-btn-r8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#0891b2">HJ</span><span class="emp-name">Henry Jackson</span><br><span class="emp-email">henry.jackson@company.com</span></td>
+                <td class="col-dept">Finance</td>
+                <td><span class="badge badge-pending">Pending</span></td>
+                <td class="col-start">Dec 1, 2023</td>
+                <td class="col-salary">$118,000</td>
+              </tr>
+              <tr class="detail-row detail-r8">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 901-2345</dd></div>
+                    <div><dt>Location</dt><dd>Boston, MA</dd></div>
+                    <div><dt>Manager</dt><dd>Amy Chen</dd></div>
+                    <div><dt>Team</dt><dd>Financial Planning</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1198</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r9">
+                <td><label for="sel-r9" class="row-check-label sel-label-r9"></label></td>
+                <td><label for="expand-r9" class="expand-btn expand-btn-r9"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#7c3aed">IN</span><span class="emp-name">Irene Novak</span><br><span class="emp-email">irene.novak@company.com</span></td>
+                <td class="col-dept">Design</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Apr 10, 2021</td>
+                <td class="col-salary">$102,000</td>
+              </tr>
+              <tr class="detail-row detail-r9">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 012-3456</dd></div>
+                    <div><dt>Location</dt><dd>Portland, OR</dd></div>
+                    <div><dt>Manager</dt><dd>Lisa Park</dd></div>
+                    <div><dt>Team</dt><dd>Visual Design</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-1055</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+              <tr class="row-r10">
+                <td><label for="sel-r10" class="row-check-label sel-label-r10"></label></td>
+                <td><label for="expand-r10" class="expand-btn expand-btn-r10"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></label></td>
+                <td><span class="avatar" style="background:#dc2626">JT</span><span class="emp-name">James Torres</span><br><span class="emp-email">james.torres@company.com</span></td>
+                <td class="col-dept">Engineering</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Aug 15, 2019</td>
+                <td class="col-salary">$142,000</td>
+              </tr>
+              <tr class="detail-row detail-r10">
+                <td colspan="7">
+                  <dl class="detail-content">
+                    <div><dt>Phone</dt><dd>+1 (555) 123-4567</dd></div>
+                    <div><dt>Location</dt><dd>San Jose, CA</dd></div>
+                    <div><dt>Manager</dt><dd>Sarah Thompson</dd></div>
+                    <div><dt>Team</dt><dd>Backend Engineering</dd></div>
+                    <div><dt>Employee ID</dt><dd>EMP-0861</dd></div>
+                    <div><dt>Type</dt><dd>Full-time</dd></div>
+                  </dl>
+                </td>
+              </tr>
+            </tbody>
+            <tbody class="page-content page-2">
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#059669">KL</span><span class="emp-name">Karen Lee</span><br><span class="emp-email">karen.lee@company.com</span></td>
+                <td class="col-dept">Product</td>
+                <td><span class="badge badge-inactive">Inactive</span></td>
+                <td class="col-start">Jun 5, 2022</td>
+                <td class="col-salary">$110,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#d97706">LB</span><span class="emp-name">Liam Brooks</span><br><span class="emp-email">liam.brooks@company.com</span></td>
+                <td class="col-dept">Sales</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Oct 20, 2020</td>
+                <td class="col-salary">$98,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#4f46e5">MR</span><span class="emp-name">Mia Russo</span><br><span class="emp-email">mia.russo@company.com</span></td>
+                <td class="col-dept">Marketing</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Jan 8, 2023</td>
+                <td class="col-salary">$92,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#0891b2">NS</span><span class="emp-name">Nathan Shah</span><br><span class="emp-email">nathan.shah@company.com</span></td>
+                <td class="col-dept">Finance</td>
+                <td><span class="badge badge-pending">Pending</span></td>
+                <td class="col-start">Nov 12, 2023</td>
+                <td class="col-salary">$115,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#7c3aed">OG</span><span class="emp-name">Olivia Grant</span><br><span class="emp-email">olivia.grant@company.com</span></td>
+                <td class="col-dept">Engineering</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Mar 28, 2021</td>
+                <td class="col-salary">$131,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#dc2626">PD</span><span class="emp-name">Paul Dixon</span><br><span class="emp-email">paul.dixon@company.com</span></td>
+                <td class="col-dept">Design</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Jul 14, 2020</td>
+                <td class="col-salary">$107,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#059669">QH</span><span class="emp-name">Quinn Harper</span><br><span class="emp-email">quinn.harper@company.com</span></td>
+                <td class="col-dept">Product</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="col-start">Sep 3, 2022</td>
+                <td class="col-salary">$116,000</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td><span class="avatar" style="background:#d97706">RF</span><span class="emp-name">Rachel Flores</span><br><span class="emp-email">rachel.flores@company.com</span></td>
+                <td class="col-dept">Sales</td>
+                <td><span class="badge badge-inactive">Inactive</span></td>
+                <td class="col-start">Dec 18, 2021</td>
+                <td class="col-salary">$89,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Card View -->
+        <div class="card-view">
+          <div class="card-grid">
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#4f46e5">AL</div>
+                <div><div class="emp-card-name">Alice Lawson</div><div class="emp-card-email">alice.lawson@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Engineering</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-active">Active</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$128,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#0891b2">BM</div>
+                <div><div class="emp-card-name">Bob Martinez</div><div class="emp-card-email">bob.martinez@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Design</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-active">Active</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$112,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#7c3aed">CK</div>
+                <div><div class="emp-card-name">Carol Kim</div><div class="emp-card-email">carol.kim@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Product</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-pending">Pending</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$105,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#dc2626">DR</div>
+                <div><div class="emp-card-name">David Reyes</div><div class="emp-card-email">david.reyes@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Engineering</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-active">Active</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$145,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#059669">EC</div>
+                <div><div class="emp-card-name">Emma Chen</div><div class="emp-card-email">emma.chen@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Marketing</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-inactive">Inactive</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$95,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#d97706">FP</div>
+                <div><div class="emp-card-name">Frank Patel</div><div class="emp-card-email">frank.patel@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Sales</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-active">Active</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$108,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#4f46e5">GW</div>
+                <div><div class="emp-card-name">Grace Wong</div><div class="emp-card-email">grace.wong@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Engineering</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-active">Active</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$135,000</span></div>
+              </div>
+            </div>
+            <div class="emp-card">
+              <div class="emp-card-header">
+                <div class="emp-card-avatar" style="background:#0891b2">HJ</div>
+                <div><div class="emp-card-name">Henry Jackson</div><div class="emp-card-email">henry.jackson@company.com</div></div>
+              </div>
+              <div class="emp-card-details">
+                <div class="emp-card-row"><span class="emp-card-label">Department</span><span>Finance</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Status</span><span class="badge badge-pending">Pending</span></div>
+                <div class="emp-card-row"><span class="emp-card-label">Salary</span><span>$118,000</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pagination">
+          <span>Showing 1&ndash;10 of 18 employees</span>
+          <div class="page-buttons">
+            <label for="page1" class="page-nav">&larr; Prev</label>
+            <label for="page1" class="page-btn">1</label>
+            <label for="page2" class="page-btn">2</label>
+            <label for="page2" class="page-nav">Next &rarr;</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

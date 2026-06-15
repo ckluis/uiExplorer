@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human/Agent Orchestration — v15: Tidal Pool Enhanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── Experiment Info Sidebar ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.experiment-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.experiment-sidebar a {
+  color: #8b9cf7;
+  text-decoration: none;
+}
+
+.experiment-sidebar a:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-back {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.experiment-sidebar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.experiment-sidebar .exp-variant {
+  display: inline-block;
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-prompt {
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+
+.experiment-sidebar .exp-origination-link {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-origination-link a {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* ─── Sidebar Versions Card ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.experiment-sidebar .exp-vc-entry:hover {
+  background: rgba(255,255,255,0.06);
+  text-decoration: none;
+}
+
+.experiment-sidebar .exp-vc-entry.current {
+  background: rgba(139, 156, 247, 0.12);
+  border: 1px solid rgba(139, 156, 247, 0.25);
+}
+
+.experiment-sidebar .exp-vc-v {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b9cf7;
+  min-width: 24px;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
+  color: #fff;
+}
+
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
+  color: #ccc;
+}
+
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2ecc71;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+}
+
+.experiment-sidebar .exp-vc-origin:hover {
+  text-decoration: underline;
+}
+
+.experiment-sidebar .exp-vc-group-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  padding: 8px 10px 2px;
+  margin-top: 4px;
+}
+
+/* ─── Device Preview Switcher ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg, #0a1628 0%, #0d2847 50%, #061a38 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+
+.preview-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.1);
+}
+
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#preview-mobile:checked ~ .window {
+  width: 375px;
+  height: 720px;
+}
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Ocean Background ─── */
+.ocean {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,
+    #5ba3d9 8%,
+    #3a7bd5 15%,
+    #2563a8 20%,
+    #1b4f8a 28%,
+    #143d6e 35%,
+    #0d2f5a 42%,
+    #082347 50%,
+    #061a38 58%,
+    #04122a 65%,
+    #030d1f 72%,
+    #020916 80%,
+    #010610 88%,
+    #000408 95%,
+    #000204 100%
+  );
+  overflow: hidden;
+}
+
+/* ─── Zone Radio Selection ─── */
+.zone-controls {
+  position: absolute;
+  top: 10px;
+  left: 56px;
+  z-index: 50;
+  display: flex;
+  gap: 4px;
+}
+
+.zone-radio-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.2s;
+}
+
+.zone-radio-label:hover {
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.1);
+}
+
+#zone-all:checked ~ .ocean .zone-controls label[for="zone-all"],
+#zone-sunlit:checked ~ .ocean .zone-controls label[for="zone-sunlit"],
+#zone-twilight:checked ~ .ocean .zone-controls label[for="zone-twilight"],
+#zone-midnight:checked ~ .ocean .zone-controls label[for="zone-midnight"],
+#zone-abyssal:checked ~ .ocean .zone-controls label[for="zone-abyssal"] {
+  color: #fff;
+  background: rgba(255,184,48,0.25);
+  border-color: rgba(255,184,48,0.5);
+}
+
+/* Zone highlighting - dim non-selected zones */
+#zone-sunlit:checked ~ .ocean .twilight-zone,
+#zone-sunlit:checked ~ .ocean .midnight-zone,
+#zone-sunlit:checked ~ .ocean .abyssal-zone {
+  opacity: 0.15;
+}
+
+#zone-twilight:checked ~ .ocean .sunlit-zone,
+#zone-twilight:checked ~ .ocean .midnight-zone,
+#zone-twilight:checked ~ .ocean .abyssal-zone {
+  opacity: 0.15;
+}
+
+#zone-midnight:checked ~ .ocean .sunlit-zone,
+#zone-midnight:checked ~ .ocean .twilight-zone,
+#zone-midnight:checked ~ .ocean .abyssal-zone {
+  opacity: 0.15;
+}
+
+#zone-abyssal:checked ~ .ocean .sunlit-zone,
+#zone-abyssal:checked ~ .ocean .twilight-zone,
+#zone-abyssal:checked ~ .ocean .midnight-zone {
+  opacity: 0.15;
+}
+
+.sunlit-zone, .twilight-zone, .midnight-zone, .abyssal-zone {
+  transition: opacity 0.4s ease;
+}
+
+/* ─── Signal Chain Checkboxes ─── */
+.signal-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 56px;
+  z-index: 50;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.signal-controls .sc-label {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.25);
+  margin-right: 2px;
+}
+
+.signal-check-label {
+  font-size: 9px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.2s;
+}
+
+.signal-check-label:hover {
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+}
+
+#sig-auth:checked ~ .ocean .signal-controls label[for="sig-auth"] {
+  color: #ffb830;
+  background: rgba(255,184,48,0.15);
+  border-color: rgba(255,184,48,0.4);
+}
+
+#sig-ui:checked ~ .ocean .signal-controls label[for="sig-ui"] {
+  color: #00dcff;
+  background: rgba(0,220,255,0.15);
+  border-color: rgba(0,220,255,0.4);
+}
+
+#sig-data:checked ~ .ocean .signal-controls label[for="sig-data"] {
+  color: #00ff8c;
+  background: rgba(0,255,140,0.15);
+  border-color: rgba(0,255,140,0.4);
+}
+
+/* Signal chains - hidden by default, shown when checked */
+.signal-chain-auth,
+.signal-chain-ui,
+.signal-chain-data {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+#sig-auth:checked ~ .ocean .signal-chain-auth { opacity: 1; }
+#sig-ui:checked ~ .ocean .signal-chain-ui { opacity: 1; }
+#sig-data:checked ~ .ocean .signal-chain-data { opacity: 1; }
+
+/* ─── Depth Ruler ─── */
+.depth-ruler {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  z-index: 10;
+}
+
+.depth-mark {
+  position: absolute;
+  left: 0;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.35);
+}
+
+.depth-mark::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+}
+
+.depth-mark span {
+  padding-left: 6px;
+}
+
+/* ─── Zone Labels ─── */
+.zone-label {
+  position: absolute;
+  right: 24px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  z-index: 5;
+}
+
+/* ─── Zone Dividers ─── */
+.zone-divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 3;
+}
+
+.zone-divider-1 {
+  top: calc(20% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,20 Q150,5 300,20 T600,20 T900,20 T1200,20 L1200,40 L0,40 Z' fill='rgba(15,60,110,0.3)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+.zone-divider-2 {
+  top: calc(45% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,20 Q100,8 200,18 T400,22 T600,18 T800,22 T1000,18 T1200,20 L1200,40 L0,40 Z' fill='rgba(5,20,50,0.3)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+.zone-divider-3 {
+  top: calc(75% - 20px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40'%3E%3Cpath d='M0,22 Q180,10 360,22 T720,22 T1080,22 T1200,18 L1200,40 L0,40 Z' fill='rgba(0,5,15,0.4)'/%3E%3C/svg%3E") repeat-x;
+  background-size: 1200px 40px;
+}
+
+/* ─── Sunlit Zone ─── */
+.sunlit-zone {
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 50px;
+  height: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.sun {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle, #fff5c0 20%, #ffd700 50%, transparent 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 40px 15px rgba(255, 215, 0, 0.3), 0 0 80px 30px rgba(255, 200, 0, 0.15);
+}
+
+.sunlit-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 16px;
+}
+
+.human-prompt {
+  background: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 18px 28px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 0 60px rgba(255,255,255,0.15);
+  color: #1a1a2e;
+}
+
+.human-prompt .label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #e67e22;
+  margin-bottom: 6px;
+}
+
+.human-prompt .text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1a1a2e;
+}
+
+/* Light particles */
+.light-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  z-index: 2;
+}
+
+.lp-1 { width: 3px; height: 3px; top: 5%; left: 25%; opacity: 0.6; }
+.lp-2 { width: 2px; height: 2px; top: 8%; left: 45%; opacity: 0.4; }
+.lp-3 { width: 4px; height: 4px; top: 3%; left: 70%; opacity: 0.5; }
+.lp-4 { width: 2px; height: 2px; top: 12%; left: 35%; opacity: 0.3; }
+.lp-5 { width: 3px; height: 3px; top: 7%; left: 80%; opacity: 0.45; }
+.lp-6 { width: 2px; height: 2px; top: 15%; left: 55%; opacity: 0.35; }
+.lp-7 { width: 3px; height: 3px; top: 10%; left: 15%; opacity: 0.4; }
+.lp-8 { width: 2px; height: 2px; top: 4%; left: 60%; opacity: 0.5; }
+
+/* ─── Twilight Zone ─── */
+.twilight-zone {
+  position: absolute;
+  top: 20%;
+  left: 60px;
+  right: 50px;
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.twilight-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 20px;
+}
+
+.whale {
+  position: relative;
+  width: 340px;
+  height: 90px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #16304d 100%);
+  border-radius: 50% 45% 45% 50% / 60% 55% 55% 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(100, 150, 220, 0.15), inset 0 -2px 8px rgba(0,0,0,0.3);
+}
+
+.whale::before {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: 10px;
+  width: 50px;
+  height: 40px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #16304d 100%);
+  clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+}
+
+.whale::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 28px;
+  width: 6px;
+  height: 6px;
+  background: rgba(180, 210, 255, 0.6);
+  border-radius: 50%;
+}
+
+.whale .agent-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(180, 210, 255, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.whale .agent-status {
+  font-size: 10px;
+  color: rgba(140, 170, 210, 0.6);
+  margin-top: 4px;
+}
+
+/* Marine Snow */
+.snow-particle {
+  position: absolute;
+  background: rgba(200, 220, 255, 0.25);
+  border-radius: 50%;
+  z-index: 4;
+}
+
+.ms-1 { width: 3px; height: 3px; top: 56%; left: 30%; }
+.ms-2 { width: 2px; height: 2px; top: 58%; left: 42%; }
+.ms-3 { width: 4px; height: 4px; top: 60%; left: 55%; }
+.ms-4 { width: 2px; height: 2px; top: 54%; left: 65%; }
+.ms-5 { width: 3px; height: 3px; top: 62%; left: 35%; }
+.ms-6 { width: 2px; height: 2px; top: 57%; left: 73%; }
+.ms-7 { width: 3px; height: 3px; top: 63%; left: 48%; }
+.ms-8 { width: 2px; height: 2px; top: 59%; left: 20%; }
+.ms-9 { width: 2px; height: 2px; top: 61%; left: 78%; }
+
+/* Task fragments */
+.task-fragment {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(100, 150, 220, 0.12);
+  border: 1px solid rgba(100, 150, 220, 0.15);
+  color: rgba(160, 190, 230, 0.6);
+  z-index: 6;
+}
+
+.tf-1 { top: 39%; left: 22%; }
+.tf-2 { top: 41%; left: 45%; }
+.tf-3 { top: 40%; left: 68%; }
+
+/* ─── Midnight Zone ─── */
+.midnight-zone {
+  position: absolute;
+  top: 45%;
+  left: 60px;
+  right: 50px;
+  height: 30%;
+  z-index: 5;
+}
+
+.midnight-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.18);
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 16px;
+}
+
+.squid-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 0 20px;
+}
+
+.squid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 180px;
+}
+
+.squid-body {
+  width: 130px;
+  padding: 16px 14px;
+  border-radius: 40px 40px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.squid-cyan .squid-body {
+  background: rgba(0, 220, 255, 0.06);
+  border: 1px solid rgba(0, 220, 255, 0.15);
+  box-shadow: 0 0 25px rgba(0, 220, 255, 0.1), 0 0 50px rgba(0, 220, 255, 0.05);
+}
+
+.squid-green .squid-body {
+  background: rgba(0, 255, 140, 0.06);
+  border: 1px solid rgba(0, 255, 140, 0.15);
+  box-shadow: 0 0 25px rgba(0, 255, 140, 0.1), 0 0 50px rgba(0, 255, 140, 0.05);
+}
+
+.squid-purple .squid-body {
+  background: rgba(180, 100, 255, 0.06);
+  border: 1px solid rgba(180, 100, 255, 0.15);
+  box-shadow: 0 0 25px rgba(180, 100, 255, 0.1), 0 0 50px rgba(180, 100, 255, 0.05);
+}
+
+.squid .agent-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.squid-cyan .agent-name { color: rgba(0, 220, 255, 0.9); }
+.squid-green .agent-name { color: rgba(0, 255, 140, 0.9); }
+.squid-purple .agent-name { color: rgba(180, 100, 255, 0.9); }
+
+.squid .agent-status {
+  font-size: 9px;
+  color: rgba(200, 200, 220, 0.4);
+  line-height: 1.3;
+}
+
+/* Hover tooltips on creatures */
+.creature-hover {
+  position: relative;
+}
+
+.creature-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 60;
+}
+
+.creature-hover:hover .creature-tooltip {
+  opacity: 1;
+}
+
+.creature-tooltip .tt-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.creature-tooltip .tt-status {
+  font-size: 9px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.creature-tooltip .tt-progress {
+  width: 80px;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.creature-tooltip .tt-bar {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.tt-cyan .tt-status { color: #00dcff; }
+.tt-cyan .tt-bar { background: #00dcff; width: 65%; }
+.tt-green .tt-status { color: #00ff8c; }
+.tt-green .tt-bar { background: #00ff8c; width: 40%; }
+.tt-purple .tt-status { color: #b464ff; }
+.tt-purple .tt-bar { background: #b464ff; width: 80%; }
+.tt-amber .tt-status { color: #ffb830; }
+.tt-amber .tt-bar { background: #ffb830; width: 55%; }
+
+/* Tentacles */
+.tentacles {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tentacle {
+  width: 1px;
+  height: 50px;
+  opacity: 0.25;
+}
+
+.squid-cyan .tentacle { background: linear-gradient(180deg, rgba(0,220,255,0.4), transparent); }
+.squid-green .tentacle { background: linear-gradient(180deg, rgba(0,255,140,0.4), transparent); }
+.squid-purple .tentacle { background: linear-gradient(180deg, rgba(180,100,255,0.4), transparent); }
+
+/* ─── Abyssal Zone ─── */
+.abyssal-zone {
+  position: absolute;
+  top: 75%;
+  left: 60px;
+  right: 50px;
+  height: 25%;
+  z-index: 5;
+}
+
+.abyssal-zone .zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.12);
+  text-align: center;
+  margin-top: 14px;
+  margin-bottom: 20px;
+}
+
+.abyssal-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 0 10px;
+}
+
+.abyssal-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.anglerfish {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.angler-lure {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.angler-cyan .angler-lure {
+  background: #00dcff;
+  box-shadow: 0 0 8px #00dcff, 0 0 16px rgba(0,220,255,0.4);
+}
+
+.angler-green .angler-lure {
+  background: #00ff8c;
+  box-shadow: 0 0 8px #00ff8c, 0 0 16px rgba(0,255,140,0.4);
+}
+
+.angler-amber .angler-lure {
+  background: #ffb830;
+  box-shadow: 0 0 8px #ffb830, 0 0 16px rgba(255,184,48,0.4);
+}
+
+.anglerfish .agent-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(200,200,220,0.5);
+  white-space: nowrap;
+}
+
+/* ─── Signal Chain Elements ─── */
+.signal-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.signal-dot.large {
+  width: 8px;
+  height: 8px;
+}
+
+.signal-line {
+  position: absolute;
+  width: 2px;
+}
+
+.signal-capsule {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  max-width: 220px;
+}
+
+.signal-capsule .capsule-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.signal-capsule .capsule-text {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Auth signal chain (amber) */
+.signal-chain-auth .signal-dot {
+  background: #ffb830;
+  box-shadow: 0 0 6px #ffb830, 0 0 14px rgba(255,184,48,0.5);
+}
+.signal-chain-auth .signal-dot.large {
+  box-shadow: 0 0 10px #ffb830, 0 0 20px rgba(255,184,48,0.6);
+}
+.signal-chain-auth .signal-line {
+  background: linear-gradient(180deg, rgba(255,184,48,0.5), rgba(255,184,48,0.1));
+}
+.signal-chain-auth .signal-capsule {
+  background: rgba(255, 184, 48, 0.08);
+  border: 1px solid rgba(255, 184, 48, 0.3);
+  box-shadow: 0 0 20px rgba(255, 184, 48, 0.12);
+}
+.signal-chain-auth .capsule-label { color: #ffb830; }
+.signal-chain-auth .capsule-text { color: rgba(255, 220, 160, 0.8); }
+
+/* UI signal chain (cyan) */
+.signal-chain-ui .signal-dot {
+  background: #00dcff;
+  box-shadow: 0 0 6px #00dcff, 0 0 14px rgba(0,220,255,0.5);
+}
+.signal-chain-ui .signal-dot.large {
+  box-shadow: 0 0 10px #00dcff, 0 0 20px rgba(0,220,255,0.6);
+}
+.signal-chain-ui .signal-line {
+  background: linear-gradient(180deg, rgba(0,220,255,0.5), rgba(0,220,255,0.1));
+}
+.signal-chain-ui .signal-capsule {
+  background: rgba(0, 220, 255, 0.08);
+  border: 1px solid rgba(0, 220, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 220, 255, 0.12);
+}
+.signal-chain-ui .capsule-label { color: #00dcff; }
+.signal-chain-ui .capsule-text { color: rgba(160, 230, 255, 0.8); }
+
+/* Data signal chain (green) */
+.signal-chain-data .signal-dot {
+  background: #00ff8c;
+  box-shadow: 0 0 6px #00ff8c, 0 0 14px rgba(0,255,140,0.5);
+}
+.signal-chain-data .signal-dot.large {
+  box-shadow: 0 0 10px #00ff8c, 0 0 20px rgba(0,255,140,0.6);
+}
+.signal-chain-data .signal-line {
+  background: linear-gradient(180deg, rgba(0,255,140,0.5), rgba(0,255,140,0.1));
+}
+.signal-chain-data .signal-capsule {
+  background: rgba(0, 255, 140, 0.08);
+  border: 1px solid rgba(0, 255, 140, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 140, 0.12);
+}
+.signal-chain-data .capsule-label { color: #00ff8c; }
+.signal-chain-data .capsule-text { color: rgba(160, 255, 200, 0.8); }
+
+/* ─── Depth Ruler Marks ─── */
+.depth-ruler .dm-0    { top: 0; }
+.depth-ruler .dm-200  { top: 20%; }
+.depth-ruler .dm-500  { top: 32%; }
+.depth-ruler .dm-1000 { top: 45%; }
+.depth-ruler .dm-2000 { top: 57%; }
+.depth-ruler .dm-3000 { top: 65%; }
+.depth-ruler .dm-4000 { top: 75%; }
+.depth-ruler .dm-5000 { top: 85%; }
+.depth-ruler .dm-6000 { top: 95%; }
+
+/* Zone labels */
+.zl-sunlit   { top: 8%;  right: 16px; color: rgba(255,255,255,0.3); }
+.zl-twilight { top: 30%; right: 16px; color: rgba(255,255,255,0.2); }
+.zl-midnight { top: 58%; right: 16px; color: rgba(255,255,255,0.13); }
+.zl-abyssal  { top: 84%; right: 16px; color: rgba(255,255,255,0.08); }
+
+/* ─── Deep particles ─── */
+.deep-particle {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.dp-1  { width: 2px; height: 2px; top: 48%; left: 15%; background: rgba(0,220,255,0.15); }
+.dp-2  { width: 2px; height: 2px; top: 52%; left: 82%; background: rgba(180,100,255,0.12); }
+.dp-3  { width: 3px; height: 3px; top: 55%; left: 40%; background: rgba(0,255,140,0.1); }
+.dp-4  { width: 2px; height: 2px; top: 62%; left: 70%; background: rgba(0,220,255,0.1); }
+.dp-5  { width: 2px; height: 2px; top: 68%; left: 25%; background: rgba(180,100,255,0.08); }
+.dp-6  { width: 2px; height: 2px; top: 78%; left: 50%; background: rgba(255,184,48,0.1); }
+.dp-7  { width: 2px; height: 2px; top: 82%; left: 18%; background: rgba(0,220,255,0.08); }
+.dp-8  { width: 2px; height: 2px; top: 88%; left: 65%; background: rgba(0,255,140,0.06); }
+.dp-9  { width: 3px; height: 3px; top: 50%; left: 55%; background: rgba(200,200,255,0.06); }
+.dp-10 { width: 2px; height: 2px; top: 72%; left: 88%; background: rgba(200,200,255,0.05); }
+.dp-11 { width: 2px; height: 2px; top: 90%; left: 35%; background: rgba(255,184,48,0.06); }
+.dp-12 { width: 2px; height: 2px; top: 85%; left: 78%; background: rgba(0,220,255,0.05); }
+
+/* ─── Mobile Preview Overrides ─── */
+#preview-mobile:checked ~ .window .ocean {
+  font-size: 0.8em;
+}
+
+#preview-mobile:checked ~ .window .zone-controls {
+  left: 8px;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+#preview-mobile:checked ~ .window .zone-radio-label {
+  font-size: 7px;
+  padding: 2px 6px;
+}
+
+#preview-mobile:checked ~ .window .signal-controls {
+  left: 8px;
+  bottom: 6px;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+#preview-mobile:checked ~ .window .signal-check-label {
+  font-size: 7px;
+  padding: 2px 6px;
+}
+
+#preview-mobile:checked ~ .window .signal-controls .sc-label {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .depth-ruler {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .zone-label {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .zone-divider {
+  display: none;
+}
+
+/* Mobile: simplified 3-zone view */
+#preview-mobile:checked ~ .window .sunlit-zone {
+  height: 25%;
+}
+
+#preview-mobile:checked ~ .window .sunlit-zone .zone-title {
+  font-size: 8px;
+  margin-bottom: 8px;
+}
+
+#preview-mobile:checked ~ .window .human-prompt {
+  padding: 10px 16px;
+  max-width: 280px;
+}
+
+#preview-mobile:checked ~ .window .human-prompt .text {
+  font-size: 12px;
+}
+
+#preview-mobile:checked ~ .window .twilight-zone {
+  top: 25%;
+  height: 25%;
+  left: 10px;
+  right: 10px;
+}
+
+#preview-mobile:checked ~ .window .whale {
+  width: 220px;
+  height: 60px;
+}
+
+#preview-mobile:checked ~ .window .whale .agent-name {
+  font-size: 10px;
+}
+
+#preview-mobile:checked ~ .window .whale .agent-status {
+  font-size: 8px;
+}
+
+/* Mobile: merge midnight + abyssal into one zone */
+#preview-mobile:checked ~ .window .midnight-zone {
+  top: 50%;
+  height: 50%;
+  left: 10px;
+  right: 10px;
+}
+
+#preview-mobile:checked ~ .window .midnight-zone .zone-title {
+  font-size: 8px;
+  margin-bottom: 8px;
+}
+
+#preview-mobile:checked ~ .window .squid-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+}
+
+#preview-mobile:checked ~ .window .squid {
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
+}
+
+#preview-mobile:checked ~ .window .squid-body {
+  width: auto;
+  min-width: 100px;
+  padding: 8px 12px;
+  border-radius: 20px;
+}
+
+#preview-mobile:checked ~ .window .tentacles {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .abyssal-zone {
+  display: none;
+}
+
+#preview-mobile:checked ~ .window .sun {
+  width: 28px;
+  height: 28px;
+  top: 8px;
+  right: 10px;
+}
+
+#preview-mobile:checked ~ .window .sunlit-zone {
+  left: 10px;
+  right: 10px;
+}
+
+#preview-mobile:checked ~ .window .task-fragment {
+  font-size: 7px;
+  padding: 2px 6px;
+}
+
+#preview-mobile:checked ~ .window .snow-particle {
+  display: none;
+}
+
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">&larr; All Experiments</a>
+      <h1>Human/Agent Orchestration</h1>
+      <span class="exp-variant">v15</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>Enhanced iteration of the Tidal Pool (v5) &mdash; adds device preview framework and CSS-only interactions. Part of a 20-variant research series.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>Device preview + depth zone radios, hover creature status, signal chain checkboxes.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent &mdash; it was crafted by the orchestrating agent based on the origination prompt and research phase.<br><br>
+        Build agent-orchestration-v15.html as an enhanced iteration of v5 (Tidal Pool). Take the existing Tidal Pool ocean cross-section and make two changes: 1. Wrap in device preview window framework (desktop/mobile/fullscreen). 2. Add CSS-only interactions: radio buttons for depth zone selection (highlights zone, shows agents), :hover on bioluminescent creatures shows agent status tooltips, checkbox toggles to trace signal chains upward through zones. Mobile: simplified 3-zone view instead of full depth. Preserve ocean gradient and bioluminescent palette.
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        This experiment is part of a research-driven series.
+        <a href="agent-orchestration.html#origination-2">View the origination prompt &rarr;</a>
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="agent-orchestration.html#origination-2" class="exp-vc-origin">Origination Prompt 2 &rarr;</a>
+        <div class="exp-vc-group-label">Enhanced Iterations (v11&ndash;v20)</div>
+        <a href="agent-orchestration-v20.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v20</span>
+          <span class="exp-vc-desc">Terrarium Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v19.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v19</span>
+          <span class="exp-vc-desc">Weaving Loom Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v18.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v18</span>
+          <span class="exp-vc-desc">Particle Chamber Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v17.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v17</span>
+          <span class="exp-vc-desc">Cartographic Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v16.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v16</span>
+          <span class="exp-vc-desc">Kitchen Brigade Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v15.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v15</span>
+          <span class="exp-vc-desc">Tidal Pool Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v14.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v14</span>
+          <span class="exp-vc-desc">Mission Control Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v13.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v13</span>
+          <span class="exp-vc-desc">Orchestra Score Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v12.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v12</span>
+          <span class="exp-vc-desc">Geological Strata Enhanced</span>
+        </a>
+        <a href="agent-orchestration-v11.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v11</span>
+          <span class="exp-vc-desc">Mycelium Network Enhanced</span>
+        </a>
+        <a href="agent-orchestration.html" class="exp-vc-origin">Origination Prompt 1 &rarr;</a>
+        <div class="exp-vc-group-label">Original Series (v1&ndash;v10)</div>
+        <a href="agent-orchestration-v10.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v10</span>
+          <span class="exp-vc-desc">Terrarium</span>
+        </a>
+        <a href="agent-orchestration-v9.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v9</span>
+          <span class="exp-vc-desc">Weaving Loom</span>
+        </a>
+        <a href="agent-orchestration-v8.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v8</span>
+          <span class="exp-vc-desc">Particle Chamber</span>
+        </a>
+        <a href="agent-orchestration-v7.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v7</span>
+          <span class="exp-vc-desc">Cartographic Expedition</span>
+        </a>
+        <a href="agent-orchestration-v6.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v6</span>
+          <span class="exp-vc-desc">Kitchen Brigade</span>
+        </a>
+        <a href="agent-orchestration-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Tidal Pool</span>
+        </a>
+        <a href="agent-orchestration-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Mission Control</span>
+        </a>
+        <a href="agent-orchestration-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Orchestra Score</span>
+        </a>
+        <a href="agent-orchestration-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Geological Strata</span>
+        </a>
+        <a href="agent-orchestration-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Mycelium Network</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web" checked>
+    <input type="radio" name="preview" id="preview-mobile">
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <!-- Zone selection radios -->
+      <input type="radio" name="zone" id="zone-all" checked>
+      <input type="radio" name="zone" id="zone-sunlit">
+      <input type="radio" name="zone" id="zone-twilight">
+      <input type="radio" name="zone" id="zone-midnight">
+      <input type="radio" name="zone" id="zone-abyssal">
+
+      <!-- Signal chain checkboxes -->
+      <input type="checkbox" id="sig-auth">
+      <input type="checkbox" id="sig-ui">
+      <input type="checkbox" id="sig-data">
+
+      <div class="ocean">
+
+        <!-- Zone Controls -->
+        <div class="zone-controls">
+          <label for="zone-all" class="zone-radio-label">All</label>
+          <label for="zone-sunlit" class="zone-radio-label">Sunlit</label>
+          <label for="zone-twilight" class="zone-radio-label">Twilight</label>
+          <label for="zone-midnight" class="zone-radio-label">Midnight</label>
+          <label for="zone-abyssal" class="zone-radio-label">Abyssal</label>
+        </div>
+
+        <!-- Signal Controls -->
+        <div class="signal-controls">
+          <span class="sc-label">Trace:</span>
+          <label for="sig-auth" class="signal-check-label">Auth Flow</label>
+          <label for="sig-ui" class="signal-check-label">UI Chain</label>
+          <label for="sig-data" class="signal-check-label">Data Chain</label>
+        </div>
+
+        <!-- Depth Ruler -->
+        <div class="depth-ruler">
+          <div class="depth-mark dm-0"><span>0m</span></div>
+          <div class="depth-mark dm-200"><span>200m</span></div>
+          <div class="depth-mark dm-500"><span>500m</span></div>
+          <div class="depth-mark dm-1000"><span>1000m</span></div>
+          <div class="depth-mark dm-2000"><span>2000m</span></div>
+          <div class="depth-mark dm-3000"><span>3000m</span></div>
+          <div class="depth-mark dm-4000"><span>4000m</span></div>
+          <div class="depth-mark dm-5000"><span>5000m</span></div>
+          <div class="depth-mark dm-6000"><span>6000m</span></div>
+        </div>
+
+        <!-- Zone Labels -->
+        <div class="zone-label zl-sunlit">Sunlit Zone</div>
+        <div class="zone-label zl-twilight">Twilight Zone</div>
+        <div class="zone-label zl-midnight">Midnight Zone</div>
+        <div class="zone-label zl-abyssal">Abyssal Zone</div>
+
+        <!-- Zone Dividers -->
+        <div class="zone-divider zone-divider-1"></div>
+        <div class="zone-divider zone-divider-2"></div>
+        <div class="zone-divider zone-divider-3"></div>
+
+        <!-- Light Particles -->
+        <div class="light-particle lp-1"></div>
+        <div class="light-particle lp-2"></div>
+        <div class="light-particle lp-3"></div>
+        <div class="light-particle lp-4"></div>
+        <div class="light-particle lp-5"></div>
+        <div class="light-particle lp-6"></div>
+        <div class="light-particle lp-7"></div>
+        <div class="light-particle lp-8"></div>
+
+        <!-- Deep Particles -->
+        <div class="deep-particle dp-1"></div>
+        <div class="deep-particle dp-2"></div>
+        <div class="deep-particle dp-3"></div>
+        <div class="deep-particle dp-4"></div>
+        <div class="deep-particle dp-5"></div>
+        <div class="deep-particle dp-6"></div>
+        <div class="deep-particle dp-7"></div>
+        <div class="deep-particle dp-8"></div>
+        <div class="deep-particle dp-9"></div>
+        <div class="deep-particle dp-10"></div>
+        <div class="deep-particle dp-11"></div>
+        <div class="deep-particle dp-12"></div>
+
+        <!-- SUNLIT ZONE -->
+        <div class="sunlit-zone">
+          <div class="sun"></div>
+          <div class="zone-title">Sunlit Zone &middot; 0&ndash;200m &middot; Human Layer</div>
+          <div class="human-prompt creature-hover">
+            <div class="label">Human Prompt</div>
+            <div class="text">&ldquo;Design a new mobile app for fitness tracking&rdquo;</div>
+            <div class="creature-tooltip tt-amber">
+              <div class="tt-name">Human Interface</div>
+              <div class="tt-status">Awaiting agent response</div>
+              <div class="tt-progress"><div class="tt-bar"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TWILIGHT ZONE -->
+        <div class="twilight-zone">
+          <div class="zone-title">Twilight Zone &middot; 200&ndash;1000m &middot; Orchestrator</div>
+          <div class="whale creature-hover">
+            <div class="agent-name">Orchestrator Agent</div>
+            <div class="agent-status">Decomposing into 3 swim lanes&hellip;</div>
+            <div class="creature-tooltip tt-cyan">
+              <div class="tt-name">Orchestrator Agent</div>
+              <div class="tt-status">Active &mdash; 3 sub-tasks dispatched</div>
+              <div class="tt-progress"><div class="tt-bar" style="width:45%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Marine Snow -->
+        <div class="snow-particle ms-1"></div>
+        <div class="snow-particle ms-2"></div>
+        <div class="snow-particle ms-3"></div>
+        <div class="snow-particle ms-4"></div>
+        <div class="snow-particle ms-5"></div>
+        <div class="snow-particle ms-6"></div>
+        <div class="snow-particle ms-7"></div>
+        <div class="snow-particle ms-8"></div>
+        <div class="snow-particle ms-9"></div>
+
+        <!-- Task fragments -->
+        <div class="task-fragment tf-1">UI Design</div>
+        <div class="task-fragment tf-2">Backend API</div>
+        <div class="task-fragment tf-3">Data Model</div>
+
+        <!-- MIDNIGHT ZONE -->
+        <div class="midnight-zone">
+          <div class="zone-title">Midnight Zone &middot; 1000&ndash;4000m &middot; Sub-Agents</div>
+          <div class="squid-row">
+            <div class="squid squid-cyan creature-hover">
+              <div class="squid-body">
+                <div class="agent-name">UI Design Agent</div>
+                <div class="agent-status">Wireframing 5 key screens&hellip;</div>
+              </div>
+              <div class="tentacles">
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+              </div>
+              <div class="creature-tooltip tt-cyan">
+                <div class="tt-name">UI Design Agent</div>
+                <div class="tt-status">65% &mdash; Wireframing screens</div>
+                <div class="tt-progress"><div class="tt-bar"></div></div>
+              </div>
+            </div>
+
+            <div class="squid squid-green creature-hover">
+              <div class="squid-body">
+                <div class="agent-name">Backend API Agent</div>
+                <div class="agent-status">Designing REST endpoints&hellip;</div>
+              </div>
+              <div class="tentacles">
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+              </div>
+              <div class="creature-tooltip tt-green">
+                <div class="tt-name">Backend API Agent</div>
+                <div class="tt-status">40% &mdash; Endpoint design</div>
+                <div class="tt-progress"><div class="tt-bar"></div></div>
+              </div>
+            </div>
+
+            <div class="squid squid-purple creature-hover">
+              <div class="squid-body">
+                <div class="agent-name">Data Model Agent</div>
+                <div class="agent-status">Modeling user schemas&hellip;</div>
+              </div>
+              <div class="tentacles">
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+                <div class="tentacle"></div>
+              </div>
+              <div class="creature-tooltip tt-purple">
+                <div class="tt-name">Data Model Agent</div>
+                <div class="tt-status">80% &mdash; Schema finalization</div>
+                <div class="tt-progress"><div class="tt-bar"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABYSSAL ZONE -->
+        <div class="abyssal-zone">
+          <div class="zone-title">Abyssal Zone &middot; 4000m+ &middot; Deep Specialists</div>
+          <div class="abyssal-row">
+            <div class="abyssal-group">
+              <div class="anglerfish angler-cyan creature-hover">
+                <div class="angler-lure"></div>
+                <div class="agent-name">Animation Specialist</div>
+                <div class="creature-tooltip tt-cyan">
+                  <div class="tt-name">Animation Specialist</div>
+                  <div class="tt-status">Idle &mdash; awaiting wireframes</div>
+                  <div class="tt-progress"><div class="tt-bar" style="width:0%"></div></div>
+                </div>
+              </div>
+              <div class="anglerfish angler-cyan creature-hover">
+                <div class="angler-lure"></div>
+                <div class="agent-name">Accessibility Auditor</div>
+                <div class="creature-tooltip tt-cyan">
+                  <div class="tt-name">Accessibility Auditor</div>
+                  <div class="tt-status">Queued &mdash; pending UI output</div>
+                  <div class="tt-progress"><div class="tt-bar" style="width:10%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="abyssal-group">
+              <div class="anglerfish angler-amber creature-hover">
+                <div class="angler-lure"></div>
+                <div class="agent-name">Auth Flow Agent</div>
+                <div class="creature-tooltip tt-amber">
+                  <div class="tt-name">Auth Flow Agent</div>
+                  <div class="tt-status">Blocked &mdash; needs user input</div>
+                  <div class="tt-progress"><div class="tt-bar"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="abyssal-group">
+              <div class="anglerfish angler-green creature-hover">
+                <div class="angler-lure"></div>
+                <div class="agent-name">Schema Validator</div>
+                <div class="creature-tooltip tt-green">
+                  <div class="tt-name">Schema Validator</div>
+                  <div class="tt-status">Running &mdash; validating models</div>
+                  <div class="tt-progress"><div class="tt-bar" style="width:70%"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGNAL CHAINS (toggled by checkboxes) -->
+
+        <!-- Auth signal chain (amber) - from Auth Flow Agent up to surface -->
+        <div class="signal-chain-auth">
+          <div class="signal-line" style="left: 50%; top: 18%; height: 68%;"></div>
+          <div class="signal-dot large" style="left: 50%; top: 86%;"></div>
+          <div class="signal-dot" style="left: 50.2%; top: 82%;"></div>
+          <div class="signal-dot" style="left: 49.8%; top: 78%;"></div>
+          <div class="signal-dot" style="left: 50.1%; top: 72%;"></div>
+          <div class="signal-dot" style="left: 49.9%; top: 66%;"></div>
+          <div class="signal-dot" style="left: 50.3%; top: 60%;"></div>
+          <div class="signal-dot" style="left: 49.7%; top: 54%;"></div>
+          <div class="signal-dot" style="left: 50%; top: 48%;"></div>
+          <div class="signal-dot" style="left: 50.2%; top: 42%;"></div>
+          <div class="signal-dot" style="left: 49.8%; top: 36%;"></div>
+          <div class="signal-dot" style="left: 50.1%; top: 30%;"></div>
+          <div class="signal-dot" style="left: 50%; top: 24%;"></div>
+          <div class="signal-dot large" style="left: 49.9%; top: 18%;"></div>
+          <div class="signal-capsule" style="left: 53%; top: 56%;">
+            <div class="capsule-label">AskUserQuestion &uarr;</div>
+            <div class="capsule-text">&ldquo;Biometric auth (FaceID/fingerprint) or traditional login?&rdquo;</div>
+          </div>
+        </div>
+
+        <!-- UI signal chain (cyan) - from Animation Specialist up -->
+        <div class="signal-chain-ui">
+          <div class="signal-line" style="left: 25%; top: 18%; height: 68%;"></div>
+          <div class="signal-dot large" style="left: 25%; top: 86%;"></div>
+          <div class="signal-dot" style="left: 25.2%; top: 80%;"></div>
+          <div class="signal-dot" style="left: 24.8%; top: 74%;"></div>
+          <div class="signal-dot" style="left: 25.1%; top: 66%;"></div>
+          <div class="signal-dot" style="left: 24.9%; top: 58%;"></div>
+          <div class="signal-dot" style="left: 25%; top: 50%;"></div>
+          <div class="signal-dot" style="left: 25.2%; top: 42%;"></div>
+          <div class="signal-dot" style="left: 24.8%; top: 34%;"></div>
+          <div class="signal-dot" style="left: 25%; top: 26%;"></div>
+          <div class="signal-dot large" style="left: 25.1%; top: 18%;"></div>
+          <div class="signal-capsule" style="left: 8%; top: 42%;">
+            <div class="capsule-label">Status Report &uarr;</div>
+            <div class="capsule-text">5 screens wireframed, awaiting animation specs</div>
+          </div>
+        </div>
+
+        <!-- Data signal chain (green) - from Schema Validator up -->
+        <div class="signal-chain-data">
+          <div class="signal-line" style="left: 75%; top: 18%; height: 68%;"></div>
+          <div class="signal-dot large" style="left: 75%; top: 86%;"></div>
+          <div class="signal-dot" style="left: 75.2%; top: 80%;"></div>
+          <div class="signal-dot" style="left: 74.8%; top: 72%;"></div>
+          <div class="signal-dot" style="left: 75.1%; top: 64%;"></div>
+          <div class="signal-dot" style="left: 74.9%; top: 56%;"></div>
+          <div class="signal-dot" style="left: 75%; top: 48%;"></div>
+          <div class="signal-dot" style="left: 75.2%; top: 40%;"></div>
+          <div class="signal-dot" style="left: 74.8%; top: 32%;"></div>
+          <div class="signal-dot" style="left: 75%; top: 24%;"></div>
+          <div class="signal-dot large" style="left: 75.1%; top: 18%;"></div>
+          <div class="signal-capsule" style="right: 8%; top: 48%;">
+            <div class="capsule-label">Validation Result &uarr;</div>
+            <div class="capsule-text">User schema validated, 2 indexes recommended</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
