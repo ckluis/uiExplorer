@@ -124,7 +124,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   margin-top: 12px;
 }
 .experiment-sidebar .exp-effort,
-.experiment-sidebar .exp-harness {
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
   font-family: var(--mono);
   font-size: 9px;
   font-weight: 500;
@@ -147,6 +148,29 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 .experiment-sidebar .exp-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
 .experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
 .experiment-sidebar .exp-effort.low::before    { background: var(--ink-faint); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(245,166,35,0.3);
+  background: rgba(245,166,35,0.12);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); box-shadow: 0 0 6px var(--auto); }
 
 /* ─── Sections ─── */
 .experiment-sidebar .exp-section {
@@ -596,10 +620,12 @@ input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
       <!-- Add only if fully autonomous: -->
       <!-- <span class="exp-autonomous">Fully Autonomous</span> -->
 
-      <!-- Run metadata: effort dot (high/medium/low) + harness chip -->
+      <!-- Run metadata — all four provenance axes: model (above) · effort · harness · autonomy.
+           {{AUTONOMY_CLASS}} = collaborative | autonomous, {{AUTONOMY}} = label text. -->
       <div class="exp-runmeta">
         <span class="exp-effort {{EFFORT_CLASS}}">{{EFFORT}}</span>
         <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy {{AUTONOMY_CLASS}}">{{AUTONOMY}}</span>
       </div>
     </div>
 

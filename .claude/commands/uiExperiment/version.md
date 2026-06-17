@@ -34,8 +34,10 @@ Spawn a **Sidebar** sub-agent with `model: sonnet` to update `{name}-v{N+1}.html
 - Version badge → `v{N+1}`; correct `.exp-model` badge; autonomy badge only if autonomous (with the autonomous note prepended to the Prompt section).
 - **Prompt** section → the VERBATIM change prompt (`<br><br>` between paragraphs) plus an `.exp-ask` block per AskUserQuestion interaction.
 - **Purpose** → updated if scope changed.
-- **Agent Trace** → entries for every agent this session (Lead, Builder, Sidebar, etc.) with durations, hover timestamps, model badges, and full-prompt toggles (`at-prompt-{N}` unique IDs) for Builder/Researcher/Validator.
+- **Run metadata** → fill the `.exp-runmeta` row (`.exp-effort` and `.exp-harness`) from the provenance gathered in Step 0 (Effort + Harness = `Claude Code`). This is mandatory — do not leave it blank.
+- **Agent Trace** → entries for every agent this session (Lead, Builder, Sidebar, etc.) with durations, hover timestamps, model badges, per-agent `.exp-at-effort` chips, and full-prompt toggles (`at-prompt-{N}` unique IDs) for Builder/Researcher/Validator.
 - **Versions** card → list ALL versions `v1..v{N+1}` newest-first; `v{N+1}` gets `class="...current"`; each entry shows its model indicator.
+- **Verify** no `{{...}}` placeholders remain anywhere in the sidebar.
 
 ## Step 4 — Backfill the Versions card in ALL previous version files (the ONLY permitted frozen-file edit)
 
@@ -48,8 +50,8 @@ Follow `CLAUDE.md` exactly:
 2. Move the single `badge-updated` Latest badge to this experiment's card; ensure exactly one exists.
 3. Bump the card's `badge-versions` span (e.g. "5 versions" → "6 versions").
 4. Update the card description if scope changed.
-5. Add a new changelog entry as the FIRST `<a>` inside the card's `.changelog`, using the Changelog Entry Template, with `class="changelog-entry latest"`.
-6. Remove `latest` from the previously-top entry (→ `class="changelog-entry"`).
+5. Inside THIS card's `.changelog` only: add the new entry as the first `<a>` with `class="changelog-entry latest"`, using the Changelog Entry Template.
+6. Inside THIS same card only: change the entry that was previously first from `class="changelog-entry latest"` to `class="changelog-entry"`. Do NOT touch any other card's per-card `latest` entry — each card has its own top entry with that class, and it is independent of the file-wide `badge-updated` Latest badge moved in step 2.
 7. Update the card's "View latest" link to `{name}-v{N+1}.html`.
 8. Autonomy: if autonomous, add `class="...autonomous"` on the new entry's `.changelog-desc` (and the card's `badge-autonomous` if not already present).
 

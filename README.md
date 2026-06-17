@@ -35,6 +35,50 @@ Plus the experiment files themselves (`{name}-v1.html`, `{name}-v2.html`, …) a
 
 Everything is governed by **`CLAUDE.md`** — the full rulebook the commands follow (file structure, versioning, gallery/changelog bookkeeping, sidebar patterns, the team system, origination series). Read it to understand the conventions; the commands automate them.
 
+## Make it your own
+
+A fresh fork inherits the author's repo identity and the showcase of example experiments. Here's how to make the lab cleanly yours.
+
+### 1. Personalize the GitHub URL
+
+The slug `ckluis/uiExplorer` is hardcoded in `index.html`, `experiments.html`, and `changelog.html` (and in this README). Replace it everywhere in one shot. From the repo root:
+
+**macOS** (BSD `sed` needs the empty `''` argument):
+```bash
+grep -rl 'ckluis/uiExplorer' . | xargs sed -i '' 's#ckluis/uiExplorer#YOUR_USER/YOUR_REPO#g'
+```
+
+**Linux** (GNU `sed` — drop the `''`):
+```bash
+grep -rl 'ckluis/uiExplorer' . | xargs sed -i 's#ckluis/uiExplorer#YOUR_USER/YOUR_REPO#g'
+```
+
+Your GitHub Pages URL follows from your fork automatically: it becomes `https://YOUR_USER.github.io/YOUR_REPO/` once Pages is enabled (see **Enabling GitHub Pages** below). If you've written that Pages host anywhere by hand, swap the host (`ckluis.github.io` → `YOUR_USER.github.io`) the same way:
+```bash
+grep -rl 'ckluis.github.io' . | xargs sed -i '' 's#ckluis.github.io#YOUR_USER.github.io#g'   # macOS; drop '' on Linux
+```
+
+### 2. Start from a clean slate (optional)
+
+The repo ships the author's experiments as a **showcase** so you can see the framework in action. If you'd rather start with your own empty lab, remove the examples and reset the bookkeeping by hand:
+
+1. **Delete the example experiment files** — every versioned file and origination origin page:
+   ```bash
+   rm -f *-v*.html        # all -v1, -v2, … experiment versions
+   ```
+   Then delete each origination **origin page** — the base-name files without a `-v` suffix (e.g. `crm-dashboard.html`). Keep the three framework pages: `index.html`, `experiments.html`, `changelog.html`.
+2. **Reset the hero stats.** In **`index.html`** find the `<div class="stats">` block and set the counts to `0` (experiments / versions / origination series); leave `0 dependencies`. Do the same `<div class="stats">` block in **`experiments.html`** (it has no dependencies stat). Update these to your first experiment's numbers as you build, exactly as `CLAUDE.md` prescribes.
+3. **Clear the example cards.** In **`experiments.html`**, empty the `<div class="grid">` … `</div>` container — delete every `.card` inside it so the gallery starts empty.
+4. **Reset the changelog.** In **`changelog.html`**, remove all entries under the `<!-- Append new entries on top. Newest first. -->` comment inside `.changelog-entries`, leaving a clean slate for your first action.
+
+After this, `/uiExperiment:new` will repopulate the gallery and changelog as you create experiments.
+
+> **Future enhancement:** a `/uiExperiment:reset` command could automate this clean-slate step end-to-end. It doesn't exist yet — the manual steps above are the path for now.
+
+### 3. Pick non-colliding experiment names
+
+Base names without a `-vN` suffix (e.g. `crm-dashboard.html`) are **reserved for origination origin pages**. When you name your own experiments, choose your own kebab-case names and always let the commands write the `-v{N}` versions — don't reuse the author's example names, and never hand-create a base-name file unless you're starting an origination series.
+
 ## The `/uiExperiment` commands
 
 | Command | What it does |

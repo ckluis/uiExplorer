@@ -1,6 +1,6 @@
-# UI Explorations — Experiment Framework
+# The UI Lab — Experiment Framework
 
-This folder contains a collection of UI experiments. Each experiment is a self-contained HTML/CSS file that can be opened directly in a browser. All experiments are linked together through `experiments.html`.
+The UI Lab is a **forkable, hostable HTML/CSS framework** for building and documenting UI experiments, where every artifact carries its full provenance: **prompt + model + effort + harness = artifact**. It is not one person's gallery — it is a system anyone can fork and run as their own lab. The framework is composed of three shell pages (`index.html`, `experiments.html`, `changelog.html`), a `/uiExperiment` command suite that automates the bookkeeping, and a `templates/` directory that is the canonical, up-to-date source for the experiment sidebar/preview/agent-trace patterns. Each experiment is a self-contained HTML/CSS file that opens standalone in a browser; all are linked together through `experiments.html`. **The templates in `templates/` are authoritative for all CSS — when this document and a template disagree, the template wins.**
 
 ## The Framework Is the Product
 
@@ -15,14 +15,25 @@ This repo is a **forkable framework** called **The UI Lab**, not just a personal
 
 **Templates** (`templates/`): `experiment-template.html` and `origin-template.html` carry the **new Lab Instrument** experiment sidebar + device-preview shell. New experiments are scaffolded from these — they are the canonical, up-to-date implementation of the sidebar/preview/agent-trace patterns documented later in this file. **If a pattern's CSS here ever disagrees with the template, the template wins.**
 
-**The freeze + the shell redesign.** The Lab Instrument redesign applies to the three shell pages and to *future* experiments (via the templates). The 137 existing experiment files keep their original inline sidebar/preview CSS — that is archive integrity, not an oversight. Never restyle a frozen experiment file. (See the freeze rule under "When Creating a New Version.")
+**The freeze + the shell redesign.** The Lab Instrument redesign applies to the three shell pages and to *future* experiments (via the templates). Every experiment file created before the Lab Instrument redesign keep their original inline sidebar/preview CSS — that is archive integrity, not an oversight. Never restyle a frozen experiment file. (See the canonical **Freeze Rule** immediately below.)
 
-**Provenance run-metadata (required).** Every experiment is documented not just with its prompt and model, but with the **run settings** that produced it:
-- **Model** — `.exp-model`/`.gc-model` badge (`opus`/`sonnet`/`haiku`).
-- **Effort** — the `/effort` reasoning level (high/medium/low). Use the `.exp-effort` (sidebar/agent-trace) and `.gc-effort` (changelog) chip with a `high`/`medium`/`low` modifier class. If you don't know the effort, **ask**.
-- **Harness** — e.g. "Claude Code" (`.exp-harness`).
-- **Autonomy** — collaborative (default) vs `Fully Autonomous`.
-Record these on changelog entries, agent-trace entries, and version metadata. The principle: *every change must show what caused it — prompt, model, and the settings it ran under.*
+**Freeze Rule (canonical).** A file is **frozen** once it is no longer the latest version of its family — i.e. every version of a family except the latest — plus all pre-redesign files. The **sole permitted edit** to a frozen file is adding newer-version entries to its sidebar `.exp-versions-card` (newest-first). Experiment content, prompt, purpose, model, effort, harness, and agent trace must **never** change. Pre-redesign files are not restyled.
+
+**Provenance run-metadata (required).** Every experiment is documented not just with its prompt, but with the **run settings** that produced it. There are **four co-equal provenance axes** — model · effort · harness · autonomy — and each is rendered as a structured chip (never as prose):
+
+| Axis | Sidebar chip | Agent-trace chip | Changelog chip |
+|------|-------------|------------------|----------------|
+| **Model** | `.exp-model` (`opus`/`sonnet`/`haiku`) | `.exp-at-model` | `.gc-model` |
+| **Effort** | `.exp-effort` (`high`/`medium`/`low`) | `.exp-at-effort` (`high`/`medium`/`low`) | `.gc-effort` (`high`/`medium`/`low`) |
+| **Harness** | `.exp-harness` | — | `.gc-harness` |
+| **Autonomy** | `.exp-autonomous` badge (only when autonomous) | — | `.gc-autonomy` badge (only when autonomous) |
+
+- **Model** — Which Claude model produced the work. Use the exact current badge string (e.g. "Opus 4.8") for the model that actually ran; other model-version examples elsewhere in this doc (e.g. "Opus 4.6", "Sonnet 4.5") are illustrative only.
+- **Effort** — the harness's literal `/effort` reasoning level. **Effort scale:** **high** = deep multi-agent or max-reasoning work (`/effort high` — creative/multi-module builds, complex CSS); **medium** = a standard single build at default reasoning; **low** = a quick single-pass edit (small isolated changes, validation). Record the literal `/effort` setting the session ran at, not a subjective judgment, so values are comparable across authors. If you don't know the effort, **ask**.
+- **Harness** — the agent harness that ran the session, e.g. "Claude Code".
+- **Autonomy** — collaborative (default) vs `Fully Autonomous`. A session is autonomous only if no human interaction occurred during creation (no AskUserQuestion, no iterative prompts, no mid-session guidance). Render the autonomy badge only on autonomous artifacts; collaborative is the implicit default and gets no badge.
+
+The CSS for every chip lives in the canonical templates (`templates/experiment-template.html`, `templates/origin-template.html`) and in `changelog.html` — do not hand-maintain it here. Record all four axes on changelog entries, agent-trace entries, and version metadata. The principle: *every change must show what caused it — prompt, model, and the settings it ran under.*
 
 **Hosting.** `README.md` is the repo front door; `.nojekyll` + `.github/workflows/deploy-pages.yml` deploy the root to GitHub Pages (or use Settings → Pages → deploy from `main`/root). Pure HTML/CSS means the static root *is* the site.
 
@@ -39,19 +50,19 @@ Record these on changelog entries, agent-trace entries, and version metadata. Th
 - `{experiment-name}.html` — Origination file (only if experiment is an origination series)
 - `{experiment-name}-v1.html` — Version 1 of an experiment
 - `{experiment-name}-v2.html` — Version 2, and so on (`-v3`, `-v4`, etc.)
-- `claude.md` — This file. The rules.
+- `CLAUDE.md` — This file. The rules. **The canonical filename is uppercase `CLAUDE.md`.** On case-insensitive filesystems (default macOS, Windows) `claude.md` resolves to the same file, but on case-sensitive filesystems (most Linux, CI, GitHub Pages builds) the lowercase form is a *different* file and will be missed by tooling that expects `CLAUDE.md`. Always create and edit the uppercase form.
 
 **Important:** The base name `{experiment-name}.html` (without version suffix) is reserved exclusively for origination files. All versions — including v1 — always use the `-v{N}` suffix. Origination variants also use `-v{N}` (e.g., `-v1` through `-v10`), not ordinal suffixes like `-01`.
 
 ### Every Experiment File Must
 
-1. **Be pure HTML/CSS.** No JavaScript. No external dependencies beyond Google Fonts. Each file must work when opened standalone in a browser.
+1. **Pure HTML/CSS — no `<script>` tags and no inline JS event handlers (`on*=`).** Interactivity, when needed, uses the checkbox/radio + `:checked` sibling-selector technique (see the Device Preview and Agent Trace patterns). No external dependencies beyond Google Fonts. Each file must work when opened standalone in a browser.
 
-2. **Include an experiment info sidebar** on the left side (~280px wide, always visible). This sidebar contains:
+2. **Include an experiment info sidebar** on the left side (~300px wide in the current Lab Instrument template; always visible). This sidebar contains:
    - **Experiment name** (e.g., "Platform Sidebar")
    - **Version** (e.g., "v1", "v2")
-   - **Model** — Which Claude model produced this version (e.g., "Opus 4.6", "Sonnet 4.5"). Use the `.exp-model` badge with the appropriate model class (`opus`, `sonnet`, `haiku`).
-   - **Run metadata** — The settings the version ran under: **Effort** (the `/effort` reasoning level — high/medium/low, via the `.exp-effort` chip with a matching modifier class) and **Harness** (e.g. "Claude Code", via `.exp-harness`). If the effort level is unknown, ask. See "Provenance run-metadata" above. The `templates/experiment-template.html` already includes this row.
+   - **Model** — Which Claude model produced this version (e.g., "Opus 4.8", "Sonnet 4.5"). Use the `.exp-model` badge with the appropriate model class (`opus`, `sonnet`, `haiku`).
+   - **Run metadata** — The provenance axes the version ran under, as structured chips: **Effort** (the `/effort` reasoning level — high/medium/low, via the `.exp-effort` chip with a matching modifier class), **Harness** (e.g. "Claude Code", via `.exp-harness`), and **Autonomy** (the `.exp-autonomous` badge, only when fully autonomous). Together with Model, these are the four co-equal provenance axes — see "Provenance run-metadata" above. If the effort level is unknown, ask. The `templates/experiment-template.html` already includes this row.
    - **Purpose** — What this experiment explores and why it matters
    - **Prompt** — The **exact prompt** (copy-pasted) that was used to generate or change this version. For v1, this is the original prompt. For v2+, this is the exact prompt that produced the changes from the previous version. Do not paraphrase or summarize — use the literal prompt text. Preserve paragraph breaks using `<br><br>` between paragraphs so the prompt is readable in the browser (HTML collapses whitespace without explicit breaks). If the experiment was developed through multiple iterative prompts before this framework existed, note that instead.
    - **AskUserQuestion interactions** — When the AskUserQuestion tool is used during a session, include each interaction inline in the prompt section using the structured `.exp-ask` block (see pattern below). Show: the question asked, all options presented, which option was selected (or "Other"), and the user's answer text. This preserves the full conversational context that led to the final implementation.
@@ -59,7 +70,7 @@ Record these on changelog entries, agent-trace entries, and version metadata. Th
    - **Previous version link** (if applicable) — e.g., `platform-sidebar-v1.html` from `platform-sidebar-v2.html`
    - **"← All Experiments" link** — Always links to `experiments.html`
 
-3. **Use the standard sidebar CSS pattern** documented below.
+3. **Use the standard sidebar CSS** from `templates/experiment-template.html` (the canonical Lab Instrument shell). The HTML skeleton is documented below; the CSS is the template's, not hand-copied here.
 
 4. **Include an autonomy indicator** when applicable. If the experiment or version was generated in a fully autonomous agent session — meaning no human interaction occurred during creation (no AskUserQuestion exchanges, no iterative human prompts, no mid-session guidance) — it must be flagged:
    - Add `<span class="exp-autonomous">Fully Autonomous</span>` next to the `.exp-version` badge
@@ -73,7 +84,7 @@ Record these on changelog entries, agent-trace entries, and version metadata. Th
 2. Make your changes to the new file
 3. Update the experiment info sidebar with the new version number, prompt, and purpose
 4. Add the new version to `experiments.html`
-5. **Update the Versions card in ALL previous version files** to include the new version entry. This is mandatory — every older version (v1, v2, etc.) must list the new version in its sidebar Versions card. This is the only permitted modification to frozen files — experiment content, prompts, and purpose must never change.
+5. **Update the Versions card in ALL previous version files** to include the new version entry. This is mandatory — every older version (v1, v2, etc.) must list the new version in its sidebar Versions card. This Versions-card backfill is the **sole permitted edit** to a frozen file; everything else (content, prompt, purpose, model, effort, harness, agent trace) must never change. See the canonical **Freeze Rule** at the top of this document.
 6. **Add an entry to `changelog.html`** — Every new version file must be logged as a creation entry at the top of the changelog.
 
 **Important: Log everything.** Every action that changes any file in this project — creating versions, updating CLAUDE.md, fixing previous version sidebars, structural changes — must get a changelog entry. Use a file-creation entry (`<a>`) for new files, and a meta entry (`<div class="gc-meta">`) with the verbatim prompt for modifications. The changelog is the immutable record of how this system gets built.
@@ -179,18 +190,22 @@ Note: No per-experiment CSS is needed. The `.card-accent` bar automatically gets
 
 #### File Creation Entry Template
 
-For new files, use an `<a>` tag linking to the file:
+For new files, use an `<a>` tag linking to the file. **Include all four provenance chips** (model · effort · harness · autonomy) so the entry is provenance-complete:
 
 ```html
 <a href="{file}.html" class="gc-entry">
   <span class="gc-time">{M/D h:mmam/pm}</span>
   <span class="gc-action">Created</span>
   <span class="gc-model {model-class}">{Model}</span>
+  <span class="gc-effort {high|medium|low}">effort: {high|medium|low}</span>
+  <span class="gc-harness">Claude Code</span>
+  <!-- Add only if the artifact was fully autonomous: -->
+  <!-- <span class="gc-autonomy">Autonomous</span> -->
   <span class="gc-target">{filename.html}</span>
 </a>
 ```
 
-Model classes: `opus` (gold), `sonnet` (purple), `haiku` (cyan). Display short name: "Opus", "Sonnet", "Haiku".
+Model classes: `opus` (gold), `sonnet` (purple), `haiku` (cyan). Display short name: "Opus", "Sonnet", "Haiku". Effort + harness + autonomy follow the provenance model above; CSS for all chips lives in `changelog.html`.
 
 #### Meta/Improvement Entry Template
 
@@ -201,6 +216,10 @@ For changes that don't create a new experiment file (structural changes, CLAUDE.
   <span class="gc-time">{M/D h:mmam/pm}</span>
   <span class="gc-action">Updated</span>
   <span class="gc-target">{files affected, comma-separated}</span>
+  <span class="gc-model {model-class}">{Model}</span>
+  <span class="gc-effort {high|medium|low}">effort: {high|medium|low}</span>
+  <span class="gc-harness">Claude Code</span>
+  <!-- Add only if fully autonomous: <span class="gc-autonomy">Autonomous</span> -->
   <span class="gc-prompt-badge">Prompt ↓</span>
   <span class="gc-desc">{Short human-readable description of what changed}</span>
   <div class="gc-prompt"><div class="gc-prompt-inner">
@@ -209,6 +228,8 @@ For changes that don't create a new experiment file (structural changes, CLAUDE.
   </div></div>
 </div>
 ```
+
+Meta entries carry the same four provenance chips as file-creation entries (model · effort · harness · autonomy) — the change ran under settings too, and they must be recorded.
 
 **Key elements:**
 - `.gc-prompt-badge` — A visible "Prompt ↓" badge that signals hover capability. Lights up on hover.
@@ -226,138 +247,9 @@ For changes that don't create a new experiment file (structural changes, CLAUDE.
 
 ## Standard Experiment Sidebar CSS Pattern
 
-Copy this into every experiment file. The experiment content sits to the right of this sidebar.
+**Canonical CSS lives in `templates/experiment-template.html`** (the "Lab Instrument" design — 300px sidebar, `var(--surface-1)`, `var(--accent)`, shared `:root` tokens). Scaffold new experiments from that template and copy the CSS from there; do **not** hand-maintain sidebar CSS in this document. The HTML skeleton below is the spec for *structure* (which elements/sections exist and their nesting) — the template supplies the styling.
 
-```css
-/* ─── Experiment Info Sidebar ─── */
-.experiment-frame {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.experiment-sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  padding: 24px 20px;
-  overflow-y: auto;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.experiment-sidebar a {
-  color: #8b9cf7;
-  text-decoration: none;
-}
-
-.experiment-sidebar a:hover {
-  text-decoration: underline;
-}
-
-.experiment-sidebar .exp-back {
-  font-size: 12px;
-  opacity: 0.7;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.experiment-sidebar h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-  margin: 0;
-}
-
-.experiment-sidebar .exp-version {
-  display: inline-block;
-  background: rgba(139, 156, 247, 0.15);
-  color: #8b9cf7;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-}
-
-.experiment-sidebar .exp-section {
-  border-top: 1px solid rgba(255,255,255,0.08);
-  padding-top: 16px;
-}
-
-.experiment-sidebar .exp-section h2 {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #888;
-  margin: 0 0 8px 0;
-}
-
-.experiment-sidebar .exp-section p {
-  margin: 0;
-  color: #ccc;
-}
-
-.experiment-sidebar .exp-prompt {
-  background: rgba(255,255,255,0.04);
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 12px;
-  color: #bbb;
-  font-style: italic;
-}
-
-.experiment-sidebar .exp-prev {
-  font-size: 12px;
-}
-
-.experiment-sidebar .exp-autonomous {
-  display: inline-block;
-  background: rgba(243, 156, 18, 0.15);
-  color: #f39c12;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-  margin-left: 6px;
-}
-
-/* ─── Model Badge ─── */
-.experiment-sidebar .exp-model {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-  margin-left: 6px;
-}
-.experiment-sidebar .exp-model.opus {
-  background: rgba(229, 166, 59, 0.15);
-  color: #e5a63b;
-}
-.experiment-sidebar .exp-model.sonnet {
-  background: rgba(139, 156, 247, 0.15);
-  color: #8b9cf7;
-}
-.experiment-sidebar .exp-model.haiku {
-  background: rgba(94, 196, 212, 0.15);
-  color: #5ec4d4;
-}
-
-.experiment-content {
-  flex: 1;
-  overflow: auto;
-  position: relative;
-}
-```
+> Frozen pre-redesign experiment files keep their original inline CSS (the older 280px / `#1a1a2e` / `#8b9cf7` shell). Never restyle them. The Lab Instrument design applies only to shell pages and future experiments scaffolded from the templates.
 
 ## Standard Experiment Sidebar HTML Pattern
 
@@ -368,9 +260,15 @@ Copy this into every experiment file. The experiment content sits to the right o
       <a href="experiments.html" class="exp-back">← All Experiments</a>
       <h1>Experiment Name</h1>
       <span class="exp-version">v1</span>
-      <span class="exp-model opus">Opus 4.6</span>
+      <span class="exp-model opus">Opus 4.8</span>
       <!-- Add only if fully autonomous: -->
       <!-- <span class="exp-autonomous">Fully Autonomous</span> -->
+
+      <!-- Run metadata (provenance): effort + harness chips. See "Provenance run-metadata". -->
+      <div class="exp-runmeta">
+        <span class="exp-effort high">effort: high</span>
+        <span class="exp-harness">Claude Code</span>
+      </div>
     </div>
 
     <div class="exp-section">
@@ -421,68 +319,7 @@ Copy this into every experiment file. The experiment content sits to the right o
 
 ## AskUserQuestion Sidebar CSS Pattern
 
-Add this CSS to any experiment file that includes AskUserQuestion interactions in the prompt section.
-
-```css
-/* ─── AskUserQuestion Visualization ─── */
-.experiment-sidebar .exp-ask {
-  background: rgba(139, 156, 247, 0.08);
-  border: 1px solid rgba(139, 156, 247, 0.2);
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin-top: 10px;
-  font-style: normal;
-}
-.experiment-sidebar .exp-ask-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #8b9cf7;
-  margin-bottom: 6px;
-}
-.experiment-sidebar .exp-ask-question {
-  font-size: 11px;
-  color: #ddd;
-  font-style: normal;
-  margin-bottom: 8px;
-  line-height: 1.4;
-}
-.experiment-sidebar .exp-ask-options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-.experiment-sidebar .exp-ask-option {
-  font-size: 10px;
-  color: #999;
-  padding: 3px 8px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.experiment-sidebar .exp-ask-option.selected {
-  color: #fff;
-  background: rgba(139, 156, 247, 0.18);
-  border-color: rgba(139, 156, 247, 0.4);
-  font-weight: 600;
-}
-.experiment-sidebar .exp-ask-answer {
-  font-size: 11px;
-  color: #ccc;
-  font-style: normal;
-  padding: 6px 8px;
-  background: rgba(46, 204, 113, 0.08);
-  border: 1px solid rgba(46, 204, 113, 0.2);
-  border-radius: 4px;
-  line-height: 1.4;
-}
-.experiment-sidebar .exp-ask-answer strong {
-  color: #2ecc71;
-  font-weight: 600;
-}
-```
+**Canonical CSS lives in `templates/experiment-template.html`** (the `.exp-ask*` rules). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for the structure of each interaction block.
 
 ## AskUserQuestion Sidebar HTML Pattern
 
@@ -523,89 +360,7 @@ Use the device preview switcher when the experiment has meaningful responsive be
 
 ### Device Preview CSS Pattern
 
-Add this CSS to experiments that use the device preview switcher.
-
-```css
-/* ─── Device Preview Switcher ─── */
-.experiment-content {
-  flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.preview-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 0 8px;
-}
-
-.preview-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: rgba(255,255,255,0.5);
-  transition: background 0.2s, color 0.2s;
-}
-
-.preview-btn:hover {
-  color: rgba(255,255,255,0.8);
-  background: rgba(255,255,255,0.1);
-}
-
-.preview-btn svg { width: 20px; height: 20px; }
-
-#preview-web:checked ~ .preview-bar label[for="preview-web"],
-#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
-#preview-full:checked ~ .preview-bar label[for="preview-full"] {
-  background: rgba(255,255,255,0.2);
-  color: white;
-}
-
-.window {
-  width: 1360px;
-  height: 820px;
-  background: var(--bg, #f5f4f1);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.1);
-  position: relative;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Mobile preview mode */
-#preview-mobile:checked ~ .window {
-  width: 375px;
-  height: 720px;
-}
-
-/* Fullscreen preview mode */
-#preview-full:checked ~ .preview-bar {
-  position: absolute;
-  top: 8px;
-  z-index: 100;
-  background: rgba(0,0,0,0.4);
-  border-radius: 10px;
-  padding: 4px;
-}
-
-#preview-full:checked ~ .window {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  box-shadow: none;
-}
-```
+**Canonical CSS lives in `templates/experiment-template.html`** (the `.experiment-content`, `.preview-bar`, `.preview-btn`, `.window`, and `#preview-*:checked ~ …` rules, styled in Lab Instrument tokens). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for structure — note the radio inputs must be siblings of (or ancestors of selectors targeting) `.preview-bar` and `.window`, and the three modes are `web` / `mobile` / `full`.
 
 ### Device Preview HTML Pattern
 
@@ -661,102 +416,11 @@ Every experiment file includes a Versions section in the sidebar that lists all 
 - The current version gets the `current` class
 - Each entry has a version number and short description
 - For origination series, an origination prompt link appears above the version list
-- Only the **current version** needs this section — past frozen files are never modified
+- Only the **current version** needs this section — past frozen files are never modified except for the one permitted Versions-card backfill (see "When Creating a New Version")
 
 ### Sidebar Versions Card CSS Pattern
 
-```css
-/* ─── Sidebar Versions Card ─── */
-.experiment-sidebar .exp-versions-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.experiment-sidebar .exp-vc-origin {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: #2ecc71;
-  text-decoration: none;
-  padding: 6px 10px;
-  background: rgba(46, 204, 113, 0.08);
-  border: 1px solid rgba(46, 204, 113, 0.15);
-  border-radius: 6px;
-  margin-bottom: 6px;
-}
-
-.experiment-sidebar .exp-vc-origin:hover {
-  background: rgba(46, 204, 113, 0.15);
-  text-decoration: none;
-}
-
-.experiment-sidebar .exp-vc-entry {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s;
-}
-
-.experiment-sidebar .exp-vc-entry:hover {
-  background: rgba(255,255,255,0.06);
-  text-decoration: none;
-}
-
-.experiment-sidebar .exp-vc-entry.current {
-  background: rgba(139, 156, 247, 0.12);
-  border: 1px solid rgba(139, 156, 247, 0.25);
-}
-
-.experiment-sidebar .exp-vc-v {
-  font-size: 11px;
-  font-weight: 700;
-  color: #8b9cf7;
-  min-width: 24px;
-}
-
-.experiment-sidebar .exp-vc-entry.current .exp-vc-v {
-  color: #fff;
-}
-
-.experiment-sidebar .exp-vc-desc {
-  font-size: 11px;
-  color: #999;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.experiment-sidebar .exp-vc-entry.current .exp-vc-desc {
-  color: #ccc;
-}
-
-/* ─── Model Indicator in Versions Card ─── */
-.experiment-sidebar .exp-vc-model {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-.experiment-sidebar .exp-vc-model.opus {
-  background: rgba(229, 166, 59, 0.12);
-  color: #e5a63b;
-}
-.experiment-sidebar .exp-vc-model.sonnet {
-  background: rgba(139, 156, 247, 0.12);
-  color: #8b9cf7;
-}
-.experiment-sidebar .exp-vc-model.haiku {
-  background: rgba(94, 196, 212, 0.12);
-  color: #5ec4d4;
-}
-```
+**Canonical CSS lives in `templates/experiment-template.html`** (the `.exp-versions-card`, `.exp-vc-origin`, `.exp-vc-entry`, `.exp-vc-v`, `.exp-vc-desc`, `.exp-vc-model` rules). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for structure.
 
 ### Sidebar Versions Card HTML Pattern
 
@@ -803,204 +467,7 @@ Place the Agent Trace section **after the Prompt section and before the Versions
 
 ### Agent Trace CSS Pattern
 
-```css
-/* ─── Agent Trace ─── */
-.experiment-sidebar .exp-at-workflow {
-  font-size: 10px;
-  color: #888;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  padding: 6px 10px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 4px;
-  margin-bottom: 8px;
-  letter-spacing: 0.02em;
-}
-
-.experiment-sidebar .exp-agent-trace {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.experiment-sidebar .exp-at-entry {
-  background: rgba(255,255,255,0.04);
-  border-radius: 6px;
-  padding: 8px 10px;
-  border-left: 3px solid #555;
-}
-
-.experiment-sidebar .exp-at-entry.opus { border-left-color: #e5a63b; }
-.experiment-sidebar .exp-at-entry.sonnet { border-left-color: #8b9cf7; }
-.experiment-sidebar .exp-at-entry.haiku { border-left-color: #5ec4d4; }
-
-.experiment-sidebar .exp-at-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.experiment-sidebar .exp-at-role {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #ddd;
-}
-
-.experiment-sidebar .exp-at-model {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  margin-left: auto;
-}
-.experiment-sidebar .exp-at-model.opus { background: rgba(229,166,59,0.15); color: #e5a63b; }
-.experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: #8b9cf7; }
-.experiment-sidebar .exp-at-model.haiku { background: rgba(94,196,212,0.15); color: #5ec4d4; }
-
-.experiment-sidebar .exp-at-action {
-  font-size: 11px;
-  color: #bbb;
-  line-height: 1.4;
-}
-
-.experiment-sidebar .exp-at-arrow {
-  text-align: center;
-  color: #555;
-  font-size: 10px;
-  line-height: 1;
-}
-
-/* ─── Agent Trace: Duration Badge ─── */
-.experiment-sidebar .exp-at-duration {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #999;
-  font-variant-numeric: tabular-nums;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-}
-
-/* ─── Agent Trace: Hover Timestamps ─── */
-.experiment-sidebar .exp-at-times {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
-  margin-top: 0;
-}
-
-.experiment-sidebar .exp-at-entry:hover .exp-at-times {
-  max-height: 40px;
-  opacity: 1;
-  margin-top: 4px;
-}
-
-.experiment-sidebar .exp-at-time-row {
-  display: flex;
-  gap: 12px;
-  font-size: 9px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-variant-numeric: tabular-nums;
-  color: #666;
-  padding: 3px 0;
-}
-
-.experiment-sidebar .exp-at-time-label {
-  color: #555;
-  min-width: 32px;
-}
-
-.experiment-sidebar .exp-at-time-value {
-  color: #888;
-}
-
-/* ─── Agent Trace: Full Prompt Toggle ─── */
-.experiment-sidebar input[id^="at-prompt-"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.experiment-sidebar .exp-at-prompt-toggle {
-  display: inline-block;
-  font-size: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #8b9cf7;
-  background: rgba(139, 156, 247, 0.1);
-  border: 1px solid rgba(139, 156, 247, 0.2);
-  border-radius: 3px;
-  padding: 0px 5px;
-  margin-top: 4px;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  user-select: none;
-}
-
-.experiment-sidebar .exp-at-prompt-toggle:hover {
-  background: rgba(139, 156, 247, 0.2);
-  color: #fff;
-}
-
-.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
-  background: rgba(139, 156, 247, 0.25);
-  color: #fff;
-  border-color: rgba(139, 156, 247, 0.4);
-}
-
-.experiment-sidebar .exp-at-prompt-panel {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
-  padding: 0;
-}
-
-.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
-  max-height: 800px;
-  opacity: 1;
-  padding-top: 6px;
-}
-
-.experiment-sidebar .exp-at-prompt-panel-inner {
-  background: rgba(139, 156, 247, 0.06);
-  border: 1px solid rgba(139, 156, 247, 0.15);
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 10px;
-  line-height: 1.5;
-  color: #bbb;
-  font-style: italic;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar {
-  width: 4px;
-}
-.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track {
-  background: transparent;
-}
-.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb {
-  background: rgba(139, 156, 247, 0.3);
-  border-radius: 2px;
-}
-
-.experiment-sidebar .exp-at-prompt-panel-label {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #8b9cf7;
-  margin-bottom: 4px;
-  font-style: normal;
-}
-```
+**Canonical CSS lives in `templates/experiment-template.html`** — all the `.exp-at-*` rules: workflow line, entry, role, model, duration badge, the **effort chip** (`.exp-at-effort` with `high`/`medium`/`low`), hover timestamps, and the full-prompt toggle (`input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel`). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for structure and the `:checked + label + panel` adjacency constraint (see "Full Prompts" below).
 
 ### Agent Trace HTML Pattern
 
@@ -1013,7 +480,8 @@ Place the Agent Trace section **after the Prompt section and before the Versions
       <div class="exp-at-header">
         <span class="exp-at-role">Lead</span>
         <span class="exp-at-duration">45s</span>
-        <span class="exp-at-model opus">Opus 4.6</span>
+        <span class="exp-at-effort high">high</span>
+        <span class="exp-at-model opus">Opus 4.8</span>
       </div>
       <div class="exp-at-action">Planned approach, spawned 3 agents</div>
       <div class="exp-at-times">
@@ -1030,6 +498,7 @@ Place the Agent Trace section **after the Prompt section and before the Versions
       <div class="exp-at-header">
         <span class="exp-at-role">Researcher</span>
         <span class="exp-at-duration">1m 23s</span>
+        <span class="exp-at-effort medium">medium</span>
         <span class="exp-at-model sonnet">Sonnet 4.5</span>
       </div>
       <div class="exp-at-action">Explored codebase patterns, read 12 files</div>
@@ -1058,7 +527,8 @@ Place the Agent Trace section **after the Prompt section and before the Versions
       <div class="exp-at-header">
         <span class="exp-at-role">Builder</span>
         <span class="exp-at-duration">3m 17s</span>
-        <span class="exp-at-model opus">Opus 4.6</span>
+        <span class="exp-at-effort high">high</span>
+        <span class="exp-at-model opus">Opus 4.8</span>
       </div>
       <div class="exp-at-action">Built experiment HTML/CSS (7100 lines)</div>
       <div class="exp-at-times">
@@ -1085,6 +555,7 @@ Place the Agent Trace section **after the Prompt section and before the Versions
       <div class="exp-at-header">
         <span class="exp-at-role">Sidebar</span>
         <span class="exp-at-duration">52s</span>
+        <span class="exp-at-effort low">low</span>
         <span class="exp-at-model sonnet">Sonnet 4.5</span>
       </div>
       <div class="exp-at-action">Documented metadata, prompts, and agent trace</div>
@@ -1107,7 +578,8 @@ Place the Agent Trace section **after the Prompt section and before the Versions
 - **Show agents in execution order** — top to bottom = first to last
 - **Use `↓` arrows** between sequential steps. For parallel agents, omit arrows and place entries side-by-side (they'll stack vertically but without the arrow separator).
 - **The workflow summary** (`.exp-at-workflow`) shows the pipeline as a one-liner: `Lead → Researcher → Builder → Sidebar`. Use `→` for sequential steps and `[A | B]` for parallel steps (e.g., `Lead → [Builder×10] → Validator`).
-- **Model values**: Use the full model identifier (e.g., "Opus 4.6", "Sonnet 4.5", "Haiku 4.5") in the badge text.
+- **Model values**: Use the full model identifier (e.g., "Opus 4.8", "Sonnet 4.5", "Haiku 4.5") in the badge text — the exact current string for the model that ran.
+- **Effort chip is required** on each entry: add `<span class="exp-at-effort {high|medium|low}">{high|medium|low}</span>` in the `.exp-at-header` between `.exp-at-duration` and `.exp-at-model`. This is the agent-trace rendering of the Effort provenance axis (see "Provenance run-metadata").
 
 #### Timestamps
 
@@ -1174,34 +646,7 @@ Each variant experiment uses a modified sidebar with these differences from the 
 
 ### Origination Variant Sidebar CSS
 
-Add this CSS to every variant experiment file (in addition to the standard sidebar CSS):
-
-```css
-/* ─── Origination Variant Badge ─── */
-.experiment-sidebar .exp-variant {
-  display: inline-block;
-  background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-}
-
-.experiment-sidebar .exp-origination-link {
-  font-size: 12px;
-  line-height: 1.6;
-  color: #ccc;
-}
-
-.experiment-sidebar .exp-origination-link a {
-  color: #2ecc71;
-  font-weight: 600;
-}
-
-/* Note: Variant navigation now uses the Sidebar Versions Card pattern (see above) */
-```
+**Canonical CSS lives in `templates/origin-template.html`** (the `.exp-variant` badge and `.exp-origination-link` rules, plus the full Lab Instrument variant sidebar). Scaffold variants from that template and copy the CSS from there; do not hand-maintain it here. Variant navigation uses the Sidebar Versions Card pattern (see above). The HTML pattern below is the spec for structure.
 
 ### Origination Variant Sidebar HTML Pattern
 

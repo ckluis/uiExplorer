@@ -202,6 +202,41 @@
   .gc-effort.medium::before { background: var(--accent-2); }
   .gc-effort.low::before    { background: var(--ink-faint); }
 
+  /* ─── Autonomy chip (collaborative · autonomous) ─── */
+  .gc-autonomy {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    color: var(--ink-faint);
+    background: rgba(255,255,255,0.03);
+    letter-spacing: 0.02em;
+  }
+  .gc-autonomy::before {
+    content: '';
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: baseline;
+    background: var(--ink-faint);
+  }
+  .gc-autonomy.collaborative {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-dim);
+  }
+  .gc-autonomy.collaborative::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .gc-autonomy.autonomous {
+    color: var(--auto);
+    border-color: rgba(245,166,35,0.3);
+    background: rgba(245,166,35,0.12);
+  }
+  .gc-autonomy.autonomous::before { background: var(--auto); box-shadow: 0 0 6px var(--auto); }
+
   /* ─── Meta entries (non-file-creation changes with prompt hover) ─── */
   .gc-meta {
     flex-wrap: wrap;
@@ -324,12 +359,30 @@
   <div class="changelog-entries">
     <!-- Append new entries on top. Newest first. -->
     <div class="gc-entry gc-meta">
+      <span class="gc-time">6/17 9:30pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">CLAUDE.md · experiments.html · index.html · changelog.html · templates/ · .claude/commands/uiExperiment/{new,version,origination,changelog,validate} · README.md</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy collaborative">collaborative</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Process-quality uplift via a multi-agent "ultracode" workflow (6 parallel auditors → synthesize → per-file implement → verify → CRM ideation). Auto-applied safe fixes (provenance fields now actually filled by commands; device-preview honored; validate gained orphan/count/provenance checks; origination effort no longer hardcoded). Then, per user-approved decisions: full <code>CLAUDE.md</code> cleanup (rebranded to The UI Lab, stale inline CSS replaced with pointers to <code>templates/</code>, effort scale defined, freeze rule stated once, ~1495→957 lines); renamed <code>claude.md</code>→<code>CLAUDE.md</code> for case-sensitive hosts; registered the orphaned <code>dual-sidebar</code> experiment and reconciled hero counts (22→23); promoted all four provenance axes to structured chips (<code>gc-harness</code>/<code>gc-autonomy</code>); added forker "Make it your own" onboarding (personalize URL + clean-slate) to the README. Also dynamically generated a fresh mobile-only CRM build prompt ("Tend — a relationship inbox"). No frozen experiment files altered.</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Session prompt (verbatim)</div>
+        "Excellent now that this is in place let's take it up a level with /effort ultracode workflows and analyze the project and determine how we can increase the quality of the process, update it, AND then come up with a prompt dynamically about a fresh take on a mobile only CRM. Use subagents as appropriate."<br><br>
+        <strong>Approach:</strong> A background Workflow ran 6 parallel process auditors (rulebook, commands, provenance, design-system, forker-DX, validate-rigor), synthesized a prioritized improvement plan, applied only the SAFE high-confidence fixes one-agent-per-file, ran an adversarial verify pass (PASS, 0 regressions), and produced the CRM prompt via a 4-concept judge panel.<br><br>
+        <strong>User decisions (AskUserQuestion):</strong> Rulebook → Full cleanup. Orphan experiment → Register it + fix counts. Forker setup → Docs-only personalize + clean-slate. Provenance → Promote all four axes to structured chips. All implemented this round by four parallel subagents (one owner per file), then verified and logged here.
+      </div></div>
+    </div>
+    <div class="gc-entry gc-meta">
       <span class="gc-time">6/15 5:58am</span>
       <span class="gc-action">Updated</span>
       <span class="gc-target">index.html · experiments.html · changelog.html · CLAUDE.md · templates/ · .claude/commands/uiExperiment/ · README.md · .github/</span>
       <span class="gc-model opus">Opus 4.8</span>
       <span class="gc-effort high">effort: high</span>
       <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy collaborative">collaborative</span>
       <span class="gc-prompt-badge">Prompt ↓</span>
       <span class="gc-desc">Reframed the project as a forkable framework ("The UI Lab"). Bold "Lab Instrument" redesign of the project shell — new <code>index.html</code> landing page, restyled <code>experiments.html</code> + <code>changelog.html</code> (shared mono/cyan design tokens, sticky nav). Added GitHub Pages hosting (README, .nojekyll, Actions workflow), the <code>/uiExperiment</code> command suite, Lab Instrument experiment templates, and a provenance run-metadata model (model · effort · harness · autonomy). Existing experiment files left frozen with their original UI.</span>
       <div class="gc-prompt"><div class="gc-prompt-inner">
@@ -352,6 +405,8 @@
       <span class="gc-action">Created</span>
       <span class="gc-model opus">Opus 4.8</span>
       <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy collaborative">collaborative</span>
       <span class="gc-target">index.html — framework landing page</span>
     </a>
     <a href="everything-app-v21.html" class="gc-entry">

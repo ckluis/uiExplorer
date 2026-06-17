@@ -373,7 +373,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   experiment-template.html shell (sidebar CSS + device preview) and swap the
   version/model header block for the one below. Restyled to Lab Instrument.
 
-  Requires these extra CSS rules (add alongside the experiment-template CSS):
+  Requires these extra CSS rules (add alongside the experiment-template CSS, which
+  already supplies .exp-runmeta, .exp-effort, .exp-harness, and .exp-autonomy —
+  the four provenance axes: model · effort · harness · autonomy):
 
   .experiment-sidebar .exp-variant {
     display:inline-block; font-family:var(--mono);
@@ -393,9 +395,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
       <span class="exp-variant">v{N}</span>
       <span class="exp-model opus">Opus 4.6</span>
       <span class="exp-autonomous">Fully Autonomous</span>
+      <!-- Run metadata — all four provenance axes: model · effort · harness · autonomy.
+           Origination variants are autonomous, so {{AUTONOMY_CLASS}}=autonomous, {{AUTONOMY}}=autonomous. -->
       <div class="exp-runmeta">
-        <span class="exp-effort high">high</span>
+        <span class="exp-effort {{EFFORT_CLASS}}">{{EFFORT}}</span>
         <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy {{AUTONOMY_CLASS}}">{{AUTONOMY}}</span>
       </div>
     </div>
 

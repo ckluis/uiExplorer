@@ -29,6 +29,10 @@ Confirm the resolved name, purpose, and `{name}-v1.html` target before writing.
 
 Verify `{name}-v1.html` does not already exist. Copy `templates/experiment-template.html` to `{name}-v1.html`. Fill every placeholder in the template (name, version `v1`, model badge, purpose, prompt, etc.). If the template is missing, fall back to constructing the file from the Standard Experiment Sidebar CSS + HTML patterns in `CLAUDE.md`.
 
+Honor the device-preview decision from Step 0.5:
+- **If device preview = YES:** keep the preview radio inputs, `.preview-bar`, the device-preview CSS section, and the `.window` wrapper, and add `#preview-mobile:checked` overrides for your content.
+- **If device preview = NO:** delete the three preview radio inputs, the `.preview-bar` block, the device-preview CSS section, and the `.window` wrapper, placing experiment content directly inside `.experiment-content`.
+
 ## Step 2 — Build the experiment content (Builder = Opus)
 
 Spawn a **Builder** sub-agent via the Agent/Task tool with `model: opus`. Its job: produce the pure HTML/CSS experiment content that lives inside `.experiment-content` (or inside `.window` if device preview is used). Constraints to pass it:
@@ -48,6 +52,9 @@ Spawn a **Sidebar** sub-agent via the Agent/Task tool with `model: sonnet`. Its 
 - **Prompt** section — the VERBATIM prompt, `<br><br>` between paragraphs. Include an `.exp-ask` block for every AskUserQuestion interaction that occurred (question, all options, selected option, answer text).
 - **Agent Trace** — one entry per agent that ran (Lead, Builder, Sidebar, and any Researcher/Validator). Each entry: role, duration badge, model badge, action, hover timestamps, and a full-prompt toggle (`at-prompt-{N}`, unique sequential IDs) containing the complete verbatim prompt for Builder/Researcher/Validator. Workflow one-liner in `.exp-at-workflow` (e.g. `Lead → Builder → Sidebar`).
 - **Versions** card — just the `v1` current entry with its model indicator.
+- Fill the `exp-runmeta` row: `<span class="exp-effort {high|medium|low}">{effort}</span>` and `<span class="exp-harness">{harness}</span>` using the values gathered in Step 0.
+- Set the per-agent `<span class="exp-at-effort {class}">{effort}</span>` chip on every Agent Trace entry.
+- Verify no `{{EFFORT}}`/`{{EFFORT_CLASS}}`/`{{AT_EFFORT}}` or other `{{...}}` placeholders remain unresolved.
 
 Pass the Sidebar agent: the model, effort, harness, autonomy, every agent's start/end times and verbatim prompts, and all AskUserQuestion transcripts.
 
