@@ -7,15 +7,15 @@ The UI Lab is a **forkable, hostable HTML/CSS framework** for building and docum
 This repo is a **forkable framework** called **The UI Lab**, not just a personal gallery. The experiments here are the *showcase* — proof the system works — but the point is that **anyone can fork it and run their own lab**. The framework is hostable on GitHub Pages and driven by a `/uiExperiment` command suite. Keep this framing in mind: changes should make the system more usable by a stranger who forks it, not just prettier for the owner.
 
 **Three shell pages (the chrome around experiments):**
-- `index.html` — **The landing page and GitHub Pages home.** Explains the concept, the provenance model, and how to fork + run your own lab. This is what visitors see first. Built in the **"Lab Instrument"** design language (mono accents `IBM Plex Mono` + `Inter`, fine grid lines, cyan `#2ee6c6` accent on near-black `#0a0c10`, shared CSS `:root` tokens). When stats change, update its hero `.stats` counts too.
-- `experiments.html` — The example gallery / **source of truth for the experiment list**. Restyled to Lab Instrument; reframed as "the example lab."
-- `changelog.html` — The immutable build log. Restyled to Lab Instrument.
+- `index.html` — **The landing page and GitHub Pages home.** Explains the concept, the provenance model, and how to fork + run your own lab. This is what visitors see first. Built in the **"Paper"** design language — a warm-cream, accessibility-first light theme blended from the senkani project (`Inter` + `JetBrains Mono`; a contrast-graded ink ramp on cream `#f5f1e8`, with the orange accent split into decoration-only `#ff6200` and text-safe `#a63d00`; skip-nav links, `:focus-visible` rings, and `prefers-reduced-motion` throughout; shared CSS `:root` tokens). The device-preview backdrop stays dark so experiments float. When stats change, update its hero `.stats` counts too.
+- `experiments.html` — The example gallery / **source of truth for the experiment list**. Restyled to the Paper theme; reframed as "the example lab."
+- `changelog.html` — The immutable build log. Restyled to the Paper theme.
 
 **`/uiExperiment` command suite** (`.claude/commands/uiExperiment/`): `new`, `version`, `origination`, `changelog`, `validate`, `help`. These automate the bookkeeping the rest of this file describes (index updates, prior-version Versions cards, changelog entries, hero counts). Prefer running a command over doing the steps by hand. The long-form rules below are the spec the commands implement.
 
-**Templates** (`templates/`): `experiment-template.html` and `origin-template.html` carry the **new Lab Instrument** experiment sidebar + device-preview shell. New experiments are scaffolded from these — they are the canonical, up-to-date implementation of the sidebar/preview/agent-trace patterns documented later in this file. **If a pattern's CSS here ever disagrees with the template, the template wins.**
+**Templates** (`templates/`): `experiment-template.html` and `origin-template.html` carry the **Paper** experiment sidebar + device-preview shell. New experiments are scaffolded from these — they are the canonical, up-to-date implementation of the sidebar/preview/agent-trace patterns documented later in this file. **If a pattern's CSS here ever disagrees with the template, the template wins.**
 
-**The freeze + the shell redesign.** The Lab Instrument redesign applies to the three shell pages and to *future* experiments (via the templates). Every experiment file created before the Lab Instrument redesign keep their original inline sidebar/preview CSS — that is archive integrity, not an oversight. Never restyle a frozen experiment file. (See the canonical **Freeze Rule** immediately below.)
+**The freeze + the shell redesign.** The Paper redesign applies to the three shell pages and to *future* experiments (via the templates). Every experiment file created before the Paper redesign keep their original inline sidebar/preview CSS — that is archive integrity, not an oversight. Never restyle a frozen experiment file. (See the canonical **Freeze Rule** immediately below.)
 
 **Freeze Rule (canonical).** A file is **frozen** once it is no longer the latest version of its family — i.e. every version of a family except the latest — plus all pre-redesign files. The **sole permitted edit** to a frozen file is adding newer-version entries to its sidebar `.exp-versions-card` (newest-first). Experiment content, prompt, purpose, model, effort, harness, and agent trace must **never** change. Pre-redesign files are not restyled.
 
@@ -40,11 +40,11 @@ The CSS for every chip lives in the canonical templates (`templates/experiment-t
 ## Rules
 
 ### File Structure
-- `index.html` — **Landing page / GitHub Pages home.** Explains the framework; links into the gallery. Lab Instrument design.
+- `index.html` — **Landing page / GitHub Pages home.** Explains the framework; links into the gallery. Paper design.
 - `experiments.html` — Central index of all experiments. **Source of truth** for the experiment list.
 - `changelog.html` — Chronological log of all actions. Linked from experiments.html footer and the nav.
 - `README.md` — Repo front door (markdown mirror of `index.html`); fork + hosting instructions.
-- `templates/` — `experiment-template.html`, `origin-template.html`. Canonical Lab Instrument shells new experiments are scaffolded from.
+- `templates/` — `experiment-template.html`, `origin-template.html`. Canonical Paper shells new experiments are scaffolded from.
 - `.claude/commands/uiExperiment/` — The `/uiExperiment` command suite (`new`, `version`, `origination`, `changelog`, `validate`, `help`).
 - `.github/workflows/deploy-pages.yml`, `.nojekyll` — GitHub Pages deploy.
 - `{experiment-name}.html` — Origination file (only if experiment is an origination series)
@@ -58,7 +58,7 @@ The CSS for every chip lives in the canonical templates (`templates/experiment-t
 
 1. **Pure HTML/CSS — no `<script>` tags and no inline JS event handlers (`on*=`).** Interactivity, when needed, uses the checkbox/radio + `:checked` sibling-selector technique (see the Device Preview and Agent Trace patterns). No external dependencies beyond Google Fonts. Each file must work when opened standalone in a browser.
 
-2. **Include an experiment info sidebar** on the left side (~300px wide in the current Lab Instrument template; always visible). This sidebar contains:
+2. **Include an experiment info sidebar** on the left side (~300px wide in the current Paper template; always visible). This sidebar contains:
    - **Experiment name** (e.g., "Platform Sidebar")
    - **Version** (e.g., "v1", "v2")
    - **Model** — Which Claude model produced this version (e.g., "Opus 4.8", "Sonnet 4.5"). Use the `.exp-model` badge with the appropriate model class (`opus`, `sonnet`, `haiku`).
@@ -70,7 +70,7 @@ The CSS for every chip lives in the canonical templates (`templates/experiment-t
    - **Previous version link** (if applicable) — e.g., `platform-sidebar-v1.html` from `platform-sidebar-v2.html`
    - **"← All Experiments" link** — Always links to `experiments.html`
 
-3. **Use the standard sidebar CSS** from `templates/experiment-template.html` (the canonical Lab Instrument shell). The HTML skeleton is documented below; the CSS is the template's, not hand-copied here.
+3. **Use the standard sidebar CSS** from `templates/experiment-template.html` (the canonical Paper shell). The HTML skeleton is documented below; the CSS is the template's, not hand-copied here.
 
 4. **Include an autonomy indicator** when applicable. If the experiment or version was generated in a fully autonomous agent session — meaning no human interaction occurred during creation (no AskUserQuestion exchanges, no iterative human prompts, no mid-session guidance) — it must be flagged:
    - Add `<span class="exp-autonomous">Fully Autonomous</span>` next to the `.exp-version` badge
@@ -247,9 +247,9 @@ Meta entries carry the same four provenance chips as file-creation entries (mode
 
 ## Standard Experiment Sidebar CSS Pattern
 
-**Canonical CSS lives in `templates/experiment-template.html`** (the "Lab Instrument" design — 300px sidebar, `var(--surface-1)`, `var(--accent)`, shared `:root` tokens). Scaffold new experiments from that template and copy the CSS from there; do **not** hand-maintain sidebar CSS in this document. The HTML skeleton below is the spec for *structure* (which elements/sections exist and their nesting) — the template supplies the styling.
+**Canonical CSS lives in `templates/experiment-template.html`** (the "Paper" design — 300px sidebar, `var(--surface-1)`, `var(--accent)`, shared `:root` tokens). Scaffold new experiments from that template and copy the CSS from there; do **not** hand-maintain sidebar CSS in this document. The HTML skeleton below is the spec for *structure* (which elements/sections exist and their nesting) — the template supplies the styling.
 
-> Frozen pre-redesign experiment files keep their original inline CSS (the older 280px / `#1a1a2e` / `#8b9cf7` shell). Never restyle them. The Lab Instrument design applies only to shell pages and future experiments scaffolded from the templates.
+> Frozen pre-redesign experiment files keep their original inline CSS (the older 280px / `#1a1a2e` / `#8b9cf7` shell). Never restyle them. The Paper design applies only to shell pages and future experiments scaffolded from the templates.
 
 ## Standard Experiment Sidebar HTML Pattern
 
@@ -360,7 +360,7 @@ Use the device preview switcher when the experiment has meaningful responsive be
 
 ### Device Preview CSS Pattern
 
-**Canonical CSS lives in `templates/experiment-template.html`** (the `.experiment-content`, `.preview-bar`, `.preview-btn`, `.window`, and `#preview-*:checked ~ …` rules, styled in Lab Instrument tokens). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for structure — note the radio inputs must be siblings of (or ancestors of selectors targeting) `.preview-bar` and `.window`, and the three modes are `web` / `mobile` / `full`.
+**Canonical CSS lives in `templates/experiment-template.html`** (the `.experiment-content`, `.preview-bar`, `.preview-btn`, `.window`, and `#preview-*:checked ~ …` rules, styled in Paper tokens). Copy it from there; do not hand-maintain it here. The HTML pattern below is the spec for structure — note the radio inputs must be siblings of (or ancestors of selectors targeting) `.preview-bar` and `.window`, and the three modes are `web` / `mobile` / `full`.
 
 ### Device Preview HTML Pattern
 
@@ -646,7 +646,7 @@ Each variant experiment uses a modified sidebar with these differences from the 
 
 ### Origination Variant Sidebar CSS
 
-**Canonical CSS lives in `templates/origin-template.html`** (the `.exp-variant` badge and `.exp-origination-link` rules, plus the full Lab Instrument variant sidebar). Scaffold variants from that template and copy the CSS from there; do not hand-maintain it here. Variant navigation uses the Sidebar Versions Card pattern (see above). The HTML pattern below is the spec for structure.
+**Canonical CSS lives in `templates/origin-template.html`** (the `.exp-variant` badge and `.exp-origination-link` rules, plus the full Paper variant sidebar). Scaffold variants from that template and copy the CSS from there; do not hand-maintain it here. Variant navigation uses the Sidebar Versions Card pattern (see above). The HTML pattern below is the spec for structure.
 
 ### Origination Variant Sidebar HTML Pattern
 

@@ -5,30 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Changelog — UI Explorations</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-  /* THE UI LAB — "Lab Instrument" design system (shared tokens) */
+  /* THE UI LAB — "Paper" (senkani-blended light theme) */
   :root {
-    --bg:        #0a0c10;
-    --surface-1: #0f1217;
-    --surface-2: #141821;
-    --surface-3: #1a1f2a;
-    --line:        rgba(255,255,255,0.07);
-    --line-strong: rgba(255,255,255,0.13);
-    --ink:       #e6e9ef;
-    --ink-dim:   #9aa4b2;
-    --ink-faint: #6b7480;
-    --accent:     #2ee6c6;
-    --accent-2:   #38bdf8;
-    --accent-dim: rgba(46,230,198,0.12);
-    --accent-line:rgba(46,230,198,0.30);
-    --opus:   #e5a63b;
-    --sonnet: #8b9cf7;
-    --haiku:  #5ec4d4;
-    --auto:   #f5a623;
-    --orig:   #2ecc71;
-    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
+  }
+
+  /* ─── Accessibility ─── */
+  .skip-nav {
+    position: absolute; left: 8px; top: -40px;
+    background: var(--accent-lo); color: #fff;
+    padding: 8px 14px; border-radius: 6px; z-index: 200;
+    transition: top .15s; text-decoration: none;
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+  }
+  .skip-nav:focus { top: 8px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+  :focus:not(:focus-visible) { outline: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,20 +75,16 @@
   body {
     font-family: var(--sans);
     background: var(--bg);
-    color: var(--ink);
+    color: var(--ink-soft);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-    background-size: 40px 40px;
   }
-  ::selection { background: var(--accent-dim); color: #fff; }
+  ::selection { background: var(--accent-dim); color: var(--ink); }
   code {
     font-family: var(--mono);
     font-size: 0.9em;
-    background: var(--accent-dim);
-    color: var(--accent);
+    background: var(--bg-sunken);
+    color: var(--accent-lo);
     padding: 1px 5px;
     border-radius: 4px;
   }
@@ -63,14 +98,14 @@
     align-items: center;
     gap: 24px;
     padding: 14px 28px;
-    background: rgba(10,12,16,0.82);
+    background: rgba(245,241,232,0.85);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--rule);
   }
   .lab-nav .brand {
     display: flex; align-items: center; gap: 8px;
     font-family: var(--mono); font-weight: 600; font-size: 13px;
-    letter-spacing: 0.04em; color: #fff; text-decoration: none;
+    letter-spacing: 0.04em; color: var(--ink); text-decoration: none;
   }
   .lab-nav .brand .blip {
     width: 8px; height: 8px; background: var(--accent);
@@ -83,11 +118,11 @@
     font-family: var(--mono); font-size: 12px;
   }
   .lab-nav .nav-links a {
-    color: var(--ink-dim); text-decoration: none; padding: 6px 12px;
+    color: var(--ink-mute); text-decoration: none; padding: 6px 12px;
     border-radius: 6px; transition: color 0.15s, background 0.15s;
   }
-  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
-  .lab-nav .nav-links a.current { color: var(--accent); }
+  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(26,26,26,0.05); }
+  .lab-nav .nav-links a.current { color: var(--accent-lo); }
   .lab-nav .nav-links a.ext::after { content: ' ↗'; opacity: 0.5; }
 
   /* ─── Header ─── */
@@ -99,7 +134,7 @@
   .header .back {
     font-family: var(--mono);
     font-size: 12px;
-    color: var(--accent);
+    color: var(--accent-lo);
     text-decoration: none;
     display: inline-block;
     margin-bottom: 18px;
@@ -110,19 +145,19 @@
     font-size: 11px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
     display: block;
     margin-bottom: 10px;
   }
   .header h1 {
     font-size: 34px;
     font-weight: 800;
-    color: #fff;
+    color: var(--ink);
     letter-spacing: -0.02em;
   }
   .header .subtitle {
     font-size: 14px;
-    color: var(--ink-dim);
+    color: var(--ink-soft);
     margin-top: 10px;
     line-height: 1.6;
     max-width: 680px;
@@ -135,10 +170,11 @@
     padding: 0 32px 80px;
   }
   .changelog-entries {
-    background: var(--surface-1);
-    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule-soft);
     border-radius: 10px;
     padding: 8px 0;
+    box-shadow: var(--shadow-card);
   }
   .gc-entry {
     display: flex;
@@ -147,15 +183,15 @@
     padding: 7px 16px;
     text-decoration: none;
     color: inherit;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid var(--rule-soft);
   }
   .gc-entry:last-child { border-bottom: none; }
-  .gc-entry:hover { background: rgba(46,230,198,0.04); }
+  .gc-entry:hover { background: var(--accent-dim); }
 
   .gc-time {
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
     min-width: 80px;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
@@ -166,14 +202,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--accent);
+    color: var(--accent-lo);
     min-width: 56px;
     flex-shrink: 0;
   }
   .gc-target {
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--ink-dim);
+    color: var(--ink-soft);
   }
 
   /* ─── Run-metadata chips (effort + harness) ─── */
@@ -184,9 +220,9 @@
     padding: 1px 6px;
     border-radius: 3px;
     flex-shrink: 0;
-    border: 1px solid var(--line);
-    color: var(--ink-faint);
-    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--rule-soft);
+    color: var(--ink-mute);
+    background: var(--bg-sunken);
     letter-spacing: 0.02em;
   }
   .gc-effort::before {
@@ -196,11 +232,11 @@
     border-radius: 50%;
     margin-right: 5px;
     vertical-align: baseline;
-    background: var(--ink-faint);
+    background: var(--ink-dim);
   }
-  .gc-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .gc-effort.high::before   { background: var(--accent); }
   .gc-effort.medium::before { background: var(--accent-2); }
-  .gc-effort.low::before    { background: var(--ink-faint); }
+  .gc-effort.low::before    { background: var(--ink-dim); }
 
   /* ─── Autonomy chip (collaborative · autonomous) ─── */
   .gc-autonomy {
@@ -210,9 +246,9 @@
     padding: 1px 6px;
     border-radius: 3px;
     flex-shrink: 0;
-    border: 1px solid var(--line);
-    color: var(--ink-faint);
-    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--rule-soft);
+    color: var(--ink-mute);
+    background: var(--bg-sunken);
     letter-spacing: 0.02em;
   }
   .gc-autonomy::before {
@@ -222,20 +258,20 @@
     border-radius: 50%;
     margin-right: 5px;
     vertical-align: baseline;
-    background: var(--ink-faint);
+    background: var(--ink-dim);
   }
   .gc-autonomy.collaborative {
-    color: var(--accent);
+    color: var(--accent-lo);
     border-color: var(--accent-line);
     background: var(--accent-dim);
   }
-  .gc-autonomy.collaborative::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .gc-autonomy.collaborative::before { background: var(--accent); }
   .gc-autonomy.autonomous {
     color: var(--auto);
-    border-color: rgba(245,166,35,0.3);
-    background: rgba(245,166,35,0.12);
+    border-color: var(--auto-bg);
+    background: var(--auto-bg);
   }
-  .gc-autonomy.autonomous::before { background: var(--auto); box-shadow: 0 0 6px var(--auto); }
+  .gc-autonomy.autonomous::before { background: var(--auto); }
 
   /* ─── Meta entries (non-file-creation changes with prompt hover) ─── */
   .gc-meta {
@@ -248,22 +284,22 @@
   }
   .gc-meta:hover {
     border-left-color: var(--accent);
-    background: rgba(46,230,198,0.04);
+    background: var(--accent-dim);
   }
   .gc-meta .gc-desc {
     width: 100%;
     font-size: 12px;
-    color: var(--ink-dim);
+    color: var(--ink-soft);
     padding: 4px 0 0 146px;
   }
-  .gc-meta .gc-action { color: var(--accent); }
+  .gc-meta .gc-action { color: var(--accent-lo); }
   .gc-meta .gc-prompt-badge {
     font-family: var(--mono);
     font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--accent);
+    color: var(--accent-lo);
     background: var(--accent-dim);
     border: 1px solid var(--accent-line);
     border-radius: 3px;
@@ -272,7 +308,7 @@
     flex-shrink: 0;
     transition: background 0.2s, color 0.2s;
   }
-  .gc-meta:hover .gc-prompt-badge { background: rgba(46,230,198,0.22); color: #fff; }
+  .gc-meta:hover .gc-prompt-badge { background: var(--accent-lo); color: #fff; }
   .gc-meta .gc-prompt {
     width: 100%;
     max-height: 0;
@@ -288,13 +324,13 @@
     padding: 10px 0 6px 0;
   }
   .gc-meta .gc-prompt-inner {
-    background: rgba(46,230,198,0.05);
-    border: 1px solid var(--accent-line);
+    background: var(--bg-sunken);
+    border: 1px solid var(--rule-soft);
     border-radius: 8px;
     padding: 14px 16px;
     font-size: 12px;
     line-height: 1.65;
-    color: var(--ink-dim);
+    color: var(--ink-soft);
   }
   .gc-meta .gc-prompt-label {
     font-family: var(--mono);
@@ -302,7 +338,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--accent);
+    color: var(--accent-lo);
     margin-bottom: 8px;
   }
 
@@ -315,9 +351,9 @@
     border-radius: 3px;
     flex-shrink: 0;
   }
-  .gc-model.opus { background: rgba(229,166,59,0.12); color: var(--opus); }
-  .gc-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
-  .gc-model.haiku { background: rgba(94,196,212,0.12); color: var(--haiku); }
+  .gc-model.opus { background: var(--opus-bg); color: var(--opus); }
+  .gc-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+  .gc-model.haiku { background: var(--haiku-bg); color: var(--haiku); }
 
   /* ─── Footer ─── */
   .site-footer {
@@ -325,9 +361,9 @@
     padding: 24px 0 40px;
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
   }
-  .site-footer a { color: var(--accent); text-decoration: none; }
+  .site-footer a { color: var(--accent-lo); text-decoration: none; }
   .site-footer a:hover { text-decoration: underline; }
 
   @media (max-width: 640px) {
@@ -337,6 +373,7 @@
 </style>
 </head>
 <body>
+<a href="#main" class="skip-nav">Skip to content</a>
 
 <nav class="lab-nav">
   <a href="index.html" class="brand"><span class="blip"></span>THE UI LAB</a>
@@ -355,9 +392,24 @@
   <p class="subtitle">Every action taken across all experiments — file creations, modifications, and structural changes — recorded with the prompt and the run settings (model · effort) that caused it. Hover any meta entry to read the exact prompt. This is how the framework explains itself.</p>
 </div>
 
-<div class="changelog">
+<div class="changelog" id="main">
   <div class="changelog-entries">
     <!-- Append new entries on top. Newest first. -->
+    <div class="gc-entry gc-meta">
+      <span class="gc-time">6/18 10:40pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">index.html · experiments.html · changelog.html · templates/experiment-template.html · templates/origin-template.html</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy collaborative">collaborative</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Reskinned the Explorer shell from the dark “Lab Instrument” theme to a warm-cream, accessibility-first “Paper” theme blended from ckluis.github.io/senkani (Inter + JetBrains Mono, orange accent split into decoration-only #ff6200 vs text-safe #a63d00, contrast-graded ink ramp). Added skip-nav links, :focus-visible rings, and prefers-reduced-motion across all shell pages; the experiment-sidebar template goes light while the device-preview backdrop stays dark so the device floats. Applied by 4 parallel subagents (one per file) from a single shared spec for coherence; their full prompts are recorded below per the request. Frozen experiment files untouched.</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">Prompt &amp; subagent prompts</div>
+        <strong>User prompt (verbatim):</strong><br><br>I think we need to change the explorer UI. the color/accessibility might not be strong enough.  let's go for a theme closer to my other projects like ckluis.github.com/senkani - I'm sure you can blend this cleaner. Don't forget that we need to track this prompt and all prompts automatically Including if you spin up subagents to make this tighter... they need to show their prompts... the purpose is in the meta<br><br><strong>Shared reskin spec given to all four subagents (verbatim):</strong><br><br># UI Lab Explorer reskin spec — "Paper" (senkani-blended, accessibility-first)<br><br>Goal: reskin the Explorer SHELL from the dark "Lab Instrument" theme to a warm-cream<br>light theme blended from ckluis.github.io/senkani, with senkani's real accessibility<br>discipline. Preserve EVERY existing class name, id, data hook, and all text content —<br>this is a restyle, not a rewrite. Do not change layout structure or copy except to ADD<br>the accessibility affordances below. No JavaScript. Keep Google Fonts the only dependency.<br><br>## 1. Replace the file's `:root {...}` block with EXACTLY this (verbatim):<br><br>```<br>:root {<br>  /* ── Paper (senkani-blended light theme) ── */<br>  --bg:        #f5f1e8;   /* warm cream page */<br>  --bg-elev:   #fbf8f1;   /* card / raised surface */<br>  --bg-sunken: #ede8dc;   /* wells, code, inset */<br>  --ink:       #1a1a1a;   /* 14.7:1 — headings */<br>  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */<br>  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */<br>  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */<br>  --rule:      rgba(26,26,26,0.16);<br>  --rule-soft: rgba(26,26,26,0.09);<br>  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */<br>  --accent-hi: #ff8534;<br>  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */<br>  --accent-shade:#c94a00;<br>  --accent-dim:rgba(255,98,0,0.12);<br>  --accent-line:rgba(255,98,0,0.32);<br>  --secondary: #ffd4a8;<br>  --secondary-ink:#6b2e00;<br>  --focus:     #7a94ad;   /* focus ring */<br>  /* dark "app" theme — used ONLY for the device-preview backdrop */<br>  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;<br>  /* model badges — text-safe ink on a tinted chip */<br>  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);<br>  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);<br>  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);<br>  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);<br>  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);<br>  /* aliases so existing rules keep working on the light theme */<br>  --surface-1:var(--bg-elev);<br>  --surface-2:#f3eee3;<br>  --surface-3:#ece6d8;<br>  --line:var(--rule-soft);<br>  --line-strong:var(--rule);<br>  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */<br>  --accent-2:#2f5fa6;<br>  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;<br>  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;<br>  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);<br>  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);<br>}<br>```<br><br>## 2. Update the Google Fonts @import to include JetBrains Mono:<br>`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');`<br><br>## 3. Fix EVERY hardcoded dark value (critical — token swap alone is not enough):<br>Search the file's CSS for these and convert to the light theme:<br>- `background:#0a0c10` / any near-black page bg → `var(--bg)`.<br>- The body `background-image` dark grid (`linear-gradient(rgba(255,255,255,0.018)...)`) → REMOVE it (clean paper). Keep `background:var(--bg)`.<br>- `color:#fff` on headings/wordmark → `var(--ink)`.<br>- Any `rgba(255,255,255,0.0x)` subtle fills/borders (designed for dark) → use `var(--bg-elev)` / `var(--bg-sunken)` for fills and `var(--rule-soft)`/`var(--rule)` for borders.<br>- Dark translucent nav bg `rgba(10,12,16,0.82)` → `rgba(245,241,232,0.85)`.<br>- Hero radial-gradient glows in cyan/blue → warm: `rgba(255,98,0,0.10)` / `rgba(255,133,52,0.06)`.<br>- Any gradient TEXT (`-webkit-text-fill-color:transparent`) that was cyan→blue → make it text-safe: either solid `color:var(--accent-lo)` (remove the clip) OR a dark-enough gradient. Readability wins over flourish.<br>- Card/button/badge text that was the bright cyan accent → links &amp; interactive text use `var(--accent-lo)`; reserve `var(--accent)` for non-text decoration (accent bars, dots, the blip, focus glpoints, left-borders, fills behind dark text).<br>- Device-preview backdrop `.experiment-content` (templates only): keep it DARK using `linear-gradient(135deg,#100f0d,#171614)` or `var(--app-bg)` so the device floats; the `.window` keeps a soft shadow + 1px `var(--rule)`-equivalent light edge. The preview-bar active state uses `var(--accent-dim)`/`var(--accent-lo)`.<br><br>## 4. Component treatments (keep class names; restyle):<br>- **body**: `background:var(--bg); color:var(--ink-soft); font-family:var(--sans);` remove dark grid.<br>- **.lab-nav**: `background:rgba(245,241,232,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--rule);` brand text `var(--ink)`; `.blip` stays `var(--accent)`; nav links `color:var(--ink-mute)`, hover `color:var(--ink); background:rgba(26,26,26,0.05)`, `.current` `color:var(--accent-lo)`.<br>- **cards** (`.card`, `.feature`, `.ex`, `.step`, `.cmd`, `.spec`, `.changelog-entries`, `.about-sidebar`): surface `var(--bg-elev)`, `border:1px solid var(--rule-soft)`, `box-shadow:var(--shadow-card)`, radius 8-12px; hover lift uses `var(--accent-line)` border + `var(--shadow-pop)`. Corner tick-marks / accent bars: use `var(--accent)`/`var(--secondary)` (decoration).<br>- **links / view-latest / back links**: `color:var(--accent-lo)`; underline on hover.<br>- **buttons**: `.btn-primary{background:var(--accent-lo);color:#fff;border:1px solid var(--accent-lo)} .btn-primary:hover{background:var(--accent-shade)}` ; `.btn-ghost{background:var(--bg-elev);color:var(--ink);border:1px solid var(--rule)} .btn-ghost:hover{border-color:var(--ink)}`.<br>- **badges/tags**: small radius; the "Latest" `.badge-updated` → `background:var(--accent-lo);color:#fff` (or `var(--secondary)`+`var(--secondary-ink)`); `.badge-versions`/`.tag` → `var(--bg-sunken)` bg + `var(--ink-mute)` text + `var(--rule-soft)` border.<br>- **model chips** (`.exp-model`, `.gc-model`, `.changelog-model`, `.exp-vc-model`, `.exp-at-model`): `.opus{color:var(--opus);background:var(--opus-bg)}` etc. for opus/sonnet/haiku (and `--auto`/`--orig` where used). Must be legible on cream.<br>- **effort/harness/autonomy chips** (`.gc-effort/.gc-harness/.gc-autonomy`, `.exp-effort/.exp-harness/.exp-autonomy`, `.exp-at-effort`): chip bg `var(--bg-sunken)`, text `var(--ink-mute)`, border `var(--rule-soft)`; the status dot uses `var(--accent)` (high) / `var(--accent-2)` (medium) / `var(--ink-dim)` (low); autonomy collaborative dot `var(--accent)`, autonomous dot `var(--auto)`.<br>- **changelog meta prompt panels** (`.gc-prompt-inner`, `.exp-prompt`, `.exp-at-prompt-panel-inner`, `.exp-ask`): inset `var(--bg-sunken)` with `var(--rule-soft)` border, text `var(--ink-soft)`; label `var(--accent-lo)`.<br>- **eyebrows / section labels / mono micro-labels**: `var(--ink-mute)` (not faint).<br><br>## 5. Accessibility (the point of this redesign — add to EVERY shell page):<br>- Add a skip link as the first body child: `&lt;a href="#main" class="skip-nav"&gt;Skip to content&lt;/a&gt;` and give the main content region `id="main"` (use the existing main/hero/content wrapper). CSS:<br>  `.skip-nav{position:absolute;left:8px;top:-40px;background:var(--accent-lo);color:#fff;padding:8px 14px;border-radius:6px;z-index:200;transition:top .15s} .skip-nav:focus{top:8px}`<br>- Global focus ring: `:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:2px}` and `:focus:not(:focus-visible){outline:none}`.<br>- Reduced motion: <br>  `@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}`<br>  This must neutralize the `.blip` keyframe and the hero `.cursor` blink.<br>- Body text must only ever use `--ink`, `--ink-soft`, or `--ink-mute`. Never `--ink-dim` or `--accent` (#ff6200) for text. Interactive text uses `--accent-lo`.<br><br>## 6. Keep intact: all section structure, all data/counts, the device-preview switcher,<br>every `{{placeholder}}` in templates, the `:checked + label + panel` adjacency chains,<br>the masonry grid, and the no-JS rule. Verify there are zero `&lt;script&gt;` tags after editing.<br><br>Aim: it should look like it belongs next to senkani — warm, editorial, calm, high-contrast,<br>clearly accessible.<br><br><br><strong>Subagent 1 — index.html (landing)</strong><br><br>Read /tmp/reskin-spec.md IN FULL — it is the exact reskin spec. Then apply it to ONE file only: index.html. This is the framework's landing page. Make .grad text-safe (solid var(--accent-lo)) and ensure .cursor blink is killed under prefers-reduced-motion. Restyle .btn-primary/.btn-ghost, .spec provenance block, .feature grid, .step list, .cmd rows, .ex strip, .section-tag, .site-footer. Spec chips legible on cream. Add skip-nav + id=main. Preserve all copy/links/counts (24/133). Confirm 0 scripts, :root verbatim, a11y present, no leftover dark values.<br><br><strong>Subagent 2 — experiments.html (gallery)</strong><br><br>Read /tmp/reskin-spec.md IN FULL, apply to experiments.html only. Restyle .about-sidebar, .lab-nav, .hero, masonry .grid of .card with .card-accent nth-child gradients (retune warm, decoration only), .card-meta badges (Latest/versions/autonomous/origination), .tags, in-card .changelog incl. the .changelog-detail hover tooltip → light popover, .changelog-model, .view-latest, .about-legend swatches, .site-footer. Keep EXACTLY ONE .badge-updated Latest (on Tend). Preserve all 24 cards + counts (24/133/3). Add skip-nav + id=main. Confirm invariants.<br><br><strong>Subagent 3 — changelog.html</strong><br><br>Read /tmp/reskin-spec.md IN FULL, apply to changelog.html only. Do NOT add/remove/reorder/reword any changelog ENTRY — only restyle CSS/chrome (the log is immutable). Restyle .lab-nav, .header, .changelog-entries, .gc-entry, gc-time/action/target, run-metadata chips (gc-model/effort/harness/autonomy with status dots), .gc-meta expandable entries + .gc-prompt-inner (clean inset, keep hover reveal), .site-footer. Add skip-nav + id=main on .changelog. Confirm no entry text changed, invariants hold.<br><br><strong>Subagent 4 — templates/experiment-template.html + origin-template.html</strong><br><br>Read /tmp/reskin-spec.md IN FULL, apply to BOTH templates. The .experiment-sidebar chrome becomes LIGHT cream Paper; the .experiment-content device-preview backdrop stays DARK so the device floats; preview-bar treated as on-dark (light idle, accent-hi active). Restyle all sidebar components (exp-version/model/runmeta chips/autonomous/section/prompt/ask*, full exp-at-* Agent Trace KEEPING the :checked+label+panel chain, versions card). Preserve every {{PLACEHOLDER}}. No skip-nav (experiment frames) but add :focus-visible + prefers-reduced-motion + :root + font import per spec. Confirm invariants for both files.
+      </div></div>
+    </div>
     <a href="tend-relationship-inbox-v1.html" class="gc-entry">
       <span class="gc-time">6/18 9:52pm</span>
       <span class="gc-action">Created</span>
