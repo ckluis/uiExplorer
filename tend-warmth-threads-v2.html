@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warmth Threads · Thread Flip — v2 · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); }
+
+/* ─── Accessibility ─── */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Frame ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Experiment Info Sidebar — Paper ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.experiment-sidebar a {
+  color: var(--accent-lo);
+  text-decoration: none;
+}
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent-lo);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent-lo);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--auto-bg);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(154,85,0,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Model Badge ─── */
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-model.opus   { background: var(--opus-bg);   color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: var(--haiku-bg);  color: var(--haiku);  }
+
+/* ─── Run-metadata row (effort + harness chips) ─── */
+.experiment-sidebar .exp-runmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.experiment-sidebar .exp-effort,
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-sunken);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-effort::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-dim); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent-lo);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(154,85,0,0.3);
+  background: var(--auto-bg);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); }
+
+/* ─── Sections ─── */
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  margin: 0 0 10px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+}
+
+.experiment-sidebar .exp-prompt {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── AskUserQuestion Visualization — Paper ─── */
+.experiment-sidebar .exp-ask {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.experiment-sidebar .exp-ask-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-lo);
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 3px 8px;
+  background: var(--bg-elev);
+  border-radius: 4px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: var(--ink);
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 6px 8px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
+
+/* ─── Agent Trace — Paper ─── */
+.experiment-sidebar .exp-at-workflow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 6px 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.experiment-sidebar .exp-agent-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.experiment-sidebar .exp-at-entry {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--rule);
+}
+.experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
+.experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
+.experiment-sidebar .exp-at-entry.haiku  { border-left-color: var(--haiku); }
+
+.experiment-sidebar .exp-at-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.experiment-sidebar .exp-at-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.experiment-sidebar .exp-at-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-at-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+.experiment-sidebar .exp-at-action {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.experiment-sidebar .exp-at-arrow {
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Agent Trace: Duration Badge ─── */
+.experiment-sidebar .exp-at-duration {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-elev);
+  color: var(--ink-mute);
+  border: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Agent Trace: Effort chip ─── */
+.experiment-sidebar .exp-at-effort {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-elev);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-at-effort::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-dim); }
+
+/* ─── Agent Trace: Hover Timestamps ─── */
+.experiment-sidebar .exp-at-times {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.experiment-sidebar .exp-at-entry:hover .exp-at-times {
+  max-height: 40px;
+  opacity: 1;
+  margin-top: 4px;
+}
+.experiment-sidebar .exp-at-time-row {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mute);
+  padding: 3px 0;
+}
+.experiment-sidebar .exp-at-time-label { color: var(--ink-mute); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-soft); }
+
+/* ─── Agent Trace: Full Prompt Toggle ─── */
+.experiment-sidebar input[id^="at-prompt-"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle:hover {
+  background: rgba(255,98,0,0.2);
+  color: var(--accent-shade);
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
+  background: rgba(255,98,0,0.22);
+  color: var(--accent-shade);
+  border-color: var(--accent);
+}
+.experiment-sidebar .exp-at-prompt-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  padding: 0;
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
+  max-height: 800px;
+  opacity: 1;
+  padding-top: 6px;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar { width: 4px; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb { background: var(--accent-line); border-radius: 2px; }
+.experiment-sidebar .exp-at-prompt-panel-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  margin-bottom: 4px;
+}
+
+/* ─── Sidebar Versions Card — Paper ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(31,122,77,0.18); text-decoration: none; }
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: var(--bg-sunken); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+}
+.experiment-sidebar .exp-vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-lo);
+  min-width: 26px;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: var(--ink-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-soft); }
+
+/* Model indicator in versions card */
+.experiment-sidebar .exp-vc-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-vc-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+/* ─── Experiment Content + Device Preview Switcher — dark backdrop so the device floats ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg,#100f0d,#171614);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.12);
+  color: var(--accent-hi);
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-pop);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px;
+}
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* hide preview radios */
+input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* origination variant badge + link */
+.experiment-sidebar .exp-variant{display:inline-block;font-family:var(--mono);background:var(--orig-bg);color:var(--orig);font-size:11px;font-weight:600;padding:2px 8px;border:1px solid rgba(31,122,77,0.3);border-radius:4px;margin-top:4px;}
+.experiment-sidebar .exp-origination-link{font-size:12px;line-height:1.6;color:var(--ink-soft);}
+.experiment-sidebar .exp-origination-link a{color:var(--orig);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ EXPERIMENT INFO SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Warmth Threads · Thread Flip</h1>
+      <span class="exp-variant">v2</span>
+      <span class="exp-model opus">Opus 4.8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+      <div class="exp-runmeta">
+        <span class="exp-effort high">high</span>
+        <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy autonomous">autonomous</span>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A variant of <strong>Warmth Threads</strong> for Tend — the conversation history beneath the unread/debt line, so you remember who someone is before you triage them. Part of a 5-variant autonomous research series.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>A 3D card-flip where the debt face turns over to reveal the warmth thread on its reverse side, making &#x27;what you owe&#x27; and &#x27;why they matter&#x27; two faces of one object.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">This version was generated autonomously by a sub-agent in a fully-autonomous origination round. The prompt below is the <strong>exact prompt</strong> given to the build agent — crafted by the orchestrating workflow from the OG master prompt and the ideation phase.<br><br>Build a standalone Tend variant called THREAD FLIP — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the conversation history underneath Tend's unread/debt line — past touches so you remember who someone is before you triage them. It is the mirror image of debt: one face is 'what you owe,' the other is 'why they matter.'<br><br>YOUR ANGLE — 3D CARD FLIP (front=debt, back=warmth):<br>Make the metaphor literal: each person-card has TWO faces. The FRONT is the standard Tend debt face: heat edge, monogram, name in Fraunces, debt line ('9 days quiet · $40k renewal'), triage verb. A small 'flip to remember' affordance sits in a corner (a ♡ + chevron). Tapping it (CSS checkbox + :checked driving a transform: rotateY(180deg) on an inner wrapper, with transform-style: preserve-3d and backface-visibility: hidden) flips the card over to reveal the BACK: the warmth thread.<br><br>Because the back must fit the same card footprint, design the thread as a COMPACT scrollable memory list within the flipped card (overflow-y on the back face, scroll-snap optional): date in muted Fraunces, glyph chip (☎ ✉ ◆ ♡), one remembered-context line. PERSONAL entries amber-washed and visually elevated above transactional ones. A sage Fraunces line at the bottom of the back: 'You've tended Maria for 14 months.' A 'flip back' control returns to the debt face. The triage verb should remain accessible — keep it on the back face too, pinned at the bottom, so you can act with the memory fresh.<br><br>Get the 3D right: perspective on the card container, the inner wrapper rotates, both faces absolutely positioned and stacked. The flip should feel like turning a real card. Only ONE card needs to be a full working flip demo; show 3-4 other resting debt-face cards in a short feed above/below it (with a sticky pressure-context header) so it reads as an inbox.<br><br>HONEST PROOF STATE: author the hero card so it can flip both directions via :checked; optionally show one secondary card pre-flipped to its warmth back so a reviewer sees both faces at once.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.</div>
+    </div>
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">Part of an autonomous origination series. <a href="tend-warmth-threads.html">View the origination prompt →</a></p>
+    </div>
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead → Author → [Builder×5] (parallel)</div>
+      <div class="exp-agent-trace">
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-duration">4m</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Orchestrated the autonomous origination workflow: 3 feature scouts → author → 5 parallel builders → assembly.</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Author</span>
+            <span class="exp-at-duration">38s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Chose the Warmth Threads feature and wrote the OG master prompt + 5 distinct variant build-prompts.</div>
+          <input type="checkbox" id="at-prompt-3">
+          <label for="at-prompt-3" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            You are the Lead of an autonomous origination round for Tend (mobile-only pure-CSS relationship-inbox CRM). Three new-feature proposals were generated in parallel (The Drift Tide, The Daily Round, Warmth Threads). Pick the single strongest feature, then (1) write the verbatim OG MASTER PROMPT that spawns 5 parallel variants of that ONE feature, and (2) define 5 genuinely DISTINCT design/interaction interpretations, each with a concept name, distinguishing angle, one-sentence Variant Focus, and a complete self-contained build prompt (handed verbatim to its builder). featureName must be kebab-case starting with 'tend-'.
+          </div></div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Builder</span>
+            <span class="exp-at-duration">1m 40s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Built this variant (Thread Flip) as a self-contained CSS-only Tend fragment.</div>
+          <input type="checkbox" id="at-prompt-4">
+          <label for="at-prompt-4" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            Build a standalone Tend variant called THREAD FLIP — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the conversation history underneath Tend's unread/debt line — past touches so you remember who someone is before you triage them. It is the mirror image of debt: one face is 'what you owe,' the other is 'why they matter.'<br><br>YOUR ANGLE — 3D CARD FLIP (front=debt, back=warmth):<br>Make the metaphor literal: each person-card has TWO faces. The FRONT is the standard Tend debt face: heat edge, monogram, name in Fraunces, debt line ('9 days quiet · $40k renewal'), triage verb. A small 'flip to remember' affordance sits in a corner (a ♡ + chevron). Tapping it (CSS checkbox + :checked driving a transform: rotateY(180deg) on an inner wrapper, with transform-style: preserve-3d and backface-visibility: hidden) flips the card over to reveal the BACK: the warmth thread.<br><br>Because the back must fit the same card footprint, design the thread as a COMPACT scrollable memory list within the flipped card (overflow-y on the back face, scroll-snap optional): date in muted Fraunces, glyph chip (☎ ✉ ◆ ♡), one remembered-context line. PERSONAL entries amber-washed and visually elevated above transactional ones. A sage Fraunces line at the bottom of the back: 'You've tended Maria for 14 months.' A 'flip back' control returns to the debt face. The triage verb should remain accessible — keep it on the back face too, pinned at the bottom, so you can act with the memory fresh.<br><br>Get the 3D right: perspective on the card container, the inner wrapper rotates, both faces absolutely positioned and stacked. The flip should feel like turning a real card. Only ONE card needs to be a full working flip demo; show 3-4 other resting debt-face cards in a short feed above/below it (with a sticky pressure-context header) so it reads as an inbox.<br><br>HONEST PROOF STATE: author the hero card so it can flip both directions via :checked; optionally show one secondary card pre-flipped to its warmth back so a reviewer sees both faces at once.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="tend-warmth-threads.html" class="exp-vc-origin">Origination Prompt →</a>
+        <a href="tend-warmth-threads-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Pull-Down Thread</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v2.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Thread Flip</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Memory Lane</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Warmth Ledger</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Keepsake Stack</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ EXPERIMENT CONTENT (device preview) ════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <style>
+.tnd-app {
+  --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;
+  --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;
+  width:100%; height:100%; position:relative; overflow:hidden;
+  background:var(--bg);
+  font-family:'Inter',-apple-system,sans-serif;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.tnd-app *{box-sizing:border-box; margin:0; padding:0;}
+
+/* ── Sticky pressure header ── */
+.tnd-app .feat-hdr{
+  position:sticky; top:0; z-index:30;
+  background:linear-gradient(180deg, var(--bg) 70%, rgba(250,247,242,0));
+  padding:16px 18px 12px;
+}
+.tnd-app .feat-hdr-top{display:flex; justify-content:space-between; align-items:baseline;}
+.tnd-app .feat-hdr-title{
+  font-family:'Fraunces',serif; font-size:22px; font-weight:600; letter-spacing:-0.01em;
+}
+.tnd-app .feat-hdr-date{font-size:11px; color:var(--ink3); font-weight:500;}
+.tnd-app .feat-pressure{
+  margin-top:8px; display:flex; gap:6px; align-items:center;
+  font-size:11.5px; color:var(--ink2);
+}
+.tnd-app .feat-pressure .feat-dot{
+  width:6px; height:6px; border-radius:50%; background:var(--urgent);
+  box-shadow:0 0 0 3px rgba(224,106,91,0.15);
+}
+.tnd-app .feat-pressure b{color:var(--ink); font-weight:600;}
+
+/* ── Feed scroll ── */
+.tnd-app .feat-feed{
+  position:absolute; top:0; bottom:0; left:0; right:0;
+  overflow-y:auto; padding-bottom:24px;
+  padding-top:0;
+}
+.tnd-app .feat-feed::-webkit-scrollbar{width:0;}
+
+/* ── Generic resting debt card ── */
+.tnd-app .feat-card{
+  margin:0 14px 10px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px 14px 14px 16px;
+  position:relative;
+  display:flex; gap:12px; align-items:flex-start;
+  box-shadow:0 1px 2px rgba(43,38,34,0.03);
+  overflow:hidden;
+}
+.tnd-app .feat-heat{
+  position:absolute; left:0; top:0; bottom:0; width:4px;
+  border-radius:16px 0 0 16px;
+}
+.tnd-app .feat-heat.cold{background:var(--cold);}
+.tnd-app .feat-heat.warm{background:var(--warm);}
+.tnd-app .feat-heat.urgent{background:var(--urgent);}
+.tnd-app .feat-mono{
+  width:40px; height:40px; flex-shrink:0;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Fraunces',serif; font-size:16px; font-weight:600;
+  color:#fff;
+}
+.tnd-app .feat-body{flex:1; min-width:0;}
+.tnd-app .feat-name{
+  font-family:'Fraunces',serif; font-size:16px; font-weight:600; letter-spacing:-0.01em;
+}
+.tnd-app .feat-debt{
+  font-size:12px; color:var(--ink2); margin-top:2px;
+}
+.tnd-app .feat-debt b{color:var(--urgent); font-weight:600;}
+.tnd-app .feat-debt .feat-rev{color:var(--ink); font-weight:600;}
+.tnd-app .feat-verb{
+  margin-top:9px;
+  display:inline-block;
+  font-size:11px; font-weight:600; letter-spacing:0.02em;
+  color:var(--accent);
+  background:var(--accent-soft);
+  padding:4px 10px; border-radius:8px;
+}
+
+/* ════════ THE FLIP CARD ════════ */
+.tnd-app .feat-flipwrap{
+  margin:0 14px 10px;
+  height:228px;
+  perspective:1400px;
+}
+/* hidden checkbox drives the flip */
+.tnd-app #tnd-flip{position:absolute; opacity:0; pointer-events:none;}
+
+.tnd-app .feat-flip-inner{
+  position:relative;
+  width:100%; height:100%;
+  transition:transform 0.62s cubic-bezier(.4,.05,.2,1);
+  transform-style:preserve-3d;
+}
+.tnd-app #tnd-flip:checked ~ .feat-flipwrap .feat-flip-inner{
+  transform:rotateY(180deg);
+}
+
+.tnd-app .feat-face{
+  position:absolute; inset:0;
+  -webkit-backface-visibility:hidden; backface-visibility:hidden;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(43,38,34,0.08);
+}
+
+/* ── FRONT (debt) ── */
+.tnd-app .feat-front{
+  background:var(--card);
+  border:1px solid var(--line);
+  padding:18px 18px 16px 20px;
+  display:flex; flex-direction:column;
+}
+.tnd-app .feat-front .feat-heat{border-radius:18px 0 0 18px;}
+.tnd-app .feat-front-head{display:flex; gap:13px; align-items:flex-start;}
+.tnd-app .feat-front .feat-mono{
+  width:46px; height:46px; font-size:18px;
+  background:linear-gradient(135deg,#e0a23b,#cf7d3a);
+}
+.tnd-app .feat-front-name{
+  font-family:'Fraunces',serif; font-size:19px; font-weight:600; letter-spacing:-0.01em;
+}
+.tnd-app .feat-front-role{font-size:11px; color:var(--ink3); margin-top:1px;}
+.tnd-app .feat-front-debt{
+  margin-top:14px;
+  font-size:14px; color:var(--ink2); line-height:1.4;
+}
+.tnd-app .feat-front-debt .feat-quiet{color:var(--urgent); font-weight:600;}
+.tnd-app .feat-front-debt .feat-rev{color:var(--ink); font-weight:600;}
+.tnd-app .feat-front-foot{
+  margin-top:auto; display:flex; align-items:center; justify-content:space-between;
+}
+.tnd-app .feat-front-verb{
+  font-size:13px; font-weight:600;
+  color:#fff; background:var(--accent);
+  padding:8px 16px; border-radius:10px;
+  letter-spacing:0.01em;
+}
+/* flip affordance */
+.tnd-app .feat-flipto{
+  display:flex; align-items:center; gap:5px;
+  cursor:pointer;
+  font-size:11px; font-weight:600; color:var(--warm);
+  padding:6px 9px; border-radius:9px;
+  border:1px solid rgba(224,162,59,0.3);
+  background:rgba(224,162,59,0.07);
+  user-select:none;
+}
+.tnd-app .feat-flipto:active{background:rgba(224,162,59,0.16);}
+.tnd-app .feat-flipto .feat-heart{font-size:12px;}
+.tnd-app .feat-flipto .feat-chev{font-size:10px; opacity:0.7;}
+
+/* ── BACK (warmth thread) ── */
+.tnd-app .feat-back{
+  background:linear-gradient(180deg,#fffdf9,#fcf7ee);
+  border:1px solid var(--line);
+  transform:rotateY(180deg);
+  display:flex; flex-direction:column;
+  padding:14px 0 0;
+}
+.tnd-app .feat-back-head{
+  display:flex; align-items:center; gap:9px;
+  padding:0 16px 11px;
+  border-bottom:1px solid var(--line);
+}
+.tnd-app .feat-back-head .feat-mini-mono{
+  width:30px; height:30px; border-radius:50%;
+  background:linear-gradient(135deg,#e0a23b,#cf7d3a);
+  color:#fff; font-family:'Fraunces',serif; font-weight:600; font-size:13px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.tnd-app .feat-back-title{flex:1;}
+.tnd-app .feat-back-title .feat-bn{
+  font-family:'Fraunces',serif; font-size:14px; font-weight:600;
+}
+.tnd-app .feat-back-title .feat-bl{
+  font-size:9.5px; text-transform:uppercase; letter-spacing:0.09em;
+  color:var(--warm); font-weight:600; margin-top:1px;
+}
+.tnd-app .feat-flipback{
+  cursor:pointer; user-select:none;
+  font-size:10px; font-weight:600; color:var(--ink3);
+  display:flex; align-items:center; gap:3px;
+  padding:5px 8px; border-radius:8px; border:1px solid var(--line);
+}
+.tnd-app .feat-flipback:active{background:var(--bg2);}
+
+/* memory list */
+.tnd-app .feat-thread{
+  flex:1; overflow-y:auto;
+  padding:9px 14px 6px;
+  scroll-snap-type:y proximity;
+}
+.tnd-app .feat-thread::-webkit-scrollbar{width:3px;}
+.tnd-app .feat-thread::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+.tnd-app .feat-mem{
+  display:flex; gap:9px; align-items:flex-start;
+  padding:7px 9px; border-radius:10px; margin-bottom:5px;
+  scroll-snap-align:start;
+}
+.tnd-app .feat-mem.personal{
+  background:rgba(224,162,59,0.1);
+  border:1px solid rgba(224,162,59,0.22);
+  box-shadow:0 1px 3px rgba(224,162,59,0.1);
+}
+.tnd-app .feat-mem.txn{opacity:0.92;}
+.tnd-app .feat-glyph{
+  width:24px; height:24px; flex-shrink:0; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px;
+  background:var(--bg2); color:var(--ink2);
+}
+.tnd-app .feat-mem.personal .feat-glyph{background:rgba(224,162,59,0.25); color:#b6781f;}
+.tnd-app .feat-mem-body{flex:1; min-width:0;}
+.tnd-app .feat-mem-date{
+  font-family:'Fraunces',serif; font-size:11px; color:var(--ink3); font-weight:500;
+}
+.tnd-app .feat-mem-ctx{
+  font-size:11.5px; color:var(--ink); line-height:1.35; margin-top:1px;
+}
+.tnd-app .feat-mem.personal .feat-mem-ctx{font-weight:500;}
+
+/* sage tenure line */
+.tnd-app .feat-tenure{
+  font-family:'Fraunces',serif; font-style:italic;
+  font-size:12px; color:var(--accent);
+  text-align:center; padding:8px 14px 9px;
+}
+/* pinned triage on back */
+.tnd-app .feat-back-foot{
+  border-top:1px solid var(--line);
+  padding:9px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(255,253,249,0.6);
+}
+.tnd-app .feat-back-verb{
+  font-size:12.5px; font-weight:600; color:#fff; background:var(--accent);
+  padding:7px 14px; border-radius:9px;
+}
+.tnd-app .feat-back-foot .feat-flipback{padding:6px 9px;}
+
+/* section label */
+.tnd-app .feat-seclbl{
+  padding:4px 18px 8px;
+  font-size:10px; text-transform:uppercase; letter-spacing:0.1em;
+  color:var(--ink3); font-weight:600;
+}
+
+/* pre-flipped secondary proof card */
+.tnd-app .feat-proof{
+  margin:2px 14px 12px;
+  height:206px;
+  border-radius:18px; overflow:hidden;
+  background:linear-gradient(180deg,#fffdf9,#fcf7ee);
+  border:1px solid var(--line);
+  box-shadow:0 6px 18px rgba(43,38,34,0.07);
+  display:flex; flex-direction:column;
+  padding-top:14px;
+  position:relative;
+}
+.tnd-app .feat-proof-tag{
+  position:absolute; top:10px; right:12px;
+  font-size:8.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--warm); background:rgba(224,162,59,0.12);
+  padding:3px 7px; border-radius:6px;
+}
+</style>
+
+<div class="tnd-app">
+  <input type="checkbox" id="tnd-flip">
+  <div class="feat-feed">
+
+    <div class="feat-hdr">
+      <div class="feat-hdr-top">
+        <span class="feat-hdr-title">Today</span>
+        <span class="feat-hdr-date">Mon · 6 to tend</span>
+      </div>
+      <div class="feat-pressure">
+        <span class="feat-dot"></span>
+        <span><b>$132k</b> in renewals going quiet this week. Flip a card to remember why they matter.</span>
+      </div>
+    </div>
+
+    <!-- resting debt cards above hero -->
+    <div class="feat-card">
+      <div class="feat-heat urgent"></div>
+      <div class="feat-mono" style="background:linear-gradient(135deg,#e06a5b,#c14b3e)">DK</div>
+      <div class="feat-body">
+        <div class="feat-name">Dana Kessler</div>
+        <div class="feat-debt"><b>17 days quiet</b> · <span class="feat-rev">$58k renewal</span></div>
+        <span class="feat-verb">Reach out today</span>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-heat cold"></div>
+      <div class="feat-mono" style="background:linear-gradient(135deg,#6b8cae,#52708f)">TO</div>
+      <div class="feat-body">
+        <div class="feat-name">Theo Okafor</div>
+        <div class="feat-debt">11 days quiet · <span class="feat-rev">$22k expansion</span></div>
+        <span class="feat-verb">Send check-in</span>
+      </div>
+    </div>
+
+    <div class="feat-seclbl">Two sides of one person ↓ tap ♡</div>
+
+    <!-- ════ HERO FLIP CARD ════ -->
+    <div class="feat-flipwrap">
+      <div class="feat-flip-inner">
+
+        <!-- FRONT: debt -->
+        <div class="feat-face feat-front">
+          <div class="feat-heat warm"></div>
+          <div class="feat-front-head">
+            <div class="feat-mono">M</div>
+            <div>
+              <div class="feat-front-name">Maria Solano</div>
+              <div class="feat-front-role">VP Ops · Brightline Logistics</div>
+            </div>
+          </div>
+          <div class="feat-front-debt">
+            <span class="feat-quiet">9 days quiet</span> · <span class="feat-rev">$40k renewal</span> closes Friday.
+          </div>
+          <div class="feat-front-foot">
+            <span class="feat-front-verb">Re-engage</span>
+            <label for="tnd-flip" class="feat-flipto">
+              <span class="feat-heart">♡</span> flip to remember <span class="feat-chev">›</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- BACK: warmth thread -->
+        <div class="feat-face feat-back">
+          <div class="feat-back-head">
+            <div class="feat-mini-mono">M</div>
+            <div class="feat-back-title">
+              <div class="feat-bn">Maria Solano</div>
+              <div class="feat-bl">Warmth thread</div>
+            </div>
+            <label for="tnd-flip" class="feat-flipback">‹ flip</label>
+          </div>
+
+          <div class="feat-thread">
+            <div class="feat-mem personal">
+              <div class="feat-glyph">♡</div>
+              <div class="feat-mem-body">
+                <div class="feat-mem-date">Mar 4</div>
+                <div class="feat-mem-ctx">Her daughter started college — sent a congrats note, she replied warmly.</div>
+              </div>
+            </div>
+            <div class="feat-mem personal">
+              <div class="feat-glyph">◆</div>
+              <div class="feat-mem-body">
+                <div class="feat-mem-date">Jan 19</div>
+                <div class="feat-mem-ctx">Coffee in Denver. Talked about her marathon training, not the contract.</div>
+              </div>
+            </div>
+            <div class="feat-mem txn">
+              <div class="feat-glyph">☎</div>
+              <div class="feat-mem-body">
+                <div class="feat-mem-date">Dec 2</div>
+                <div class="feat-mem-ctx">Renewal call — she championed us internally to her CFO.</div>
+              </div>
+            </div>
+            <div class="feat-mem txn">
+              <div class="feat-glyph">✉</div>
+              <div class="feat-mem-body">
+                <div class="feat-mem-date">Oct 8</div>
+                <div class="feat-mem-ctx">Onboarded her new analyst, shared the Q4 rollout deck.</div>
+              </div>
+            </div>
+            <div class="feat-mem txn">
+              <div class="feat-glyph">◆</div>
+              <div class="feat-mem-body">
+                <div class="feat-mem-date">May 12</div>
+                <div class="feat-mem-ctx">First deal. She took a chance on us over the incumbent.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-tenure">You've tended Maria for 14 months.</div>
+
+          <div class="feat-back-foot">
+            <label for="tnd-flip" class="feat-flipback">‹ flip back</label>
+            <span class="feat-back-verb">Re-engage</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="feat-seclbl">Already turned over ↓</div>
+
+    <!-- pre-flipped proof card (static warmth back, no JS) -->
+    <div class="feat-proof">
+      <span class="feat-proof-tag">warmth</span>
+      <div class="feat-back-head">
+        <div class="feat-mini-mono" style="background:linear-gradient(135deg,#3da06b,#2c7d52)">R</div>
+        <div class="feat-back-title">
+          <div class="feat-bn">Reuben Adler</div>
+          <div class="feat-bl">Warmth thread</div>
+        </div>
+      </div>
+      <div class="feat-thread">
+        <div class="feat-mem personal">
+          <div class="feat-glyph">♡</div>
+          <div class="feat-mem-body">
+            <div class="feat-mem-date">Apr 2</div>
+            <div class="feat-mem-ctx">Recovering from knee surgery — wished him well, he was grateful.</div>
+          </div>
+        </div>
+        <div class="feat-mem txn">
+          <div class="feat-glyph">☎</div>
+          <div class="feat-mem-body">
+            <div class="feat-mem-date">Feb 14</div>
+            <div class="feat-mem-ctx">QBR call. Praised the new dashboard, asked about API access.</div>
+          </div>
+        </div>
+        <div class="feat-mem txn">
+          <div class="feat-glyph">✉</div>
+          <div class="feat-mem-body">
+            <div class="feat-mem-date">Nov 30</div>
+            <div class="feat-mem-ctx">Renewed early without a nudge — said it was a no-brainer.</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-tenure">You've tended Reuben for 2 years.</div>
+      <div class="feat-back-foot">
+        <span style="font-size:10px;color:var(--ink3)">8 days quiet</span>
+        <span class="feat-back-verb" style="background:var(--green)">Thank him</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warmth Threads · Memory Lane — v3 · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); }
+
+/* ─── Accessibility ─── */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Frame ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Experiment Info Sidebar — Paper ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.experiment-sidebar a {
+  color: var(--accent-lo);
+  text-decoration: none;
+}
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent-lo);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent-lo);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--auto-bg);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(154,85,0,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Model Badge ─── */
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-model.opus   { background: var(--opus-bg);   color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: var(--haiku-bg);  color: var(--haiku);  }
+
+/* ─── Run-metadata row (effort + harness chips) ─── */
+.experiment-sidebar .exp-runmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.experiment-sidebar .exp-effort,
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-sunken);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-effort::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-dim); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent-lo);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(154,85,0,0.3);
+  background: var(--auto-bg);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); }
+
+/* ─── Sections ─── */
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  margin: 0 0 10px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+}
+
+.experiment-sidebar .exp-prompt {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── AskUserQuestion Visualization — Paper ─── */
+.experiment-sidebar .exp-ask {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.experiment-sidebar .exp-ask-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-lo);
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 3px 8px;
+  background: var(--bg-elev);
+  border-radius: 4px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: var(--ink);
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 6px 8px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
+
+/* ─── Agent Trace — Paper ─── */
+.experiment-sidebar .exp-at-workflow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 6px 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.experiment-sidebar .exp-agent-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.experiment-sidebar .exp-at-entry {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--rule);
+}
+.experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
+.experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
+.experiment-sidebar .exp-at-entry.haiku  { border-left-color: var(--haiku); }
+
+.experiment-sidebar .exp-at-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.experiment-sidebar .exp-at-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.experiment-sidebar .exp-at-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-at-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+.experiment-sidebar .exp-at-action {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.experiment-sidebar .exp-at-arrow {
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Agent Trace: Duration Badge ─── */
+.experiment-sidebar .exp-at-duration {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-elev);
+  color: var(--ink-mute);
+  border: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Agent Trace: Effort chip ─── */
+.experiment-sidebar .exp-at-effort {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-elev);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-at-effort::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-dim); }
+
+/* ─── Agent Trace: Hover Timestamps ─── */
+.experiment-sidebar .exp-at-times {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.experiment-sidebar .exp-at-entry:hover .exp-at-times {
+  max-height: 40px;
+  opacity: 1;
+  margin-top: 4px;
+}
+.experiment-sidebar .exp-at-time-row {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mute);
+  padding: 3px 0;
+}
+.experiment-sidebar .exp-at-time-label { color: var(--ink-mute); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-soft); }
+
+/* ─── Agent Trace: Full Prompt Toggle ─── */
+.experiment-sidebar input[id^="at-prompt-"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle:hover {
+  background: rgba(255,98,0,0.2);
+  color: var(--accent-shade);
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
+  background: rgba(255,98,0,0.22);
+  color: var(--accent-shade);
+  border-color: var(--accent);
+}
+.experiment-sidebar .exp-at-prompt-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  padding: 0;
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
+  max-height: 800px;
+  opacity: 1;
+  padding-top: 6px;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar { width: 4px; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb { background: var(--accent-line); border-radius: 2px; }
+.experiment-sidebar .exp-at-prompt-panel-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  margin-bottom: 4px;
+}
+
+/* ─── Sidebar Versions Card — Paper ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(31,122,77,0.18); text-decoration: none; }
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: var(--bg-sunken); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+}
+.experiment-sidebar .exp-vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-lo);
+  min-width: 26px;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: var(--ink-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-soft); }
+
+/* Model indicator in versions card */
+.experiment-sidebar .exp-vc-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-vc-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+/* ─── Experiment Content + Device Preview Switcher — dark backdrop so the device floats ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg,#100f0d,#171614);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.12);
+  color: var(--accent-hi);
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-pop);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px;
+}
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* hide preview radios */
+input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* origination variant badge + link */
+.experiment-sidebar .exp-variant{display:inline-block;font-family:var(--mono);background:var(--orig-bg);color:var(--orig);font-size:11px;font-weight:600;padding:2px 8px;border:1px solid rgba(31,122,77,0.3);border-radius:4px;margin-top:4px;}
+.experiment-sidebar .exp-origination-link{font-size:12px;line-height:1.6;color:var(--ink-soft);}
+.experiment-sidebar .exp-origination-link a{color:var(--orig);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ EXPERIMENT INFO SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Warmth Threads · Memory Lane</h1>
+      <span class="exp-variant">v3</span>
+      <span class="exp-model opus">Opus 4.8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+      <div class="exp-runmeta">
+        <span class="exp-effort high">high</span>
+        <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy autonomous">autonomous</span>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A variant of <strong>Warmth Threads</strong> for Tend — the conversation history beneath the unread/debt line, so you remember who someone is before you triage them. Part of a 5-variant autonomous research series.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>A full-screen immersive memory view that slides up per person via :target, turning the thread into a quiet reading room for reminiscing rather than an inline list.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">This version was generated autonomously by a sub-agent in a fully-autonomous origination round. The prompt below is the <strong>exact prompt</strong> given to the build agent — crafted by the orchestrating workflow from the OG master prompt and the ideation phase.<br><br>Build a standalone Tend variant called MEMORY LANE — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the warm conversation history underneath Tend's debt line, so you remember who someone is before triaging them.<br><br>YOUR ANGLE — FULL-SCREEN IMMERSIVE :target READING ROOM:<br>Instead of an inline accordion, the thread is a dedicated full-bleed view. The base layer is the normal Tend inbox: sticky pressure-context header + a debt-ranked feed of person-cards (heat edge, monogram, Fraunces name, debt line, triage verb), each with a small 'remember' affordance (♡). Tapping a card is an &lt;a href='#person-maria'&gt; that targets a full 375×720 overlay panel which slides up over the feed (position:absolute, transform: translateY(100%) → 0 on :target, transition).<br><br>The overlay is an emotional reading room, NOT a cramped list: a large Fraunces name + monogram up top, a generous calm warmth thread below with lots of whitespace — each memory entry gets room to breathe (date in Fraunces, glyph ☎ ✉ ◆ ♡, a full remembered-context sentence). PERSONAL memories are the visual centerpiece: bigger, amber-washed, slightly larger type — the human moments dominate the page while transactional ones recede in muted ink3. The oldest memories fade toward bg. Near the bottom, the hero sage Fraunces line 'You've tended Maria for 14 months.' A back affordance (href='#feed') slides the overlay back down. Pin the triage verb at the bottom of the overlay so you can act after reminiscing.<br><br>Use :target as the state engine. Build at least 2 distinct person overlays (e.g. Maria, Priya) each with its own #id and its own thread content, plus a default feed state, so tapping different cards opens different memory rooms. This is the variant that prioritizes EMOTION and READING — make it feel like opening a letter, not scanning a log.<br><br>HONEST PROOF STATE: default load shows the feed; document that tapping a card opens that person's overlay. Optionally hard-open one overlay via the URL hash being present in markup is not possible without JS, so instead make tapping reliable and show the overlay fully styled.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.</div>
+    </div>
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">Part of an autonomous origination series. <a href="tend-warmth-threads.html">View the origination prompt →</a></p>
+    </div>
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead → Author → [Builder×5] (parallel)</div>
+      <div class="exp-agent-trace">
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-duration">4m</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Orchestrated the autonomous origination workflow: 3 feature scouts → author → 5 parallel builders → assembly.</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Author</span>
+            <span class="exp-at-duration">38s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Chose the Warmth Threads feature and wrote the OG master prompt + 5 distinct variant build-prompts.</div>
+          <input type="checkbox" id="at-prompt-5">
+          <label for="at-prompt-5" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            You are the Lead of an autonomous origination round for Tend (mobile-only pure-CSS relationship-inbox CRM). Three new-feature proposals were generated in parallel (The Drift Tide, The Daily Round, Warmth Threads). Pick the single strongest feature, then (1) write the verbatim OG MASTER PROMPT that spawns 5 parallel variants of that ONE feature, and (2) define 5 genuinely DISTINCT design/interaction interpretations, each with a concept name, distinguishing angle, one-sentence Variant Focus, and a complete self-contained build prompt (handed verbatim to its builder). featureName must be kebab-case starting with 'tend-'.
+          </div></div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Builder</span>
+            <span class="exp-at-duration">1m 40s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Built this variant (Memory Lane) as a self-contained CSS-only Tend fragment.</div>
+          <input type="checkbox" id="at-prompt-6">
+          <label for="at-prompt-6" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            Build a standalone Tend variant called MEMORY LANE — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the warm conversation history underneath Tend's debt line, so you remember who someone is before triaging them.<br><br>YOUR ANGLE — FULL-SCREEN IMMERSIVE :target READING ROOM:<br>Instead of an inline accordion, the thread is a dedicated full-bleed view. The base layer is the normal Tend inbox: sticky pressure-context header + a debt-ranked feed of person-cards (heat edge, monogram, Fraunces name, debt line, triage verb), each with a small 'remember' affordance (♡). Tapping a card is an &lt;a href='#person-maria'&gt; that targets a full 375×720 overlay panel which slides up over the feed (position:absolute, transform: translateY(100%) → 0 on :target, transition).<br><br>The overlay is an emotional reading room, NOT a cramped list: a large Fraunces name + monogram up top, a generous calm warmth thread below with lots of whitespace — each memory entry gets room to breathe (date in Fraunces, glyph ☎ ✉ ◆ ♡, a full remembered-context sentence). PERSONAL memories are the visual centerpiece: bigger, amber-washed, slightly larger type — the human moments dominate the page while transactional ones recede in muted ink3. The oldest memories fade toward bg. Near the bottom, the hero sage Fraunces line 'You've tended Maria for 14 months.' A back affordance (href='#feed') slides the overlay back down. Pin the triage verb at the bottom of the overlay so you can act after reminiscing.<br><br>Use :target as the state engine. Build at least 2 distinct person overlays (e.g. Maria, Priya) each with its own #id and its own thread content, plus a default feed state, so tapping different cards opens different memory rooms. This is the variant that prioritizes EMOTION and READING — make it feel like opening a letter, not scanning a log.<br><br>HONEST PROOF STATE: default load shows the feed; document that tapping a card opens that person's overlay. Optionally hard-open one overlay via the URL hash being present in markup is not possible without JS, so instead make tapping reliable and show the overlay fully styled.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="tend-warmth-threads.html" class="exp-vc-origin">Origination Prompt →</a>
+        <a href="tend-warmth-threads-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Pull-Down Thread</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Thread Flip</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v3.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Memory Lane</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Warmth Ledger</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Keepsake Stack</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ EXPERIMENT CONTENT (device preview) ════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap');
+
+  .tnd-app {
+    --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;
+    --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;
+    width:100%; height:100%; position:relative; overflow:hidden;
+    background:var(--bg); font-family:'Inter',sans-serif; color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .tnd-app *{box-sizing:border-box; margin:0; padding:0;}
+
+  /* ── BASE FEED ── */
+  .feat-feed{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    background:var(--bg);
+  }
+  .feat-feed-head{
+    flex-shrink:0; padding:16px 18px 12px; background:var(--bg);
+    border-bottom:1px solid var(--line);
+  }
+  .feat-pressure{
+    display:flex; align-items:center; gap:7px; font-size:11px;
+    color:var(--ink3); font-weight:500; letter-spacing:.02em; margin-bottom:8px;
+  }
+  .feat-pressure .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--urgent);}
+  .feat-feed-title{font-family:'Fraunces',serif; font-size:25px; font-weight:600; color:var(--ink); letter-spacing:-.01em;}
+  .feat-feed-sub{font-size:12px; color:var(--ink2); margin-top:3px;}
+
+  .feat-list{flex:1; overflow-y:auto; padding:10px 14px 24px; display:flex; flex-direction:column; gap:10px;}
+
+  .feat-card{
+    position:relative; display:block; text-decoration:none; color:inherit;
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:13px 14px 13px 17px; overflow:hidden;
+    box-shadow:0 1px 2px rgba(43,38,34,.03);
+  }
+  .feat-card::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  }
+  .feat-card.heat-urgent::before{background:var(--urgent);}
+  .feat-card.heat-warm::before{background:var(--warm);}
+  .feat-card.heat-cold::before{background:var(--cold);}
+
+  .feat-card-row{display:flex; align-items:center; gap:12px;}
+  .feat-mono{
+    flex-shrink:0; width:42px; height:42px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:#fff;
+  }
+  .feat-mono.m-maria{background:linear-gradient(135deg,#e0a23b,#d68a4e);}
+  .feat-mono.m-priya{background:linear-gradient(135deg,#2f9e8f,#3da06b);}
+  .feat-mono.m-jonas{background:linear-gradient(135deg,#6b8cae,#7d9bb8);}
+  .feat-mono.m-tess{background:linear-gradient(135deg,#b08bb0,#a07ba0);}
+
+  .feat-card-body{flex:1; min-width:0;}
+  .feat-name{font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:var(--ink); line-height:1.1;}
+  .feat-debt{font-size:11.5px; color:var(--ink2); margin-top:3px; line-height:1.35;}
+  .feat-verb{
+    display:inline-block; margin-top:7px; font-size:10px; font-weight:600;
+    letter-spacing:.04em; text-transform:uppercase; padding:3px 9px; border-radius:20px;
+  }
+  .feat-verb.v-reply{background:rgba(224,106,91,.12); color:var(--urgent);}
+  .feat-verb.v-nudge{background:rgba(224,162,59,.14); color:#b87d1f;}
+  .feat-verb.v-thank{background:var(--accent-soft); color:var(--accent);}
+  .feat-verb.v-wait{background:rgba(107,140,174,.13); color:var(--cold);}
+
+  .feat-heart{
+    flex-shrink:0; width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink3); font-size:15px; border:1px solid var(--line); background:var(--bg);
+  }
+
+  /* ── OVERLAY (reading room) ── */
+  .feat-room{
+    position:absolute; inset:0; z-index:30;
+    background:var(--bg); display:flex; flex-direction:column;
+    transform:translateY(100%); transition:transform .5s cubic-bezier(.22,1,.36,1);
+    pointer-events:none;
+  }
+  .feat-room:target{transform:translateY(0); pointer-events:auto;}
+
+  .feat-room-head{
+    flex-shrink:0; position:relative; padding:18px 22px 18px;
+    background:linear-gradient(180deg,var(--bg2),var(--bg));
+    border-bottom:1px solid var(--line);
+  }
+  .feat-back{
+    display:inline-flex; align-items:center; gap:5px; text-decoration:none;
+    font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:14px;
+  }
+  .feat-back-x{font-size:15px; line-height:1;}
+  .feat-room-id{display:flex; align-items:center; gap:13px;}
+  .feat-room-mono{
+    width:54px; height:54px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#fff;
+  }
+  .feat-room-name{font-family:'Fraunces',serif; font-size:27px; font-weight:600; letter-spacing:-.015em; line-height:1; color:var(--ink);}
+  .feat-room-meta{font-size:11.5px; color:var(--ink3); margin-top:5px; letter-spacing:.01em;}
+
+  .feat-thread{
+    flex:1; overflow-y:auto; padding:8px 24px 18px;
+  }
+  .feat-thread-label{
+    font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink3); margin:18px 0 4px;
+  }
+
+  /* memory entry — generous, breathing */
+  .feat-mem{padding:16px 0; border-bottom:1px solid var(--line);}
+  .feat-mem-date{
+    font-family:'Fraunces',serif; font-size:13px; font-style:italic;
+    color:var(--ink2); margin-bottom:7px; display:flex; align-items:center; gap:8px;
+  }
+  .feat-glyph{font-style:normal; font-size:12px;}
+  .feat-mem-text{font-size:14px; line-height:1.55; color:var(--ink2);}
+
+  /* transactional recede */
+  .feat-mem.txn .feat-mem-text{color:var(--ink3); font-size:13px;}
+  .feat-mem.txn .feat-mem-date{color:var(--ink3);}
+
+  /* personal = centerpiece */
+  .feat-mem.personal{
+    background:linear-gradient(180deg,rgba(224,162,59,.10),rgba(224,162,59,.04));
+    border:1px solid rgba(224,162,59,.22); border-radius:16px;
+    padding:18px 18px 19px; margin:14px 0;
+  }
+  .feat-mem.personal .feat-mem-date{color:#b87d1f; font-size:14px;}
+  .feat-mem.personal .feat-mem-text{color:var(--ink); font-size:16.5px; line-height:1.5; font-weight:400;}
+
+  /* oldest fade */
+  .feat-mem.faded{opacity:.55;}
+  .feat-mem.fadest{opacity:.32;}
+
+  .feat-hero{
+    text-align:center; padding:30px 16px 14px;
+  }
+  .feat-hero-line{
+    font-family:'Fraunces',serif; font-size:19px; font-weight:500; font-style:italic;
+    color:var(--accent); line-height:1.4; letter-spacing:-.005em;
+  }
+
+  .feat-room-foot{
+    flex-shrink:0; padding:13px 20px 16px; background:var(--card);
+    border-top:1px solid var(--line); display:flex; align-items:center; gap:12px;
+  }
+  .feat-foot-hint{flex:1; font-size:11.5px; color:var(--ink3); line-height:1.3;}
+  .feat-act{
+    flex-shrink:0; padding:11px 20px; border-radius:24px; color:#fff;
+    font-size:13px; font-weight:600; letter-spacing:.01em; text-decoration:none;
+  }
+  .feat-act.a-warm{background:var(--warm);}
+  .feat-act.a-accent{background:var(--accent);}
+
+  .feat-list::-webkit-scrollbar,.feat-thread::-webkit-scrollbar{width:0;}
+</style>
+
+<div class="tnd-app">
+
+  <!-- BASE FEED -->
+  <div class="feat-feed">
+    <div class="feat-feed-head">
+      <div class="feat-pressure"><span class="feat-dot"></span> 4 owe you · 2 going cold · 11mo avg tended</div>
+      <div class="feat-feed-title">Your people</div>
+      <div class="feat-feed-sub">Ranked by what you owe. Tap a name to remember them first.</div>
+    </div>
+
+    <div class="feat-list">
+      <a class="feat-card heat-urgent" href="#tnd-room-maria">
+        <div class="feat-card-row">
+          <div class="feat-mono m-maria">M</div>
+          <div class="feat-card-body">
+            <div class="feat-name">Maria Okonkwo</div>
+            <div class="feat-debt">You owe a reply · 6 days since she reached out</div>
+            <span class="feat-verb v-reply">Reply</span>
+          </div>
+          <div class="feat-heart">&#9825;</div>
+        </div>
+      </a>
+
+      <a class="feat-card heat-warm" href="#tnd-room-priya">
+        <div class="feat-card-row">
+          <div class="feat-mono m-priya">P</div>
+          <div class="feat-card-body">
+            <div class="feat-name">Priya Nair</div>
+            <div class="feat-debt">Going quiet · last spoke 5 weeks ago</div>
+            <span class="feat-verb v-nudge">Nudge</span>
+          </div>
+          <div class="feat-heart">&#9825;</div>
+        </div>
+      </a>
+
+      <a class="feat-card heat-cold" href="#tnd-room-priya">
+        <div class="feat-card-row">
+          <div class="feat-mono m-jonas">J</div>
+          <div class="feat-card-body">
+            <div class="feat-name">Jonas Veld</div>
+            <div class="feat-debt">He's waiting on your intro · no rush yet</div>
+            <span class="feat-verb v-wait">Hold</span>
+          </div>
+          <div class="feat-heart">&#9825;</div>
+        </div>
+      </a>
+
+      <a class="feat-card heat-warm" href="#tnd-room-maria">
+        <div class="feat-card-row">
+          <div class="feat-mono m-tess">T</div>
+          <div class="feat-card-body">
+            <div class="feat-name">Tess Aldridge</div>
+            <div class="feat-debt">Sent thanks · close the loop when you can</div>
+            <span class="feat-verb v-thank">Thank</span>
+          </div>
+          <div class="feat-heart">&#9825;</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- MARIA ROOM -->
+  <div class="feat-room" id="tnd-room-maria">
+    <div class="feat-room-head">
+      <a class="feat-back" href="#feat-feed"><span class="feat-back-x">&#8595;</span> Back to your people</a>
+      <div class="feat-room-id">
+        <div class="feat-room-mono m-maria">M</div>
+        <div>
+          <div class="feat-room-name">Maria Okonkwo</div>
+          <div class="feat-room-meta">Designer · met at the Lisbon workshop · 9 threads</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-thread">
+      <div class="feat-thread-label">Recently</div>
+
+      <div class="feat-mem txn">
+        <div class="feat-mem-date">June 9 <span class="feat-glyph">&#9742;</span></div>
+        <div class="feat-mem-text">She left a voicemail asking if you'd seen the revised deck.</div>
+      </div>
+
+      <div class="feat-mem personal">
+        <div class="feat-mem-date">May 2 <span class="feat-glyph">&#9825;</span></div>
+        <div class="feat-mem-text">Told you her daughter finally took her first steps — she cried describing it and so did you a little.</div>
+      </div>
+
+      <div class="feat-mem txn">
+        <div class="feat-mem-date">Apr 18 <span class="feat-glyph">&#9993;</span></div>
+        <div class="feat-mem-text">Forwarded the contract redlines, said no rush.</div>
+      </div>
+
+      <div class="feat-thread-label">Earlier this year</div>
+
+      <div class="feat-mem personal faded">
+        <div class="feat-mem-date">Feb 14 <span class="feat-glyph">&#9825;</span></div>
+        <div class="feat-mem-text">She mailed you a postcard from Porto — said the harbour reminded her of the night you all stayed out too late.</div>
+      </div>
+
+      <div class="feat-mem txn fadest">
+        <div class="feat-mem-date">Jan 6 <span class="feat-glyph">&#9670;</span></div>
+        <div class="feat-mem-text">Signed off on the Q1 scope.</div>
+      </div>
+
+      <div class="feat-mem personal fadest">
+        <div class="feat-mem-date">Last autumn <span class="feat-glyph">&#9825;</span></div>
+        <div class="feat-mem-text">The Lisbon workshop. She lent you her umbrella and never asked for it back.</div>
+      </div>
+
+      <div class="feat-hero">
+        <div class="feat-hero-line">You've tended Maria for 14 months.</div>
+      </div>
+    </div>
+
+    <div class="feat-room-foot">
+      <div class="feat-foot-hint">She's waited 6 days. Now you remember why she matters.</div>
+      <a class="feat-act a-warm" href="#feat-feed">Reply</a>
+    </div>
+  </div>
+
+  <!-- PRIYA ROOM -->
+  <div class="feat-room" id="tnd-room-priya">
+    <div class="feat-room-head">
+      <a class="feat-back" href="#feat-feed"><span class="feat-back-x">&#8595;</span> Back to your people</a>
+      <div class="feat-room-id">
+        <div class="feat-room-mono m-priya">P</div>
+        <div>
+          <div class="feat-room-name">Priya Nair</div>
+          <div class="feat-room-meta">Old roommate · turned collaborator · 23 threads</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-thread">
+      <div class="feat-thread-label">Recently</div>
+
+      <div class="feat-mem txn">
+        <div class="feat-mem-date">May 8 <span class="feat-glyph">&#9993;</span></div>
+        <div class="feat-mem-text">Shared the grant timeline, then went quiet.</div>
+      </div>
+
+      <div class="feat-mem personal">
+        <div class="feat-mem-date">Apr 20 <span class="feat-glyph">&#9825;</span></div>
+        <div class="feat-mem-text">She admitted she's been burnt out and you were the only person she said it to. You sent her the long voice note.</div>
+      </div>
+
+      <div class="feat-mem txn">
+        <div class="feat-mem-date">Mar 30 <span class="feat-glyph">&#9670;</span></div>
+        <div class="feat-mem-text">Looped you into the funding intro with Jonas.</div>
+      </div>
+
+      <div class="feat-thread-label">The long history</div>
+
+      <div class="feat-mem personal faded">
+        <div class="feat-mem-date">Two winters ago <span class="feat-glyph">&#9825;</span></div>
+        <div class="feat-mem-text">You shared that tiny flat with the broken radiator. She made soup the week you were sick and never let you forget it.</div>
+      </div>
+
+      <div class="feat-mem txn fadest">
+        <div class="feat-mem-date">Years back <span class="feat-glyph">&#9742;</span></div>
+        <div class="feat-mem-text">The 2am call about whether to take the job. You both took it.</div>
+      </div>
+
+      <div class="feat-hero">
+        <div class="feat-hero-line">You've tended Priya for 6 years.</div>
+      </div>
+    </div>
+
+    <div class="feat-room-foot">
+      <div class="feat-foot-hint">Five quiet weeks. A small nudge keeps six years warm.</div>
+      <a class="feat-act a-accent" href="#feat-feed">Nudge</a>
+    </div>
+  </div>
+
+</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

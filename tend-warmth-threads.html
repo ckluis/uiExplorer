@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warmth Threads — Origination · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); }
+
+/* ─── Accessibility ─── */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.experiment-frame { display: flex; height: 100vh; overflow: hidden; }
+
+/* ─── Sidebar — Paper ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.experiment-sidebar a { color: var(--accent-lo); text-decoration: none; }
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent-lo);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+/* Origin badge (green) instead of version badge */
+.experiment-sidebar .exp-origin-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--orig-bg);
+  color: var(--orig);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(31,122,77,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--auto-bg);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(154,85,0,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 16px;
+}
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  margin: 0 0 10px 0;
+}
+.experiment-sidebar .exp-section p { margin: 0; color: var(--ink-soft); }
+
+.experiment-sidebar .exp-origination-link { font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+.experiment-sidebar .exp-origination-link a { color: var(--orig); font-weight: 600; }
+
+/* ─── Versions card (lists all variants) ─── */
+.experiment-sidebar .exp-versions-card { display: flex; flex-direction: column; gap: 2px; }
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(31,122,77,0.18); }
+.experiment-sidebar .exp-vc-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px; border-radius: 5px;
+  text-decoration: none; color: inherit;
+  border: 1px solid transparent; transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: var(--bg-sunken); }
+.experiment-sidebar .exp-vc-entry.current { background: var(--accent-dim); border-color: var(--accent-line); }
+.experiment-sidebar .exp-vc-v { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent-lo); min-width: 26px; }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px; color: var(--ink-mute);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ─── Content area — dark backdrop so the editorial sheet floats ─── */
+.origin-content {
+  flex: 1;
+  overflow-y: auto;
+  background: linear-gradient(135deg,#100f0d,#171614);
+  padding: 56px 64px 80px;
+}
+.origin-content::-webkit-scrollbar { width: 8px; }
+.origin-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+
+.origin-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--shadow-pop);
+  padding: 48px 56px 64px;
+}
+
+.origin-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-lo);
+  margin-bottom: 12px;
+}
+.origin-title {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+.origin-lead { font-size: 16px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 40px; max-width: 640px; }
+
+.origin-block { margin-bottom: 48px; }
+.origin-block-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Verbatim master prompt panel */
+.origin-prompt {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 24px 28px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+
+.origin-research { font-size: 14px; line-height: 1.7; color: var(--ink-soft); }
+
+/* Variant grid */
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.variant-card {
+  display: block;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.variant-card:hover { border-color: var(--accent-line); transform: translateY(-2px); box-shadow: var(--shadow-pop); text-decoration: none; }
+.variant-card .vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-lo);
+}
+.variant-card .vc-name { font-size: 14px; font-weight: 600; color: var(--ink); margin: 6px 0 4px; }
+.variant-card .vc-desc { font-size: 12px; color: var(--ink-mute); line-height: 1.5; }
+
+/* AskUserQuestion block (for origin page, if interactions shaped the series) */
+.origin-ask {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.origin-ask-label {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent-lo); margin-bottom: 8px;
+}
+.origin-ask-question { font-size: 14px; color: var(--ink); margin-bottom: 12px; }
+.origin-ask-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.origin-ask-option {
+  font-family: var(--mono); font-size: 12px; color: var(--ink-mute);
+  padding: 6px 10px; background: var(--bg-elev);
+  border: 1px solid var(--rule-soft); border-radius: 5px;
+}
+.origin-ask-option.selected { color: var(--ink); background: var(--accent-dim); border-color: var(--accent-line); font-weight: 600; }
+.origin-ask-answer {
+  font-size: 13px; color: var(--ink-soft);
+  padding: 10px 12px; background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2); border-radius: 5px;
+}
+.origin-ask-answer strong { color: var(--orig); }
+
+.origin-exec { font-family: var(--mono); font-size: 12px; color: var(--ink-mute); line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ ORIGIN PAGE SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Warmth Threads</h1>
+      <span class="exp-origin-badge">Origin</span>
+      <span class="exp-model opus">Opus 4.8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+    </div>
+
+    <div class="exp-section">
+      <h2>About This Series</h2>
+      <p>5 distinct, fully-autonomous interpretations of one new Tend feature — Warmth Threads — generated from a single OG master prompt by parallel build agents.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">
+        The verbatim master prompt and all AskUserQuestion interactions appear in the main panel.
+      </p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Variants</h2>
+      <div class="exp-versions-card">
+        <a href="tend-warmth-threads-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Pull-Down Thread</span>
+        </a>
+        <a href="tend-warmth-threads-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Thread Flip</span>
+        </a>
+        <a href="tend-warmth-threads-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Memory Lane</span>
+        </a>
+        <a href="tend-warmth-threads-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Warmth Ledger</span>
+        </a>
+        <a href="tend-warmth-threads-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Keepsake Stack</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ ORIGIN CONTENT ════════════════════ -->
+  <main class="origin-content">
+    <div class="origin-inner">
+      <div class="origin-eyebrow">Origination Series</div>
+      <h1 class="origin-title">Warmth Threads</h1>
+      <p class="origin-lead">Five distinct takes on one idea: give every Tend contact a warm thread of past touches, so you remember who someone is before you triage them. Generated autonomously from the OG master prompt below.</p>
+
+      <!-- Verbatim master prompt — copy-pasted, never paraphrased -->
+      <div class="origin-block">
+        <div class="origin-block-label">Master Prompt</div>
+        <div class="origin-prompt">
+          AUTONOMOUS ORIGINATION ROUND — "Warmth Threads" for Tend.<br><br>You are spawning 5 parallel Builder agents. Each builds ONE standalone variant of the SAME feature: Warmth Threads. This is NOT 5 features — it is 5 distinct design/interaction interpretations of one idea.<br><br>THE FEATURE — Warmth Threads:<br>Tend is a mobile-only "relationship inbox": contacts are unread messages ranked by relational debt (days-since-touch × how much they matter), triaged with swipe-to-log/snooze verbs. v1 nailed the unread badge and the triage verb but stopped at the TOP of the thread — it tells you a relationship is 9 days quiet and worth $40k, but never what was said, promised, or shared. That's the cold-spreadsheet failure mode Tend exists to fight. Warmth Threads adds the missing half of the email metaphor: the conversation history underneath the unread line. Each person-card can reveal a warm vertical thread of past touches — calls, notes, meetings, and especially PERSONAL moments ("Kid's piano recital — wished her luck", "Closed the renewal over coffee — she brought her dog") — so that before you triage someone, you remember who they actually are. It is the mirror image of debt: one face is "what you owe," the other is "why they matter." Personal/human memories must visually glow WARMER than transactional ones. The relationship's age should be stated as a kept thing, not a metric ("You've tended Maria for 14 months").<br><br>TEND CONTEXT &amp; HARD CONSTRAINTS (every variant must obey):<br>- Mobile-only. Exactly 375px wide × 720px tall. Design only for that viewport.<br>- Pure HTML + CSS. NO JavaScript whatsoever. All interaction via CSS checkbox/radio + :checked sibling selectors, :target, :hover, max-height/transform transitions, scroll-snap. Author honest static proof states (e.g., one card pre-expanded) since there's no JS.<br>- Warm palette — scope ALL CSS variables to .tnd-app, NOT :root. Reuse verbatim:<br>  --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;<br>  --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;<br>- Fonts: 'Fraunces' (warm serif display, for dates/names/emotional lines) + 'Inter' (body/UI) via Google Fonts.<br>- Reuse the existing inbox feel: a sticky header with pressure context, a debt-ranked feed of person-cards (heat edge, monogram, one context line, debt line), a thumb-zone triage verb. The triage verb must stay reachable while a thread is open.<br>- Touch glyphs for thread entries: ☎ call · ✉ note · ◆ meeting · ♡ personal. Personal entries get the warm/amber treatment and rise visually above transactional ones.<br>- End each expanded thread with the relationship-age line in sage/green Fraunces.<br><br>DELIVERABLE per builder: a single self-contained HTML file with all CSS inline in a &lt;style&gt; block, wrapped in a .tnd-app container, fitting 375×720. It must look like native Tend, not a generic timeline. Each builder receives a DISTINCT angle (below) and must commit fully to that interpretation so the 5 variants read as genuinely different products of the same idea — not reskins.
+        </div>
+      </div>
+
+      <!-- Research context / domains -->
+      <div class="origin-block">
+        <div class="origin-block-label">Research Context</div>
+        <div class="origin-research">Warmth Threads adds the missing half of Tend's email metaphor: the conversation history beneath the unread/debt line — calls, notes, meetings, and especially personal moments — so you remember who a contact actually is before you triage them. It is the mirror of relational debt: one face is <em>what you owe</em>, the other is <em>why they matter</em>.<br><br>Three feature directions were scouted in parallel before this one was chosen:<ul><li><strong>The Drift Tide</strong> — A proactive forecast band that surfaces relationships about to go &quot;unread&quot; — predicting tomorrow&#x27;s debt today so you tend a few warm ones before they ever turn red.</li><li><strong>The Daily Round</strong> — A once-a-day, five-card &quot;tending ritual&quot; that deals you a fixed hand each morning and ends in a streak-keeping closing card — turning relationship upkeep into a brushing-your-teeth habit instead of an open-ended chore.</li><li><strong>Warmth Threads</strong> — A pull-down &quot;memory&quot; face on each person-card that replays the relationship&#x27;s warm moments as a vertical thread of past touches — so before you triage someone, you remember who they actually are.</li></ul></div>
+      </div>
+
+      <!-- Variants -->
+      <div class="origin-block">
+        <div class="origin-block-label">Variants</div>
+        <div class="variant-grid">
+          <a href="tend-warmth-threads-v1.html" class="variant-card">
+            <div class="vc-v">v1</div>
+            <div class="vc-name">Pull-Down Thread</div>
+            <div class="vc-desc">The thread lives INSIDE the card and grows downward in place via a checkbox toggle — the card expands to ~3x height, pushing the feed below it, exactly mirroring the diff-flip pattern. The thread is an accordion that belongs to the card.</div>
+          </a>
+          <a href="tend-warmth-threads-v2.html" class="variant-card">
+            <div class="vc-v">v2</div>
+            <div class="vc-name">Thread Flip</div>
+            <div class="vc-desc">The thread is the BACK of the card — a 3D flip reveals it. The debt face and the warmth face are literally two sides of the same object, reinforcing &#x27;what you owe&#x27; vs &#x27;why they matter&#x27; as one card with two faces.</div>
+          </a>
+          <a href="tend-warmth-threads-v3.html" class="variant-card">
+            <div class="vc-v">v3</div>
+            <div class="vc-name">Memory Lane</div>
+            <div class="vc-desc">Full-screen immersive thread via :target — tapping a card slides up a dedicated full-bleed 375×720 &#x27;memory view&#x27; for that one person, an emotional reading room rather than an inline accordion. Big typography, generous whitespace, scroll-through reminiscence.</div>
+          </a>
+          <a href="tend-warmth-threads-v4.html" class="variant-card">
+            <div class="vc-v">v4</div>
+            <div class="vc-name">Warmth Ledger</div>
+            <div class="vc-desc">Reframes the thread as a two-column &#x27;balance sheet of the relationship&#x27; — warm/personal memories on one rail, transactional touches on another — so the thread literally visualizes warmth-vs-business balance. Data-aware but humane.</div>
+          </a>
+          <a href="tend-warmth-threads-v5.html" class="variant-card">
+            <div class="vc-v">v5</div>
+            <div class="vc-name">Keepsake Stack</div>
+            <div class="vc-desc">Memories are physical keepsakes — a peelable stack of layered note-cards / polaroids that fan out when opened, with slight rotations, paper texture, and tape. The thread feels like opening a shoebox of mementos, not scrolling a feed.</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Execution model -->
+      <div class="origin-block">
+        <div class="origin-block-label">Execution Model</div>
+        <div class="origin-exec">Fully autonomous round, no human interaction during creation. <br>Lead → [3 feature scouts ×Opus] → Author (Opus, chose the feature + wrote the OG prompt and 5 variant prompts) → [Builder ×5 Opus] (parallel) → Lead assembly &amp; registration. <br>Run metadata: model Opus 4.8 · effort high · harness Claude Code · autonomy autonomous.</div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+
+</body>
+</html>

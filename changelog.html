@@ -396,6 +396,75 @@
   <div class="changelog-entries">
     <!-- Append new entries on top. Newest first. -->
     <div class="gc-entry gc-meta">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Updated</span>
+      <span class="gc-target">tend-warmth-threads.html + tend-warmth-threads-v1..v5.html · experiments.html · index.html</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-prompt-badge">Prompt ↓</span>
+      <span class="gc-desc">Autonomous origination round (ultracode workflow): 3 parallel feature scouts proposed new Tend features; an Author agent chose <strong>Warmth Threads</strong> and wrote the OG master prompt + 5 distinct variant build-prompts; 5 parallel Opus Builders each built a variant (Pull-Down Thread · Thread Flip · Memory Lane · Warmth Ledger · Keepsake Stack). Fully autonomous — no human interaction during creation. The verbatim OG master prompt is below; each variant's exact build prompt lives in its own sidebar.</span>
+      <div class="gc-prompt"><div class="gc-prompt-inner">
+        <div class="gc-prompt-label">OG master prompt (verbatim)</div>
+        AUTONOMOUS ORIGINATION ROUND — "Warmth Threads" for Tend.<br><br>You are spawning 5 parallel Builder agents. Each builds ONE standalone variant of the SAME feature: Warmth Threads. This is NOT 5 features — it is 5 distinct design/interaction interpretations of one idea.<br><br>THE FEATURE — Warmth Threads:<br>Tend is a mobile-only "relationship inbox": contacts are unread messages ranked by relational debt (days-since-touch × how much they matter), triaged with swipe-to-log/snooze verbs. v1 nailed the unread badge and the triage verb but stopped at the TOP of the thread — it tells you a relationship is 9 days quiet and worth $40k, but never what was said, promised, or shared. That's the cold-spreadsheet failure mode Tend exists to fight. Warmth Threads adds the missing half of the email metaphor: the conversation history underneath the unread line. Each person-card can reveal a warm vertical thread of past touches — calls, notes, meetings, and especially PERSONAL moments ("Kid's piano recital — wished her luck", "Closed the renewal over coffee — she brought her dog") — so that before you triage someone, you remember who they actually are. It is the mirror image of debt: one face is "what you owe," the other is "why they matter." Personal/human memories must visually glow WARMER than transactional ones. The relationship's age should be stated as a kept thing, not a metric ("You've tended Maria for 14 months").<br><br>TEND CONTEXT &amp; HARD CONSTRAINTS (every variant must obey):<br>- Mobile-only. Exactly 375px wide × 720px tall. Design only for that viewport.<br>- Pure HTML + CSS. NO JavaScript whatsoever. All interaction via CSS checkbox/radio + :checked sibling selectors, :target, :hover, max-height/transform transitions, scroll-snap. Author honest static proof states (e.g., one card pre-expanded) since there's no JS.<br>- Warm palette — scope ALL CSS variables to .tnd-app, NOT :root. Reuse verbatim:<br>  --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;<br>  --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;<br>- Fonts: 'Fraunces' (warm serif display, for dates/names/emotional lines) + 'Inter' (body/UI) via Google Fonts.<br>- Reuse the existing inbox feel: a sticky header with pressure context, a debt-ranked feed of person-cards (heat edge, monogram, one context line, debt line), a thumb-zone triage verb. The triage verb must stay reachable while a thread is open.<br>- Touch glyphs for thread entries: ☎ call · ✉ note · ◆ meeting · ♡ personal. Personal entries get the warm/amber treatment and rise visually above transactional ones.<br>- End each expanded thread with the relationship-age line in sage/green Fraunces.<br><br>DELIVERABLE per builder: a single self-contained HTML file with all CSS inline in a &lt;style&gt; block, wrapped in a .tnd-app container, fitting 375×720. It must look like native Tend, not a generic timeline. Each builder receives a DISTINCT angle (below) and must commit fully to that interpretation so the 5 variants read as genuinely different products of the same idea — not reskins.
+      </div></div>
+    </div>
+    <a href="tend-warmth-threads.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads.html — Warmth Threads origination page</span>
+    </a>
+    <a href="tend-warmth-threads-v1.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads-v1.html — Pull-Down Thread</span>
+    </a>
+    <a href="tend-warmth-threads-v2.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads-v2.html — Thread Flip</span>
+    </a>
+    <a href="tend-warmth-threads-v3.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads-v3.html — Memory Lane</span>
+    </a>
+    <a href="tend-warmth-threads-v4.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads-v4.html — Warmth Ledger</span>
+    </a>
+    <a href="tend-warmth-threads-v5.html" class="gc-entry">
+      <span class="gc-time">6/18 11:10pm</span>
+      <span class="gc-action">Created</span>
+      <span class="gc-model opus">Opus 4.8</span>
+      <span class="gc-effort high">effort: high</span>
+      <span class="gc-harness">Claude Code</span>
+      <span class="gc-autonomy autonomous">autonomous</span>
+      <span class="gc-target">tend-warmth-threads-v5.html — Keepsake Stack</span>
+    </a>
+    <div class="gc-entry gc-meta">
       <span class="gc-time">6/18 10:40pm</span>
       <span class="gc-action">Updated</span>
       <span class="gc-target">index.html · experiments.html · changelog.html · templates/experiment-template.html · templates/origin-template.html</span>
