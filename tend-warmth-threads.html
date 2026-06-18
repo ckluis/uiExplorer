@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{FAMILY_NAME}} — Origination · The UI Lab</title>
+<title>Warmth Threads — Origination · The UI Lab</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
@@ -330,15 +330,15 @@ body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); 
   <aside class="experiment-sidebar">
     <div>
       <a href="experiments.html" class="exp-back">← All Experiments</a>
-      <h1>{{FAMILY_NAME}}</h1>
+      <h1>Warmth Threads</h1>
       <span class="exp-origin-badge">Origin</span>
-      <span class="exp-model {{MODEL_CLASS}}">{{MODEL}}</span>
+      <span class="exp-model opus">Opus 4.8</span>
       <span class="exp-autonomous">Fully Autonomous</span>
     </div>
 
     <div class="exp-section">
       <h2>About This Series</h2>
-      <p>{{SERIES_SUMMARY}}</p>
+      <p>5 distinct, fully-autonomous interpretations of one new Tend feature — Warmth Threads — generated from a single OG master prompt by parallel build agents.</p>
     </div>
 
     <div class="exp-section">
@@ -351,12 +351,26 @@ body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); 
     <div class="exp-section">
       <h2>Variants</h2>
       <div class="exp-versions-card">
-        <!-- Most recent variant first. Add one per variant. -->
-        <a href="{{FAMILY}}-v1.html" class="exp-vc-entry">
+        <a href="tend-warmth-threads-v1.html" class="exp-vc-entry">
           <span class="exp-vc-v">v1</span>
-          <span class="exp-vc-desc">{{VARIANT_1_NAME}}</span>
+          <span class="exp-vc-desc">Pull-Down Thread</span>
         </a>
-        <!-- ... down to vN ... -->
+        <a href="tend-warmth-threads-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Thread Flip</span>
+        </a>
+        <a href="tend-warmth-threads-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Memory Lane</span>
+        </a>
+        <a href="tend-warmth-threads-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Warmth Ledger</span>
+        </a>
+        <a href="tend-warmth-threads-v5.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Keepsake Stack</span>
+        </a>
       </div>
     </div>
   </aside>
@@ -365,144 +379,65 @@ body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); 
   <main class="origin-content">
     <div class="origin-inner">
       <div class="origin-eyebrow">Origination Series</div>
-      <h1 class="origin-title">{{FAMILY_NAME}}</h1>
-      <p class="origin-lead">{{SERIES_LEAD}}</p>
+      <h1 class="origin-title">Warmth Threads</h1>
+      <p class="origin-lead">Five distinct takes on one idea: give every Tend contact a warm thread of past touches, so you remember who someone is before you triage them. Generated autonomously from the OG master prompt below.</p>
 
       <!-- Verbatim master prompt — copy-pasted, never paraphrased -->
       <div class="origin-block">
         <div class="origin-block-label">Master Prompt</div>
         <div class="origin-prompt">
-          {{MASTER_PROMPT}}
+          AUTONOMOUS ORIGINATION ROUND — "Warmth Threads" for Tend.<br><br>You are spawning 5 parallel Builder agents. Each builds ONE standalone variant of the SAME feature: Warmth Threads. This is NOT 5 features — it is 5 distinct design/interaction interpretations of one idea.<br><br>THE FEATURE — Warmth Threads:<br>Tend is a mobile-only "relationship inbox": contacts are unread messages ranked by relational debt (days-since-touch × how much they matter), triaged with swipe-to-log/snooze verbs. v1 nailed the unread badge and the triage verb but stopped at the TOP of the thread — it tells you a relationship is 9 days quiet and worth $40k, but never what was said, promised, or shared. That's the cold-spreadsheet failure mode Tend exists to fight. Warmth Threads adds the missing half of the email metaphor: the conversation history underneath the unread line. Each person-card can reveal a warm vertical thread of past touches — calls, notes, meetings, and especially PERSONAL moments ("Kid's piano recital — wished her luck", "Closed the renewal over coffee — she brought her dog") — so that before you triage someone, you remember who they actually are. It is the mirror image of debt: one face is "what you owe," the other is "why they matter." Personal/human memories must visually glow WARMER than transactional ones. The relationship's age should be stated as a kept thing, not a metric ("You've tended Maria for 14 months").<br><br>TEND CONTEXT &amp; HARD CONSTRAINTS (every variant must obey):<br>- Mobile-only. Exactly 375px wide × 720px tall. Design only for that viewport.<br>- Pure HTML + CSS. NO JavaScript whatsoever. All interaction via CSS checkbox/radio + :checked sibling selectors, :target, :hover, max-height/transform transitions, scroll-snap. Author honest static proof states (e.g., one card pre-expanded) since there's no JS.<br>- Warm palette — scope ALL CSS variables to .tnd-app, NOT :root. Reuse verbatim:<br>  --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;<br>  --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;<br>- Fonts: 'Fraunces' (warm serif display, for dates/names/emotional lines) + 'Inter' (body/UI) via Google Fonts.<br>- Reuse the existing inbox feel: a sticky header with pressure context, a debt-ranked feed of person-cards (heat edge, monogram, one context line, debt line), a thumb-zone triage verb. The triage verb must stay reachable while a thread is open.<br>- Touch glyphs for thread entries: ☎ call · ✉ note · ◆ meeting · ♡ personal. Personal entries get the warm/amber treatment and rise visually above transactional ones.<br>- End each expanded thread with the relationship-age line in sage/green Fraunces.<br><br>DELIVERABLE per builder: a single self-contained HTML file with all CSS inline in a &lt;style&gt; block, wrapped in a .tnd-app container, fitting 375×720. It must look like native Tend, not a generic timeline. Each builder receives a DISTINCT angle (below) and must commit fully to that interpretation so the 5 variants read as genuinely different products of the same idea — not reskins.
         </div>
-
-        <!-- ── AskUserQuestion interactions — uncomment one per interaction ──
-        <div class="origin-ask">
-          <div class="origin-ask-label">AskUserQuestion</div>
-          <div class="origin-ask-question">{{QUESTION}}</div>
-          <div class="origin-ask-options">
-            <div class="origin-ask-option">{{OPTION_1}}</div>
-            <div class="origin-ask-option selected">{{SELECTED_OPTION}}</div>
-          </div>
-          <div class="origin-ask-answer"><strong>Answer:</strong> {{ANSWER_TEXT}}</div>
-        </div>
-        ── end AskUserQuestion block ── -->
       </div>
 
       <!-- Research context / domains -->
       <div class="origin-block">
         <div class="origin-block-label">Research Context</div>
-        <div class="origin-research">{{RESEARCH_CONTEXT}}</div>
+        <div class="origin-research">Warmth Threads adds the missing half of Tend's email metaphor: the conversation history beneath the unread/debt line — calls, notes, meetings, and especially personal moments — so you remember who a contact actually is before you triage them. It is the mirror of relational debt: one face is <em>what you owe</em>, the other is <em>why they matter</em>.<br><br>Three feature directions were scouted in parallel before this one was chosen:<ul><li><strong>The Drift Tide</strong> — A proactive forecast band that surfaces relationships about to go &quot;unread&quot; — predicting tomorrow&#x27;s debt today so you tend a few warm ones before they ever turn red.</li><li><strong>The Daily Round</strong> — A once-a-day, five-card &quot;tending ritual&quot; that deals you a fixed hand each morning and ends in a streak-keeping closing card — turning relationship upkeep into a brushing-your-teeth habit instead of an open-ended chore.</li><li><strong>Warmth Threads</strong> — A pull-down &quot;memory&quot; face on each person-card that replays the relationship&#x27;s warm moments as a vertical thread of past touches — so before you triage someone, you remember who they actually are.</li></ul></div>
       </div>
 
       <!-- Variants -->
       <div class="origin-block">
         <div class="origin-block-label">Variants</div>
         <div class="variant-grid">
-          {{VARIANT_GRID}}
-          <!-- Each variant card:
-          <a href="{{FAMILY}}-v1.html" class="variant-card">
+          <a href="tend-warmth-threads-v1.html" class="variant-card">
             <div class="vc-v">v1</div>
-            <div class="vc-name">{{VARIANT_NAME}}</div>
-            <div class="vc-desc">{{VARIANT_DESC}}</div>
+            <div class="vc-name">Pull-Down Thread</div>
+            <div class="vc-desc">The thread lives INSIDE the card and grows downward in place via a checkbox toggle — the card expands to ~3x height, pushing the feed below it, exactly mirroring the diff-flip pattern. The thread is an accordion that belongs to the card.</div>
           </a>
-          -->
+          <a href="tend-warmth-threads-v2.html" class="variant-card">
+            <div class="vc-v">v2</div>
+            <div class="vc-name">Thread Flip</div>
+            <div class="vc-desc">The thread is the BACK of the card — a 3D flip reveals it. The debt face and the warmth face are literally two sides of the same object, reinforcing &#x27;what you owe&#x27; vs &#x27;why they matter&#x27; as one card with two faces.</div>
+          </a>
+          <a href="tend-warmth-threads-v3.html" class="variant-card">
+            <div class="vc-v">v3</div>
+            <div class="vc-name">Memory Lane</div>
+            <div class="vc-desc">Full-screen immersive thread via :target — tapping a card slides up a dedicated full-bleed 375×720 &#x27;memory view&#x27; for that one person, an emotional reading room rather than an inline accordion. Big typography, generous whitespace, scroll-through reminiscence.</div>
+          </a>
+          <a href="tend-warmth-threads-v4.html" class="variant-card">
+            <div class="vc-v">v4</div>
+            <div class="vc-name">Warmth Ledger</div>
+            <div class="vc-desc">Reframes the thread as a two-column &#x27;balance sheet of the relationship&#x27; — warm/personal memories on one rail, transactional touches on another — so the thread literally visualizes warmth-vs-business balance. Data-aware but humane.</div>
+          </a>
+          <a href="tend-warmth-threads-v5.html" class="variant-card">
+            <div class="vc-v">v5</div>
+            <div class="vc-name">Keepsake Stack</div>
+            <div class="vc-desc">Memories are physical keepsakes — a peelable stack of layered note-cards / polaroids that fan out when opened, with slight rotations, paper texture, and tape. The thread feels like opening a shoebox of mementos, not scrolling a feed.</div>
+          </a>
         </div>
       </div>
 
       <!-- Execution model -->
       <div class="origin-block">
         <div class="origin-block-label">Execution Model</div>
-        <div class="origin-exec">{{EXECUTION_MODEL}}</div>
+        <div class="origin-exec">Fully autonomous round, no human interaction during creation. <br>Lead → [3 feature scouts ×Opus] → Author (Opus, chose the feature + wrote the OG prompt and 5 variant prompts) → [Builder ×5 Opus] (parallel) → Lead assembly &amp; registration. <br>Run metadata: model Opus 4.8 · effort high · harness Claude Code · autonomy autonomous.</div>
       </div>
     </div>
   </main>
 
 </div>
 
-<!--
-════════════════════════════════════════════════════════════════════════════
-  VARIANT SIDEBAR SNIPPET — copy this into each {{FAMILY}}-v{N}.html variant.
-  This is the autonomous-variant sidebar shell. Pair it with the standard
-  experiment-template.html shell (sidebar CSS + device preview) and swap the
-  version/model header block for the one below. Restyled to Lab Instrument.
 
-  Requires these extra CSS rules (add alongside the experiment-template CSS, which
-  already supplies .exp-runmeta, .exp-effort, .exp-harness, and .exp-autonomy —
-  the four provenance axes: model · effort · harness · autonomy):
-
-  .experiment-sidebar .exp-variant {
-    display:inline-block; font-family:var(--mono);
-    background:var(--orig-bg); color:var(--orig);
-    font-size:11px; font-weight:600; padding:2px 8px;
-    border:1px solid rgba(31,122,77,0.3); border-radius:4px; margin-top:4px;
-  }
-  .experiment-sidebar .exp-origination-link { font-size:12px; line-height:1.6; color:var(--ink-soft); }
-  .experiment-sidebar .exp-origination-link a { color:var(--orig); font-weight:600; }
-
-  HTML:
-
-  <aside class="experiment-sidebar">
-    <div>
-      <a href="experiments.html" class="exp-back">← All Experiments</a>
-      <h1>{{FAMILY_NAME}}</h1>
-      <span class="exp-variant">v{N}</span>
-      <span class="exp-model opus">Opus 4.6</span>
-      <span class="exp-autonomous">Fully Autonomous</span>
-      <!-- Run metadata — all four provenance axes: model · effort · harness · autonomy.
-           Origination variants are autonomous, so {{AUTONOMY_CLASS}}=autonomous, {{AUTONOMY}}=autonomous. -->
-      <div class="exp-runmeta">
-        <span class="exp-effort {{EFFORT_CLASS}}">{{EFFORT}}</span>
-        <span class="exp-harness">Claude Code</span>
-        <span class="exp-autonomy {{AUTONOMY_CLASS}}">{{AUTONOMY}}</span>
-      </div>
-    </div>
-
-    <div class="exp-section">
-      <h2>Purpose</h2>
-      <p>{{WHAT THIS VARIANT EXPLORES}}. Part of a {N}-variant research series.</p>
-    </div>
-
-    <div class="exp-section">
-      <h2>Variant Focus</h2>
-      <p>{{SPECIFIC UI APPROACH / PERSONA / DESIGN DIRECTION FOR THIS VARIANT}}.</p>
-    </div>
-
-    <div class="exp-section">
-      <h2>Prompt</h2>
-      <div class="exp-prompt">
-        This version was generated autonomously by a sub-agent. The prompt below is the
-        exact prompt given to the build agent — it was crafted by the orchestrating agent
-        based on the origination prompt and research phase.<br><br>
-        <strong>{{VARIANT NAME}}</strong><br><br>
-        {{THE FULL, EXACT BUILD PROMPT GIVEN TO THE SUB-AGENT — verbatim, not summarized.
-        Use <br><br> between paragraphs.}}
-      </div>
-    </div>
-
-    <div class="exp-section">
-      <h2>Origination Prompt</h2>
-      <p class="exp-origination-link">
-        This experiment is part of a research-driven series.
-        <a href="{{FAMILY}}.html">View the origination prompt →</a>
-      </p>
-    </div>
-
-    <div class="exp-section">
-      <h2>Versions</h2>
-      <div class="exp-versions-card">
-        <a href="{{FAMILY}}.html" class="exp-vc-origin">Origination Prompt →</a>
-        <a href="{{FAMILY}}-v2.html" class="exp-vc-entry">
-          <span class="exp-vc-v">v2</span>
-          <span class="exp-vc-desc">Variant concept name</span>
-        </a>
-        <a href="{{FAMILY}}-v1.html" class="exp-vc-entry current">
-          <span class="exp-vc-v">v1</span>
-          <span class="exp-vc-desc">Variant concept name</span>
-        </a>
-      </div>
-    </div>
-  </aside>
-════════════════════════════════════════════════════════════════════════════
--->
 </body>
 </html>

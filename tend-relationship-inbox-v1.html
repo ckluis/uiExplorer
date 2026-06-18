@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tend — v1 · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:#0a0c10; --surface-1:#0f1217; --surface-2:#141821; --surface-3:#1a1f2a;
+  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.13);
+  --ink:#e6e9ef; --ink-dim:#9aa4b2; --ink-faint:#6b7480;
+  --accent:#2ee6c6; --accent-2:#38bdf8; --accent-dim:rgba(46,230,198,0.12); --accent-line:rgba(46,230,198,0.30);
+  --opus:#e5a63b; --sonnet:#8b9cf7; --haiku:#5ec4d4; --auto:#f5a623; --orig:#2ecc71;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+
+/* ─── Frame ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Experiment Info Sidebar — Lab Instrument ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--surface-1);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+.experiment-sidebar a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: rgba(245,166,35,0.12);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Model Badge ─── */
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku);  }
+
+/* ─── Run-metadata row (effort + harness chips) ─── */
+.experiment-sidebar .exp-runmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.experiment-sidebar .exp-effort,
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  background: rgba(255,255,255,0.03);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-effort::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-faint); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(245,166,35,0.3);
+  background: rgba(245,166,35,0.12);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); box-shadow: 0 0 6px var(--auto); }
+
+/* ─── Sections ─── */
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0 0 10px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-family: var(--sans);
+}
+
+.experiment-sidebar .exp-prompt {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── AskUserQuestion Visualization — Lab Instrument ─── */
+.experiment-sidebar .exp-ask {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.experiment-sidebar .exp-ask-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: var(--ink);
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px;
+  color: var(--ink-dim);
+  padding: 6px 8px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
+
+/* ─── Agent Trace — Lab Instrument ─── */
+.experiment-sidebar .exp-at-workflow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.experiment-sidebar .exp-agent-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.experiment-sidebar .exp-at-entry {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--line-strong);
+}
+.experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
+.experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
+.experiment-sidebar .exp-at-entry.haiku  { border-left-color: var(--haiku); }
+
+.experiment-sidebar .exp-at-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.experiment-sidebar .exp-at-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.experiment-sidebar .exp-at-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-at-model.opus   { background: rgba(229,166,59,0.15);  color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: rgba(94,196,212,0.15);  color: var(--haiku); }
+
+.experiment-sidebar .exp-at-action {
+  font-size: 11px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+}
+
+.experiment-sidebar .exp-at-arrow {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Agent Trace: Duration Badge ─── */
+.experiment-sidebar .exp-at-duration {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.05);
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Agent Trace: Effort chip ─── */
+.experiment-sidebar .exp-at-effort {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  background: rgba(255,255,255,0.03);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-at-effort::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: var(--ink-faint);
+}
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-faint); }
+
+/* ─── Agent Trace: Hover Timestamps ─── */
+.experiment-sidebar .exp-at-times {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.experiment-sidebar .exp-at-entry:hover .exp-at-times {
+  max-height: 40px;
+  opacity: 1;
+  margin-top: 4px;
+}
+.experiment-sidebar .exp-at-time-row {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  padding: 3px 0;
+}
+.experiment-sidebar .exp-at-time-label { color: var(--ink-faint); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-dim); }
+
+/* ─── Agent Trace: Full Prompt Toggle ─── */
+.experiment-sidebar input[id^="at-prompt-"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle:hover {
+  background: rgba(46,230,198,0.2);
+  color: var(--ink);
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
+  background: rgba(46,230,198,0.25);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+.experiment-sidebar .exp-at-prompt-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  padding: 0;
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
+  max-height: 800px;
+  opacity: 1;
+  padding-top: 6px;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar { width: 4px; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb { background: var(--accent-line); border-radius: 2px; }
+.experiment-sidebar .exp-at-prompt-panel-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* ─── Sidebar Versions Card — Lab Instrument ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(46,204,113,0.15); text-decoration: none; }
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+}
+.experiment-sidebar .exp-vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 26px;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-dim); }
+
+/* Model indicator in versions card */
+.experiment-sidebar .exp-vc-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+.experiment-sidebar .exp-vc-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku); }
+
+/* ─── Experiment Content + Device Preview Switcher — Lab Instrument ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg,#0d1016,#121722);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink-faint);
+  transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: var(--ink-dim); background: rgba(255,255,255,0.06); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(0,0,0,0.5);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px;
+}
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* hide preview radios */
+input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ EXPERIMENT INFO SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Tend</h1>
+      <span class="exp-version">v1</span>
+      <span class="exp-model opus">Opus 4.8</span>
+      <!-- Add only if fully autonomous: -->
+      <!-- <span class="exp-autonomous">Fully Autonomous</span> -->
+
+      <!-- Run metadata — all four provenance axes: model (above) · effort · harness · autonomy.
+           collaborative = collaborative | autonomous, collaborative = label text. -->
+      <div class="exp-runmeta">
+        <span class="exp-effort high">high</span>
+        <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy collaborative">collaborative</span>
+      </div>
+    </div>
+
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A fresh take on a mobile-only CRM that reframes every contact as an <strong>unread message</strong> and the whole app as an inbox you triage to zero. It explores whether “relational debt” ranking, swipe-to-triage, and a diff-confirm micro-beat can make relationship upkeep feel like clearing email — all in pure CSS, sized for one-handed mobile.</p>
+    </div>
+
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">
+        <em>This experiment’s prompt was generated dynamically this session by a multi-agent judge-panel workflow (4 mobile-CRM concepts → scored → winner “Tend”). The verbatim build prompt given to the Builder:</em><br><br>Build a mobile-only CRM experiment called **Tend** — a "relationship inbox." This is the experiment content that lives INSIDE the `.window` element (device preview defaults to mobile, 375px). Pure HTML/CSS, NO JavaScript, no external dependencies beyond Google Fonts, fully self-contained, must render standalone. Do NOT touch the experiment sidebar — only build the content. Every interaction must be achievable with CSS-only patterns: radio/checkbox inputs, `:checked`, `:target`, sibling/`peer` selectors, `&lt;details&gt;`, `scroll-snap`, and transforms.<br><br>=== CONCEPT &amp; METAPHOR ===<br>The core reframe: a contact is not a row in a database — it is an UNREAD MESSAGE. A relationship goes "unread" when it needs you (deal gone quiet, a promise owed, a follow-up due, a renewal looming). Home is a single descending feed of person-cards ranked by "relational debt" (days-since-last-touch × how much they matter). There is no list view, no table, no kanban. You don't manage records — you clear a feed of humans. Triage to zero = "relationship inbox zero." Reinforce the email metaphor throughout: an unread COUNT in the header IS the to-do list ("6 people need you"), section headers are temporal moods, and clearing the feed earns a genuine empty-state celebration. The whole concept must be honestly told on this ONE home screen.<br><br>=== 375px SCREEN LAYOUT (windshield / cockpit discipline) ===<br>Apply Thumbprint's thumb-zone discipline: the TOP ~60% is read-only "windshield" context (header + the scrolling feed of cards). The BOTTOM ~40% is the "cockpit" — all triage verbs and the context-aware compose bar live here, thumb-reachable, never a stretch. Concretely, top to bottom:<br><br>1. **Status header (sticky, top):** App wordmark "Tend" small. A large unread-count line as the hero of the header — e.g. "6 people need you" — styled like an inbox unread badge (this is the unread-count-as-todo framing). A thin progress meter beneath it showing how close you are to inbox zero (e.g. a hairline bar mostly empty). A small "Today's hand: 6 of 23" pill — this is Pile's smart pre-filter / daily-surfaced-card CEILING, the humane fix for the "anxiety engine" risk: only a capped set surfaces per day, never the full overdue mountain.<br><br>2. **The pressure-ranked feed (scrollable middle):** ONE vertical stream of person-cards, sorted in source-markup order by relational debt (most overdue + most valuable on top). Sticky section headers segment the feed by temporal mood, in this order: **OVERDUE**, **TODAY**, **COOLING**, **WARM &amp; QUIET**. Each header shows a count chip. The amount of "OVERDUE" you scroll through before reaching "TODAY" IS the dashboard — scroll position communicates how behind you are. No sort/filter chrome; the ranking is the interface.<br><br>3. **Compose / triage bar (sticky, bottom — the cockpit):** A single persistent thumb-zone bar whose primary verb is context-aware. Show it reading "Triage 6" by default (count = remaining unread), with a secondary "Add someone" affordance. Make clear via copy that at inbox zero it would read "Add someone." Destructive actions (Archive/Delete a contact entirely) live at the awkward FAR edge of this bar (Thumbprint's friction-by-anatomy) — visibly placed where a thumb has to stretch, as a safety rail.<br><br>=== THE PERSON-CARD (the heart of the experiment) ===<br>Each card shows ONLY ONE line of context + ONE next action — never a profile dump:<br>- Avatar (CSS monogram circle), Name, and a single context line in the form: "9 days quiet · $40k renewal" or a copilot-style proactive line: "Maya's pricing is due today" (borrow Threadbook's proactive-copilot turns as the relational-debt context line — make it read like a smart assistant's text).<br>- A **heat edge:** a thin colored LEFT BORDER encoding urgency — cold blue → warm amber → urgent red (pure CSS border-color class per card). <br>- **Staleness / weight &amp; memory (from Pile):** cold/ignored cards get a desaturated, slightly dimmed treatment via CSS `filter: grayscale()/opacity` and a subtle dog-eared corner (a small CSS triangle on the top-right). Hot cards get a faint glow/lift via box-shadow. Urgency must read VISUALLY before any text is parsed — the OVERDUE section cards look hot and saturated; WARM &amp; QUIET cards look faded and dog-eared.<br>- A single tappable **verb chip** on the card front (e.g. "Nudge", "Reply", "Log call", "Send pricing").<br><br>=== INTERACTION MODEL (CSS-only) ===<br>1. **Swipe-to-triage** (email muscle memory, not pipeline drag): each card is a horizontal `scroll-snap` track with reveal-on-scroll action panels. Scroll/swipe RIGHT reveals a green "Logged / touched" panel; swipe LEFT reveals a "Snooze" panel with chips (Tomorrow / Next week / When they reply). This is the whole interaction model. At least the top 2-3 cards should be authored fully so a viewer discovers the panels by horizontal swipe; show one card pre-nudged into a "done sliver" collapsed state as proof of the loop.<br><br>2. **Diff-confirm micro-moment (grafted from Threadbook — the key blend):** when a card's verb chip is tapped, the card FLIPS (checkbox + `transform: rotateY`/translate) to reveal an inline DIFF of exactly what the action will write before it commits — green-add / amber-change rows, e.g. "Stage: Discovery → Negotiation" (amber change), "Last touch: today" (green add), "+ Logged: sent pricing deck" (green add). A "Confirm" affordance and a "Cancel" affordance sit in the thumb zone. This adds trust and a satisfying micro-beat to triage. Make the diff visually crisp: monospace-ish field names, colored left ticks, strikethrough on the old value.<br><br>3. **Inbox-zero celebration:** include a hidden/toggleable empty-state "celebration" screen (radio or `:target` toggle, reachable from a small "preview zero" control) showing the reward payoff — "Inbox zero. 6 relationships tended today." with a calm illustration-via-CSS (e.g. a checkmark, soft gradient) and the bottom bar now reading "Add someone." This is the static payoff that proves the loop.<br><br>4. **Left-handed mirror (cheap no-JS a11y win from Thumbprint):** a single root-level CSS radio toggle backed by a `--grip-side` custom property that mirrors the compose bar's primary verb and the awkward-edge destructive action to the opposite side. Author the whole bottom bar against `--grip-side` so the flip is one custom-property swap. Expose it as a tiny "R / L" toggle in the header or compose bar.<br><br>=== SAMPLE DATA (make it feel real) ===<br>~9-11 person-cards across the four moods. Suggested:<br>- OVERDUE: "Maria Soto · 9 days quiet · $40k renewal" (red heat, chip "Nudge"); "Devon Park · pricing promised 4 days ago" (red, chip "Send pricing"); "Acme / Lena Ruiz · contract sent, no reply 6d · $120k" (red-amber, chip "Follow up").<br>- TODAY: "Maya Chen · pricing is due today" copilot line (amber, chip "Reply"); "Jordan Blake · intro call at 2pm" (amber, chip "Prep").<br>- COOLING: "Priya Nair · 18 days quiet · $15k expansion" (cool amber, chip "Check in"); "Sam Whitlock · demo no-show, 12d" (cool, chip "Reschedule").<br>- WARM &amp; QUIET: "Tomás Vidal · all good · last touch 3d" (faded blue, dog-eared, chip "Note"); "Greenfield Co. · closed-won, nurture" (faded, dog-eared, chip "Thank-you").<br>Use realistic deal values, day counts, and one or two genuinely copilot-phrased proactive lines. The diff-confirm example should use Maria or Lena (a stage change reads well).<br><br>=== COLOR &amp; MOOD DIRECTION (its own palette — NOT the Lab Instrument dark UI) ===<br>Warm, calm, humane — the OPPOSITE of a cold spreadsheet, deliberately fighting the "anxiety engine" risk. Soft off-white/parchment background (#faf7f2 range), warm near-black ink, generous rounded cards with soft shadows. Heat scale: cold = muted slate-blue (#6b8cae), warm = amber (#e0a23b), urgent = a warm coral-red (#e06a5b) — never a harsh alarm red; urgency should feel like a gentle nudge, not a klaxon. Green for "logged/done" and diff-adds (#3da06b), amber for diff-changes. Accent for primary actions: a friendly teal or sage. Typography: Inter or similar humanist sans for UI; consider a slightly warmer display weight for the unread-count hero. Lots of breathing room, large tap targets, friendly micro-copy ("tended", "needs you", "all good"). The empty state should feel like genuine relief, not a dead screen.<br><br>=== EXPLICIT MOBILE-ONLY CONSTRAINTS ===<br>- Design to exactly 375px wide; assume the 720px-tall mobile preview window. All layout, type sizes, and tap targets sized for a phone held one-handed.<br>- Everything actionable must sit in the bottom ~40% thumb zone; the top is read-only context.<br>- One decision per card, zero typing required to make progress.<br>- No desktop/multi-column fallback needed — this is mobile-native by definition. Do not build a responsive desktop view.<br>- Sticky header and sticky bottom compose bar; the feed scrolls between them.<br>- All gestures faked credibly with scroll-snap / checkboxes / radios / :target. Be honest that swipe-persistence is an illusion in no-JS — author convincing static states (one done-sliver, one flipped diff, the zero state) so the full loop is legible from a single screen without interaction.
+      </div>
+    </div>
+
+    <!-- Agent Trace — always include; documents all agents used during creation -->
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead → Builder (Opus) → Lead</div>
+      <div class="exp-agent-trace">
+
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-duration">6m</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Ran /uiExperiment:new — scaffolded from the template, assembled the Builder’s content, wrote this sidebar, and registered the experiment in experiments.html + changelog.html.</div>
+          <div class="exp-at-times">
+            <div class="exp-at-time-row">
+              <span class="exp-at-time-label">Start</span>
+              <span class="exp-at-time-value">9:46:00 pm</span>
+              <span class="exp-at-time-label">End</span>
+              <span class="exp-at-time-value">9:52:00 pm</span>
+            </div>
+          </div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Builder</span>
+            <span class="exp-at-duration">1m 51s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Built the full Tend experiment content (warm parchment UI, debt-ranked feed, swipe-to-triage, diff-confirm flip, inbox-zero screen, L/R grip mirror) as a self-contained, scoped CSS-only fragment.</div>
+          <div class="exp-at-times">
+            <div class="exp-at-time-row">
+              <span class="exp-at-time-label">Start</span>
+              <span class="exp-at-time-value">9:48:00 pm</span>
+              <span class="exp-at-time-label">End</span>
+              <span class="exp-at-time-value">9:49:51 pm</span>
+            </div>
+          </div>
+          <!-- Full prompt toggle: checkbox ID must be unique within the file -->
+          <input type="checkbox" id="at-prompt-1">
+          <label for="at-prompt-1" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel">
+            <div class="exp-at-prompt-panel-inner">
+              <div class="exp-at-prompt-panel-label">Full Prompt</div>
+              Build a mobile-only CRM experiment called **Tend** — a "relationship inbox." This is the experiment content that lives INSIDE the `.window` element (device preview defaults to mobile, 375px). Pure HTML/CSS, NO JavaScript, no external dependencies beyond Google Fonts, fully self-contained, must render standalone. Do NOT touch the experiment sidebar — only build the content. Every interaction must be achievable with CSS-only patterns: radio/checkbox inputs, `:checked`, `:target`, sibling/`peer` selectors, `&lt;details&gt;`, `scroll-snap`, and transforms.<br><br>=== CONCEPT &amp; METAPHOR ===<br>The core reframe: a contact is not a row in a database — it is an UNREAD MESSAGE. A relationship goes "unread" when it needs you (deal gone quiet, a promise owed, a follow-up due, a renewal looming). Home is a single descending feed of person-cards ranked by "relational debt" (days-since-last-touch × how much they matter). There is no list view, no table, no kanban. You don't manage records — you clear a feed of humans. Triage to zero = "relationship inbox zero." Reinforce the email metaphor throughout: an unread COUNT in the header IS the to-do list ("6 people need you"), section headers are temporal moods, and clearing the feed earns a genuine empty-state celebration. The whole concept must be honestly told on this ONE home screen.<br><br>=== 375px SCREEN LAYOUT (windshield / cockpit discipline) ===<br>Apply Thumbprint's thumb-zone discipline: the TOP ~60% is read-only "windshield" context (header + the scrolling feed of cards). The BOTTOM ~40% is the "cockpit" — all triage verbs and the context-aware compose bar live here, thumb-reachable, never a stretch. Concretely, top to bottom:<br><br>1. **Status header (sticky, top):** App wordmark "Tend" small. A large unread-count line as the hero of the header — e.g. "6 people need you" — styled like an inbox unread badge (this is the unread-count-as-todo framing). A thin progress meter beneath it showing how close you are to inbox zero (e.g. a hairline bar mostly empty). A small "Today's hand: 6 of 23" pill — this is Pile's smart pre-filter / daily-surfaced-card CEILING, the humane fix for the "anxiety engine" risk: only a capped set surfaces per day, never the full overdue mountain.<br><br>2. **The pressure-ranked feed (scrollable middle):** ONE vertical stream of person-cards, sorted in source-markup order by relational debt (most overdue + most valuable on top). Sticky section headers segment the feed by temporal mood, in this order: **OVERDUE**, **TODAY**, **COOLING**, **WARM &amp; QUIET**. Each header shows a count chip. The amount of "OVERDUE" you scroll through before reaching "TODAY" IS the dashboard — scroll position communicates how behind you are. No sort/filter chrome; the ranking is the interface.<br><br>3. **Compose / triage bar (sticky, bottom — the cockpit):** A single persistent thumb-zone bar whose primary verb is context-aware. Show it reading "Triage 6" by default (count = remaining unread), with a secondary "Add someone" affordance. Make clear via copy that at inbox zero it would read "Add someone." Destructive actions (Archive/Delete a contact entirely) live at the awkward FAR edge of this bar (Thumbprint's friction-by-anatomy) — visibly placed where a thumb has to stretch, as a safety rail.<br><br>=== THE PERSON-CARD (the heart of the experiment) ===<br>Each card shows ONLY ONE line of context + ONE next action — never a profile dump:<br>- Avatar (CSS monogram circle), Name, and a single context line in the form: "9 days quiet · $40k renewal" or a copilot-style proactive line: "Maya's pricing is due today" (borrow Threadbook's proactive-copilot turns as the relational-debt context line — make it read like a smart assistant's text).<br>- A **heat edge:** a thin colored LEFT BORDER encoding urgency — cold blue → warm amber → urgent red (pure CSS border-color class per card). <br>- **Staleness / weight &amp; memory (from Pile):** cold/ignored cards get a desaturated, slightly dimmed treatment via CSS `filter: grayscale()/opacity` and a subtle dog-eared corner (a small CSS triangle on the top-right). Hot cards get a faint glow/lift via box-shadow. Urgency must read VISUALLY before any text is parsed — the OVERDUE section cards look hot and saturated; WARM &amp; QUIET cards look faded and dog-eared.<br>- A single tappable **verb chip** on the card front (e.g. "Nudge", "Reply", "Log call", "Send pricing").<br><br>=== INTERACTION MODEL (CSS-only) ===<br>1. **Swipe-to-triage** (email muscle memory, not pipeline drag): each card is a horizontal `scroll-snap` track with reveal-on-scroll action panels. Scroll/swipe RIGHT reveals a green "Logged / touched" panel; swipe LEFT reveals a "Snooze" panel with chips (Tomorrow / Next week / When they reply). This is the whole interaction model. At least the top 2-3 cards should be authored fully so a viewer discovers the panels by horizontal swipe; show one card pre-nudged into a "done sliver" collapsed state as proof of the loop.<br><br>2. **Diff-confirm micro-moment (grafted from Threadbook — the key blend):** when a card's verb chip is tapped, the card FLIPS (checkbox + `transform: rotateY`/translate) to reveal an inline DIFF of exactly what the action will write before it commits — green-add / amber-change rows, e.g. "Stage: Discovery → Negotiation" (amber change), "Last touch: today" (green add), "+ Logged: sent pricing deck" (green add). A "Confirm" affordance and a "Cancel" affordance sit in the thumb zone. This adds trust and a satisfying micro-beat to triage. Make the diff visually crisp: monospace-ish field names, colored left ticks, strikethrough on the old value.<br><br>3. **Inbox-zero celebration:** include a hidden/toggleable empty-state "celebration" screen (radio or `:target` toggle, reachable from a small "preview zero" control) showing the reward payoff — "Inbox zero. 6 relationships tended today." with a calm illustration-via-CSS (e.g. a checkmark, soft gradient) and the bottom bar now reading "Add someone." This is the static payoff that proves the loop.<br><br>4. **Left-handed mirror (cheap no-JS a11y win from Thumbprint):** a single root-level CSS radio toggle backed by a `--grip-side` custom property that mirrors the compose bar's primary verb and the awkward-edge destructive action to the opposite side. Author the whole bottom bar against `--grip-side` so the flip is one custom-property swap. Expose it as a tiny "R / L" toggle in the header or compose bar.<br><br>=== SAMPLE DATA (make it feel real) ===<br>~9-11 person-cards across the four moods. Suggested:<br>- OVERDUE: "Maria Soto · 9 days quiet · $40k renewal" (red heat, chip "Nudge"); "Devon Park · pricing promised 4 days ago" (red, chip "Send pricing"); "Acme / Lena Ruiz · contract sent, no reply 6d · $120k" (red-amber, chip "Follow up").<br>- TODAY: "Maya Chen · pricing is due today" copilot line (amber, chip "Reply"); "Jordan Blake · intro call at 2pm" (amber, chip "Prep").<br>- COOLING: "Priya Nair · 18 days quiet · $15k expansion" (cool amber, chip "Check in"); "Sam Whitlock · demo no-show, 12d" (cool, chip "Reschedule").<br>- WARM &amp; QUIET: "Tomás Vidal · all good · last touch 3d" (faded blue, dog-eared, chip "Note"); "Greenfield Co. · closed-won, nurture" (faded, dog-eared, chip "Thank-you").<br>Use realistic deal values, day counts, and one or two genuinely copilot-phrased proactive lines. The diff-confirm example should use Maria or Lena (a stage change reads well).<br><br>=== COLOR &amp; MOOD DIRECTION (its own palette — NOT the Lab Instrument dark UI) ===<br>Warm, calm, humane — the OPPOSITE of a cold spreadsheet, deliberately fighting the "anxiety engine" risk. Soft off-white/parchment background (#faf7f2 range), warm near-black ink, generous rounded cards with soft shadows. Heat scale: cold = muted slate-blue (#6b8cae), warm = amber (#e0a23b), urgent = a warm coral-red (#e06a5b) — never a harsh alarm red; urgency should feel like a gentle nudge, not a klaxon. Green for "logged/done" and diff-adds (#3da06b), amber for diff-changes. Accent for primary actions: a friendly teal or sage. Typography: Inter or similar humanist sans for UI; consider a slightly warmer display weight for the unread-count hero. Lots of breathing room, large tap targets, friendly micro-copy ("tended", "needs you", "all good"). The empty state should feel like genuine relief, not a dead screen.<br><br>=== EXPLICIT MOBILE-ONLY CONSTRAINTS ===<br>- Design to exactly 375px wide; assume the 720px-tall mobile preview window. All layout, type sizes, and tap targets sized for a phone held one-handed.<br>- Everything actionable must sit in the bottom ~40% thumb zone; the top is read-only context.<br>- One decision per card, zero typing required to make progress.<br>- No desktop/multi-column fallback needed — this is mobile-native by definition. Do not build a responsive desktop view.<br>- Sticky header and sticky bottom compose bar; the feed scrolls between them.<br>- All gestures faked credibly with scroll-snap / checkboxes / radios / :target. Be honest that swipe-persistence is an illusion in no-JS — author convincing static states (one done-sliver, one flipped diff, the zero state) so the full loop is legible from a single screen without interaction.
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- Versions card — always include -->
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <!-- Most recent first; current version has class="current" -->
+        <a href="tend-relationship-inbox-v1.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial — mobile relationship-inbox CRM</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <!-- Add prior versions below, e.g.:
+        <a href="experiment-name-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Initial version</span>
+          <span class="exp-vc-model sonnet">Sonnet</span>
+        </a>
+        -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ EXPERIMENT CONTENT (device preview) ════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+.tnd-app{
+  --bg:#faf7f2;
+  --bg2:#f4eee4;
+  --card:#fffdf9;
+  --ink:#2b2622;
+  --ink2:#6f675e;
+  --ink3:#9b9288;
+  --line:#ece4d7;
+  --cold:#6b8cae;
+  --warm:#e0a23b;
+  --urgent:#e06a5b;
+  --green:#3da06b;
+  --accent:#2f9e8f;
+  --accent-soft:#dff0ed;
+  --grip-side:flex-end; /* default right-handed */
+  width:100%;height:100%;position:relative;overflow:hidden;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;
+  font-size:14px;
+}
+.tnd-app *{box-sizing:border-box;margin:0;padding:0;}
+
+/* hidden state inputs */
+.tnd-app .tnd-rad{position:absolute;opacity:0;pointer-events:none;width:0;height:0;}
+
+/* ---------- HEADER (sticky top) ---------- */
+.tnd-header{
+  flex:0 0 auto;
+  background:linear-gradient(180deg,#fbf8f3 0%,#f7f1e8 100%);
+  padding:14px 18px 12px;
+  border-bottom:1px solid var(--line);
+  position:relative;z-index:5;
+}
+.tnd-htop{display:flex;align-items:center;justify-content:space-between;}
+.tnd-wordmark{
+  font-family:'Fraunces',serif;font-weight:600;font-size:17px;letter-spacing:-.01em;
+  color:var(--ink);display:flex;align-items:center;gap:6px;
+}
+.tnd-leaf{width:7px;height:7px;border-radius:50% 0 50% 50%;background:var(--accent);display:inline-block;transform:rotate(45deg);}
+.tnd-grip{display:flex;gap:0;background:#ece4d7;border-radius:8px;padding:2px;}
+.tnd-grip label{
+  font-size:10px;font-weight:700;color:var(--ink3);
+  width:22px;height:20px;display:flex;align-items:center;justify-content:center;
+  border-radius:6px;cursor:pointer;transition:.15s;
+}
+.tnd-app #tnd-grip-r:checked ~ .tnd-header .tnd-grip label[for="tnd-grip-r"],
+.tnd-app #tnd-grip-l:checked ~ .tnd-header .tnd-grip label[for="tnd-grip-l"]{
+  background:#fff;color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.08);
+}
+
+.tnd-hero{display:flex;align-items:baseline;gap:9px;margin-top:11px;}
+.tnd-hero-count{
+  font-family:'Fraunces',serif;font-weight:700;font-size:34px;line-height:1;
+  color:var(--urgent);letter-spacing:-.02em;
+}
+.tnd-hero-label{font-family:'Fraunces',serif;font-weight:500;font-size:18px;color:var(--ink);line-height:1.1;}
+.tnd-meter{height:5px;border-radius:99px;background:#eadfce;margin-top:11px;overflow:hidden;}
+.tnd-meter-fill{height:100%;width:14%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--accent));}
+.tnd-hrow{display:flex;align-items:center;justify-content:space-between;margin-top:9px;}
+.tnd-hint{font-size:11px;color:var(--ink3);}
+.tnd-hand{
+  font-size:11px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);padding:4px 10px;border-radius:99px;
+}
+
+/* ---------- FEED (scroll middle) ---------- */
+.tnd-feed{
+  flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:var(--bg);
+  padding:0 0 14px;
+}
+.tnd-sec{
+  position:sticky;top:0;z-index:3;
+  background:linear-gradient(180deg,var(--bg) 70%,rgba(250,247,242,0));
+  padding:13px 18px 6px;
+  display:flex;align-items:center;gap:8px;
+}
+.tnd-sec h2{
+  font-family:'Fraunces',serif;font-weight:600;font-size:12px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink2);
+}
+.tnd-chip{
+  font-size:10px;font-weight:700;color:#fff;background:var(--ink3);
+  min-width:17px;height:17px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 5px;
+}
+.tnd-chip.over{background:var(--urgent);}
+.tnd-chip.tod{background:var(--warm);}
+.tnd-chip.cool{background:var(--cold);}
+.tnd-chip.warm{background:var(--ink3);}
+.tnd-sec-sub{font-size:10px;color:var(--ink3);font-style:italic;}
+
+/* ---------- CARD swipe track ---------- */
+.tnd-track{
+  display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  margin:0 14px 9px;border-radius:16px;
+}
+.tnd-track::-webkit-scrollbar{display:none;}
+.tnd-panel{flex:0 0 100%;scroll-snap-align:center;min-width:100%;}
+
+/* swipe side panels */
+.tnd-swipe{
+  display:flex;align-items:center;border-radius:16px;height:100%;
+  padding:0 18px;font-weight:600;font-size:13px;color:#fff;
+}
+.tnd-swipe.log{background:linear-gradient(90deg,#34935f,#3da06b);justify-content:flex-start;gap:9px;}
+.tnd-swipe.snooze{background:#efe6d6;color:var(--ink2);flex-direction:column;align-items:stretch;justify-content:center;gap:5px;padding:12px 16px;}
+.tnd-swipe-ic{font-size:18px;}
+.tnd-snz-opt{font-size:11px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;text-align:center;}
+.tnd-swipe-hint{font-size:10px;font-weight:600;opacity:.85;}
+
+/* the actual card */
+.tnd-card{
+  position:relative;background:var(--card);border-radius:16px;
+  border:1px solid var(--line);border-left:4px solid var(--cold);
+  padding:13px 14px;min-height:78px;
+  box-shadow:0 1px 2px rgba(80,60,30,.04);
+  overflow:hidden;
+}
+.tnd-card.hot{border-left-color:var(--urgent);box-shadow:0 6px 18px rgba(224,106,91,.16);}
+.tnd-card.warmc{border-left-color:var(--warm);box-shadow:0 4px 12px rgba(224,162,59,.12);}
+.tnd-card.cool{border-left-color:var(--cold);}
+.tnd-card.quiet{border-left-color:#c9bfae;filter:grayscale(.35);opacity:.72;}
+
+/* dog-ear for quiet cards */
+.tnd-card.quiet::after{
+  content:"";position:absolute;top:0;right:0;
+  border-width:0 16px 16px 0;border-style:solid;
+  border-color:transparent var(--bg2) transparent transparent;
+  filter:drop-shadow(-1px 1px 1px rgba(0,0,0,.06));
+}
+.tnd-card.quiet::before{
+  content:"";position:absolute;top:0;right:0;width:16px;height:16px;
+  background:linear-gradient(225deg,#e7ddcb 50%,transparent 50%);
+}
+
+.tnd-cmain{display:flex;align-items:center;gap:12px;}
+.tnd-mono{
+  flex:0 0 auto;width:42px;height:42px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-weight:600;font-size:16px;color:#fff;
+}
+.tnd-m-red{background:linear-gradient(135deg,#e8806f,#d8584a);}
+.tnd-m-amb{background:linear-gradient(135deg,#ecb45a,#dd9226);}
+.tnd-m-blue{background:linear-gradient(135deg,#7f9ec0,#5d80a6);}
+.tnd-m-sage{background:linear-gradient(135deg,#9bb59f,#7fa088);}
+.tnd-cbody{flex:1 1 auto;min-width:0;}
+.tnd-name{font-weight:600;font-size:15px;color:var(--ink);letter-spacing:-.01em;}
+.tnd-ctx{font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.3;}
+.tnd-copilot{color:var(--accent);font-style:italic;}
+.tnd-val{font-weight:600;color:var(--ink);}
+
+.tnd-verb{
+  flex:0 0 auto;align-self:center;
+  font-size:12px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);border:1px solid #cfe7e2;
+  padding:7px 12px;border-radius:10px;cursor:pointer;white-space:nowrap;
+  transition:.15s;
+}
+.tnd-verb:active{transform:scale(.96);}
+.tnd-card.hot .tnd-verb{color:#fff;background:var(--urgent);border-color:var(--urgent);}
+
+/* done sliver */
+.tnd-sliver{
+  margin:0 14px 9px;background:#eef6f0;
+  border:1px dashed #b9ddc7;border-radius:13px;
+  padding:9px 14px;display:flex;align-items:center;gap:10px;
+}
+.tnd-sliver .tnd-sv-ic{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto;}
+.tnd-sliver .tnd-sv-tx{font-size:12px;color:#3a7a55;font-weight:600;}
+.tnd-sliver .tnd-sv-tx small{display:block;font-weight:400;color:#6a9a7e;font-size:11px;}
+
+/* ---------- DIFF FLIP ---------- */
+.tnd-flip{position:relative;}
+.tnd-flip-back{display:none;}
+.tnd-app .tnd-difftog:checked ~ .tnd-feed .tnd-flip .tnd-flip-front{display:none;}
+.tnd-app .tnd-difftog:checked ~ .tnd-feed .tnd-flip .tnd-flip-back{display:block;}
+/* fallback for inline (front/back inside same card) */
+.tnd-card.flipped .tnd-cmain{display:none;}
+
+.tnd-diff{padding:2px 2px 0;}
+.tnd-diff-h{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.tnd-diff-h .tnd-mono{width:30px;height:30px;border-radius:9px;font-size:12px;}
+.tnd-diff-h b{font-size:13px;}
+.tnd-diff-h span{font-size:11px;color:var(--ink3);margin-left:auto;font-weight:600;}
+.tnd-drow{
+  display:flex;align-items:flex-start;gap:8px;font-size:12px;
+  padding:6px 8px;border-radius:8px;margin-bottom:5px;
+}
+.tnd-drow.chg{background:#fdf3e0;border-left:3px solid var(--warm);}
+.tnd-drow.add{background:#e9f6ee;border-left:3px solid var(--green);}
+.tnd-dk{font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:10px;color:var(--ink2);flex:0 0 92px;padding-top:1px;}
+.tnd-dv{flex:1 1 auto;color:var(--ink);}
+.tnd-dv s{color:var(--ink3);}
+.tnd-dv .tnd-arr{color:var(--warm);font-weight:700;}
+.tnd-dv .tnd-plus{color:var(--green);font-weight:700;}
+.tnd-diff-act{display:flex;gap:8px;margin-top:9px;}
+.tnd-diff-act label,.tnd-diff-act a{
+  flex:1;text-align:center;font-size:12px;font-weight:600;padding:9px;border-radius:10px;cursor:pointer;text-decoration:none;
+}
+.tnd-confirm{background:var(--green);color:#fff;}
+.tnd-cancel{background:#f0e9dd;color:var(--ink2);}
+
+/* ---------- CELEBRATION (target) ---------- */
+.tnd-zero{
+  position:absolute;inset:0;z-index:30;background:linear-gradient(170deg,#eef7f3 0%,#faf7f2 60%);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 28px;text-align:center;
+}
+.tnd-app .tnd-zero:target{display:flex;}
+.tnd-z-burst{
+  width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,#bfe8d4,#dff0ea);
+  display:flex;align-items:center;justify-content:center;margin-bottom:22px;
+  box-shadow:0 10px 30px rgba(61,160,107,.25);
+}
+.tnd-z-check{width:44px;height:44px;}
+.tnd-z-check svg{width:100%;height:100%;}
+.tnd-z-title{font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:var(--ink);letter-spacing:-.02em;}
+.tnd-z-sub{font-size:14px;color:var(--ink2);margin-top:10px;line-height:1.5;max-width:240px;}
+.tnd-z-tended{color:var(--green);font-weight:600;}
+.tnd-z-close{
+  margin-top:26px;font-size:13px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);padding:10px 22px;border-radius:99px;text-decoration:none;
+}
+
+/* ---------- COCKPIT (sticky bottom) ---------- */
+.tnd-cockpit{
+  flex:0 0 auto;background:linear-gradient(0deg,#f7f1e8,#fbf8f3);
+  border-top:1px solid var(--line);padding:12px 16px 16px;
+  position:relative;z-index:6;
+}
+.tnd-cock-row{display:flex;align-items:center;gap:10px;justify-content:var(--grip-side);}
+.tnd-primary{
+  flex:1 1 auto;order:1;
+  background:linear-gradient(135deg,#34a596,#2f9e8f);color:#fff;
+  font-size:15px;font-weight:700;text-align:center;
+  padding:15px;border-radius:14px;text-decoration:none;
+  box-shadow:0 5px 14px rgba(47,158,143,.32);letter-spacing:-.01em;
+}
+.tnd-destruct{
+  flex:0 0 auto;order:2;
+  width:48px;height:48px;border-radius:14px;
+  background:#f3ece0;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);font-size:18px;
+}
+/* left-handed mirror: swap order so destructive goes to opposite far edge */
+.tnd-app #tnd-grip-l:checked ~ .tnd-cockpit .tnd-primary{order:2;}
+.tnd-app #tnd-grip-l:checked ~ .tnd-cockpit .tnd-destruct{order:1;}
+.tnd-app #tnd-grip-l:checked ~ .tnd-cockpit .tnd-cock-row{justify-content:flex-start;}
+
+.tnd-cock-foot{display:flex;align-items:center;justify-content:space-between;margin-top:9px;}
+.tnd-cock-note{font-size:10px;color:var(--ink3);}
+.tnd-preview-zero{font-size:11px;font-weight:600;color:var(--accent);text-decoration:none;background:var(--accent-soft);padding:4px 11px;border-radius:99px;}
+</style>
+
+<div class="tnd-app">
+
+  <!-- root grip toggle -->
+  <input type="radio" name="tnd-grip" id="tnd-grip-r" class="tnd-rad" checked>
+  <input type="radio" name="tnd-grip" id="tnd-grip-l" class="tnd-rad">
+  <!-- diff flip toggle for Lena card -->
+  <input type="checkbox" id="tnd-diff-lena" class="tnd-rad tnd-difftog">
+
+  <!-- ===== HEADER ===== -->
+  <header class="tnd-header">
+    <div class="tnd-htop">
+      <div class="tnd-wordmark"><span class="tnd-leaf"></span>Tend</div>
+      <div class="tnd-grip">
+        <label for="tnd-grip-r">R</label>
+        <label for="tnd-grip-l">L</label>
+      </div>
+    </div>
+    <div class="tnd-hero">
+      <span class="tnd-hero-count">6</span>
+      <span class="tnd-hero-label">people<br>need you</span>
+    </div>
+    <div class="tnd-meter"><div class="tnd-meter-fill"></div></div>
+    <div class="tnd-hrow">
+      <span class="tnd-hint">far from inbox zero — that's okay</span>
+      <span class="tnd-hand">Today's hand · 6 of 23</span>
+    </div>
+  </header>
+
+  <!-- ===== FEED ===== -->
+  <main class="tnd-feed">
+
+    <!-- OVERDUE -->
+    <div class="tnd-sec">
+      <h2>Overdue</h2><span class="tnd-chip over">3</span>
+      <span class="tnd-sec-sub">these are aching</span>
+    </div>
+
+    <!-- Maria — full swipe track -->
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card hot">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-red">MS</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Maria Soto</div>
+              <div class="tnd-ctx">9 days quiet · <span class="tnd-val">$40k renewal</span></div>
+            </div>
+            <span class="tnd-verb">Nudge</span>
+          </div>
+        </div>
+      </div>
+      <div class="tnd-panel">
+        <div class="tnd-swipe log"><span class="tnd-swipe-ic">✓</span>Logged · touched today</div>
+      </div>
+      <div class="tnd-panel">
+        <div class="tnd-swipe snooze">
+          <span class="tnd-swipe-hint">Snooze until…</span>
+          <span class="tnd-snz-opt">Tomorrow</span>
+          <span class="tnd-snz-opt">Next week</span>
+          <span class="tnd-snz-opt">When they reply</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devon — full swipe track -->
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card hot">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-red">DP</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Devon Park</div>
+              <div class="tnd-ctx">pricing promised 4 days ago</div>
+            </div>
+            <span class="tnd-verb">Send pricing</span>
+          </div>
+        </div>
+      </div>
+      <div class="tnd-panel">
+        <div class="tnd-swipe log"><span class="tnd-swipe-ic">✓</span>Logged · touched today</div>
+      </div>
+      <div class="tnd-panel">
+        <div class="tnd-swipe snooze">
+          <span class="tnd-swipe-hint">Snooze until…</span>
+          <span class="tnd-snz-opt">Tomorrow</span>
+          <span class="tnd-snz-opt">Next week</span>
+          <span class="tnd-snz-opt">When they reply</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lena — diff-flip card (tap verb to flip) -->
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card warmc tnd-flip">
+          <!-- FRONT -->
+          <div class="tnd-flip-front">
+            <div class="tnd-cmain">
+              <div class="tnd-mono tnd-m-red">LR</div>
+              <div class="tnd-cbody">
+                <div class="tnd-name">Lena Ruiz <span style="font-weight:400;color:var(--ink3);font-size:12px;">· Acme</span></div>
+                <div class="tnd-ctx">contract sent, no reply 6d · <span class="tnd-val">$120k</span></div>
+              </div>
+              <label for="tnd-diff-lena" class="tnd-verb">Follow up</label>
+            </div>
+          </div>
+          <!-- BACK (diff) -->
+          <div class="tnd-flip-back">
+            <div class="tnd-diff">
+              <div class="tnd-diff-h">
+                <div class="tnd-mono tnd-m-red">LR</div>
+                <b>Lena Ruiz</b><span>review change</span>
+              </div>
+              <div class="tnd-drow chg">
+                <span class="tnd-dk">stage</span>
+                <span class="tnd-dv"><s>Discovery</s> <span class="tnd-arr">→</span> Negotiation</span>
+              </div>
+              <div class="tnd-drow add">
+                <span class="tnd-dk">last_touch</span>
+                <span class="tnd-dv"><span class="tnd-plus">+</span> today</span>
+              </div>
+              <div class="tnd-drow add">
+                <span class="tnd-dk">activity</span>
+                <span class="tnd-dv"><span class="tnd-plus">+</span> Logged: followed up on contract</span>
+              </div>
+              <div class="tnd-diff-act">
+                <label for="tnd-diff-lena" class="tnd-cancel">Cancel</label>
+                <label for="tnd-diff-lena" class="tnd-confirm">Confirm</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TODAY -->
+    <div class="tnd-sec">
+      <h2>Today</h2><span class="tnd-chip tod">2</span>
+      <span class="tnd-sec-sub">on the calendar</span>
+    </div>
+
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card warmc">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-amb">MC</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Maya Chen</div>
+              <div class="tnd-ctx tnd-copilot">Maya's pricing is due today</div>
+            </div>
+            <span class="tnd-verb">Reply</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card warmc">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-amb">JB</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Jordan Blake</div>
+              <div class="tnd-ctx">intro call at 2pm</div>
+            </div>
+            <span class="tnd-verb">Prep</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COOLING -->
+    <div class="tnd-sec">
+      <h2>Cooling</h2><span class="tnd-chip cool">2</span>
+      <span class="tnd-sec-sub">drifting away</span>
+    </div>
+
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card cool">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-blue">PN</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Priya Nair</div>
+              <div class="tnd-ctx">18 days quiet · <span class="tnd-val">$15k expansion</span></div>
+            </div>
+            <span class="tnd-verb">Check in</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sam — pre-nudged done sliver -->
+    <div class="tnd-sliver">
+      <div class="tnd-sv-ic">✓</div>
+      <div class="tnd-sv-tx">Sam Whitlock — rescheduled<small>tended a moment ago · undo</small></div>
+    </div>
+
+    <!-- WARM & QUIET -->
+    <div class="tnd-sec">
+      <h2>Warm &amp; Quiet</h2><span class="tnd-chip warm">2</span>
+      <span class="tnd-sec-sub">all good — just resting</span>
+    </div>
+
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card quiet">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-sage">TV</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Tomás Vidal</div>
+              <div class="tnd-ctx">all good · last touch 3d</div>
+            </div>
+            <span class="tnd-verb">Note</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tnd-track">
+      <div class="tnd-panel">
+        <div class="tnd-card quiet">
+          <div class="tnd-cmain">
+            <div class="tnd-mono tnd-m-sage">GC</div>
+            <div class="tnd-cbody">
+              <div class="tnd-name">Greenfield Co.</div>
+              <div class="tnd-ctx">closed-won · nurture</div>
+            </div>
+            <span class="tnd-verb">Thank-you</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--ink3);font-style:italic;">
+      that's today's hand. the rest can wait. 🌿
+    </div>
+
+  </main>
+
+  <!-- ===== COCKPIT ===== -->
+  <footer class="tnd-cockpit">
+    <div class="tnd-cock-row">
+      <a href="#tnd-zero-screen" class="tnd-primary">Triage 6</a>
+      <div class="tnd-destruct">⌫</div>
+    </div>
+    <div class="tnd-cock-foot">
+      <span class="tnd-cock-note">at zero this reads “Add someone”</span>
+      <a href="#tnd-zero-screen" class="tnd-preview-zero">preview zero →</a>
+    </div>
+  </footer>
+
+  <!-- ===== CELEBRATION ===== -->
+  <section class="tnd-zero" id="tnd-zero-screen">
+    <div class="tnd-z-burst">
+      <div class="tnd-z-check">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M14 25l7 7 14-15" stroke="#3da06b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="tnd-z-title">Inbox zero.</div>
+    <div class="tnd-z-sub"><span class="tnd-z-tended">6 relationships tended</span> today. Nobody's slipping. Come back tomorrow.</div>
+    <a href="#" class="tnd-z-close">Add someone</a>
+  </section>
+
+</div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

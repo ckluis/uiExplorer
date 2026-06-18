@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warmth Threads · Keepsake Stack — v5 · The UI Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); }
+
+/* ─── Accessibility ─── */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Frame ─── */
+.experiment-frame {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Experiment Info Sidebar — Paper ─── */
+.experiment-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 24px 20px;
+  overflow-y: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.experiment-sidebar::-webkit-scrollbar { width: 6px; }
+.experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.experiment-sidebar a {
+  color: var(--accent-lo);
+  text-decoration: none;
+}
+.experiment-sidebar a:hover { text-decoration: underline; }
+
+.experiment-sidebar .exp-back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent-lo);
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.experiment-sidebar .exp-back:hover { opacity: 1; }
+
+.experiment-sidebar h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px 0;
+}
+
+.experiment-sidebar .exp-version {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--accent-dim);
+  color: var(--accent-lo);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.experiment-sidebar .exp-autonomous {
+  display: inline-block;
+  font-family: var(--mono);
+  background: var(--auto-bg);
+  color: var(--auto);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid rgba(154,85,0,0.3);
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+
+/* ─── Model Badge ─── */
+.experiment-sidebar .exp-model {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-model.opus   { background: var(--opus-bg);   color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: var(--haiku-bg);  color: var(--haiku);  }
+
+/* ─── Run-metadata row (effort + harness chips) ─── */
+.experiment-sidebar .exp-runmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.experiment-sidebar .exp-effort,
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-sunken);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-effort::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-dim); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent-lo);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(154,85,0,0.3);
+  background: var(--auto-bg);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); }
+
+/* ─── Sections ─── */
+.experiment-sidebar .exp-section {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 16px;
+}
+
+.experiment-sidebar .exp-section h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  margin: 0 0 10px 0;
+}
+
+.experiment-sidebar .exp-section p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+}
+
+.experiment-sidebar .exp-prompt {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.experiment-sidebar .exp-prev { font-size: 12px; }
+
+/* ─── AskUserQuestion Visualization — Paper ─── */
+.experiment-sidebar .exp-ask {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.experiment-sidebar .exp-ask-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-lo);
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-ask-question {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.experiment-sidebar .exp-ask-option {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 3px 8px;
+  background: var(--bg-elev);
+  border-radius: 4px;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-ask-option.selected {
+  color: var(--ink);
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  font-weight: 600;
+}
+.experiment-sidebar .exp-ask-answer {
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 6px 8px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+.experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
+
+/* ─── Agent Trace — Paper ─── */
+.experiment-sidebar .exp-at-workflow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 6px 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.experiment-sidebar .exp-agent-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.experiment-sidebar .exp-at-entry {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--rule);
+}
+.experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
+.experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
+.experiment-sidebar .exp-at-entry.haiku  { border-left-color: var(--haiku); }
+
+.experiment-sidebar .exp-at-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.experiment-sidebar .exp-at-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.experiment-sidebar .exp-at-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-at-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+.experiment-sidebar .exp-at-action {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.experiment-sidebar .exp-at-arrow {
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Agent Trace: Duration Badge ─── */
+.experiment-sidebar .exp-at-duration {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-elev);
+  color: var(--ink-mute);
+  border: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Agent Trace: Effort chip ─── */
+.experiment-sidebar .exp-at-effort {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-elev);
+  letter-spacing: 0.02em;
+}
+.experiment-sidebar .exp-at-effort::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); }
+.experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-dim); }
+
+/* ─── Agent Trace: Hover Timestamps ─── */
+.experiment-sidebar .exp-at-times {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  margin-top: 0;
+}
+.experiment-sidebar .exp-at-entry:hover .exp-at-times {
+  max-height: 40px;
+  opacity: 1;
+  margin-top: 4px;
+}
+.experiment-sidebar .exp-at-time-row {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mute);
+  padding: 3px 0;
+}
+.experiment-sidebar .exp-at-time-label { color: var(--ink-mute); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-soft); }
+
+/* ─── Agent Trace: Full Prompt Toggle ─── */
+.experiment-sidebar input[id^="at-prompt-"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+}
+.experiment-sidebar .exp-at-prompt-toggle:hover {
+  background: rgba(255,98,0,0.2);
+  color: var(--accent-shade);
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
+  background: rgba(255,98,0,0.22);
+  color: var(--accent-shade);
+  border-color: var(--accent);
+}
+.experiment-sidebar .exp-at-prompt-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  padding: 0;
+}
+.experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle + .exp-at-prompt-panel {
+  max-height: 800px;
+  opacity: 1;
+  padding-top: 6px;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar { width: 4px; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.experiment-sidebar .exp-at-prompt-panel-inner::-webkit-scrollbar-thumb { background: var(--accent-line); border-radius: 2px; }
+.experiment-sidebar .exp-at-prompt-panel-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-lo);
+  margin-bottom: 4px;
+}
+
+/* ─── Sidebar Versions Card — Paper ─── */
+.experiment-sidebar .exp-versions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.experiment-sidebar .exp-vc-origin {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orig);
+  text-decoration: none;
+  padding: 6px 10px;
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(31,122,77,0.18); text-decoration: none; }
+
+.experiment-sidebar .exp-vc-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.experiment-sidebar .exp-vc-entry:hover { background: var(--bg-sunken); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry.current {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-line);
+}
+.experiment-sidebar .exp-vc-v {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-lo);
+  min-width: 26px;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
+.experiment-sidebar .exp-vc-desc {
+  font-size: 11px;
+  color: var(--ink-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-soft); }
+
+/* Model indicator in versions card */
+.experiment-sidebar .exp-vc-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--rule-soft);
+}
+.experiment-sidebar .exp-vc-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
+
+/* ─── Experiment Content + Device Preview Switcher — dark backdrop so the device floats ─── */
+.experiment-content {
+  flex: 1;
+  background: linear-gradient(135deg,#100f0d,#171614);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+}
+.preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.2s, color 0.2s;
+}
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
+.preview-btn svg { width: 20px; height: 20px; }
+
+#preview-web:checked ~ .preview-bar label[for="preview-web"],
+#preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
+#preview-full:checked ~ .preview-bar label[for="preview-full"] {
+  background: rgba(255,255,255,0.12);
+  color: var(--accent-hi);
+}
+
+.window {
+  width: 1360px;
+  height: 820px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-pop);
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+#preview-mobile:checked ~ .window { width: 375px; height: 720px; }
+
+#preview-full:checked ~ .preview-bar {
+  position: absolute;
+  top: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px;
+}
+#preview-full:checked ~ .window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* hide preview radios */
+input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* origination variant badge + link */
+.experiment-sidebar .exp-variant{display:inline-block;font-family:var(--mono);background:var(--orig-bg);color:var(--orig);font-size:11px;font-weight:600;padding:2px 8px;border:1px solid rgba(31,122,77,0.3);border-radius:4px;margin-top:4px;}
+.experiment-sidebar .exp-origination-link{font-size:12px;line-height:1.6;color:var(--ink-soft);}
+.experiment-sidebar .exp-origination-link a{color:var(--orig);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="experiment-frame">
+
+  <!-- ════════════════════ EXPERIMENT INFO SIDEBAR ════════════════════ -->
+  <aside class="experiment-sidebar">
+    <div>
+      <a href="experiments.html" class="exp-back">← All Experiments</a>
+      <h1>Warmth Threads · Keepsake Stack</h1>
+      <span class="exp-variant">v5</span>
+      <span class="exp-model opus">Opus 4.8</span>
+      <span class="exp-autonomous">Fully Autonomous</span>
+      <div class="exp-runmeta">
+        <span class="exp-effort high">high</span>
+        <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy autonomous">autonomous</span>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Purpose</h2>
+      <p>A variant of <strong>Warmth Threads</strong> for Tend — the conversation history beneath the unread/debt line, so you remember who someone is before you triage them. Part of a 5-variant autonomous research series.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Variant Focus</h2>
+      <p>A tactile keepsake stack where memories are layered, slightly-rotated paper note-cards that fan open like a shoebox of mementos rather than a digital timeline.</p>
+    </div>
+    <div class="exp-section">
+      <h2>Prompt</h2>
+      <div class="exp-prompt">This version was generated autonomously by a sub-agent in a fully-autonomous origination round. The prompt below is the <strong>exact prompt</strong> given to the build agent — crafted by the orchestrating workflow from the OG master prompt and the ideation phase.<br><br>Build a standalone Tend variant called KEEPSAKE STACK — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the warm history underneath Tend's debt line. This variant makes that history TACTILE and physical — memory as keepsake.<br><br>YOUR ANGLE — PHYSICAL KEEPSAKE STACK:<br>Each person-card, when opened (CSS checkbox + :checked), reveals its memories not as a flat timeline but as a STACK of small physical keepsake cards — like mementos in a shoebox. Collapsed: the card shows a tiny peeking stack (2-3 paper edges fanned at the bottom with slight rotate() and box-shadows, 'tap to remember'). Expanded (max-height/transform transition): the stack fans out into a readable vertical run of note-cards, each one a small parchment 'memento' with: slight per-card rotation (rotate(-1.5deg) / rotate(1deg) alternating for hand-placed feel), soft paper drop-shadow, a date in Fraunces, a glyph (☎ ✉ ◆ ♡), and the remembered-context line. Add tactile touches with pure CSS: a faint torn/taped top edge, subtle inner texture via layered gradients, a slightly different paper tint per type. PERSONAL ♡ keepsakes are the special ones: warm amber paper, a tiny pressed-heart sticker, sitting proudest in the stack — like a polaroid you kept. Transactional ones are plainer, cooler paper.<br><br>The relationship-age line at the bottom should read like a label on the box: sage Fraunces 'You've tended Maria for 14 months.' Keep the triage verb reachable in the thumb zone.<br><br>Wrap it in the normal Tend inbox: sticky pressure-context header + debt-ranked feed (heat edges, monograms, debt lines, triage verbs). Author ONE card pre-fanned showing the full keepsake stack with a glowing personal memento; others collapsed to their peeking-stack state, tappable via :checked. Lean hard into the physicality — rotations, shadows, paper — while staying within the warm Tend palette. This is the most material/sentimental of the 5 variants.<br><br>HONEST PROOF STATE: hero card checkbox checked by default to show the fanned stack; others show the collapsed peeking-stack affordance.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.</div>
+    </div>
+    <div class="exp-section">
+      <h2>Origination Prompt</h2>
+      <p class="exp-origination-link">Part of an autonomous origination series. <a href="tend-warmth-threads.html">View the origination prompt →</a></p>
+    </div>
+    <div class="exp-section">
+      <h2>Agent Trace</h2>
+      <div class="exp-at-workflow">Lead → Author → [Builder×5] (parallel)</div>
+      <div class="exp-agent-trace">
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Lead</span>
+            <span class="exp-at-duration">4m</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Orchestrated the autonomous origination workflow: 3 feature scouts → author → 5 parallel builders → assembly.</div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Author</span>
+            <span class="exp-at-duration">38s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Chose the Warmth Threads feature and wrote the OG master prompt + 5 distinct variant build-prompts.</div>
+          <input type="checkbox" id="at-prompt-9">
+          <label for="at-prompt-9" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            You are the Lead of an autonomous origination round for Tend (mobile-only pure-CSS relationship-inbox CRM). Three new-feature proposals were generated in parallel (The Drift Tide, The Daily Round, Warmth Threads). Pick the single strongest feature, then (1) write the verbatim OG MASTER PROMPT that spawns 5 parallel variants of that ONE feature, and (2) define 5 genuinely DISTINCT design/interaction interpretations, each with a concept name, distinguishing angle, one-sentence Variant Focus, and a complete self-contained build prompt (handed verbatim to its builder). featureName must be kebab-case starting with 'tend-'.
+          </div></div>
+        </div>
+        <div class="exp-at-arrow">↓</div>
+        <div class="exp-at-entry opus">
+          <div class="exp-at-header">
+            <span class="exp-at-role">Builder</span>
+            <span class="exp-at-duration">1m 40s</span>
+            <span class="exp-at-effort high">high</span>
+            <span class="exp-at-model opus">Opus 4.8</span>
+          </div>
+          <div class="exp-at-action">Built this variant (Keepsake Stack) as a self-contained CSS-only Tend fragment.</div>
+          <input type="checkbox" id="at-prompt-10">
+          <label for="at-prompt-10" class="exp-at-prompt-toggle">Prompt ↓</label>
+          <div class="exp-at-prompt-panel"><div class="exp-at-prompt-panel-inner">
+            <div class="exp-at-prompt-panel-label">Full Prompt</div>
+            Build a standalone Tend variant called KEEPSAKE STACK — one of 5 interpretations of the Warmth Threads feature. NO JavaScript. Pure HTML/CSS only. Exactly 375×720, mobile-only, wrapped in .tnd-app.<br><br>FEATURE: Warmth Threads adds the warm history underneath Tend's debt line. This variant makes that history TACTILE and physical — memory as keepsake.<br><br>YOUR ANGLE — PHYSICAL KEEPSAKE STACK:<br>Each person-card, when opened (CSS checkbox + :checked), reveals its memories not as a flat timeline but as a STACK of small physical keepsake cards — like mementos in a shoebox. Collapsed: the card shows a tiny peeking stack (2-3 paper edges fanned at the bottom with slight rotate() and box-shadows, 'tap to remember'). Expanded (max-height/transform transition): the stack fans out into a readable vertical run of note-cards, each one a small parchment 'memento' with: slight per-card rotation (rotate(-1.5deg) / rotate(1deg) alternating for hand-placed feel), soft paper drop-shadow, a date in Fraunces, a glyph (☎ ✉ ◆ ♡), and the remembered-context line. Add tactile touches with pure CSS: a faint torn/taped top edge, subtle inner texture via layered gradients, a slightly different paper tint per type. PERSONAL ♡ keepsakes are the special ones: warm amber paper, a tiny pressed-heart sticker, sitting proudest in the stack — like a polaroid you kept. Transactional ones are plainer, cooler paper.<br><br>The relationship-age line at the bottom should read like a label on the box: sage Fraunces 'You've tended Maria for 14 months.' Keep the triage verb reachable in the thumb zone.<br><br>Wrap it in the normal Tend inbox: sticky pressure-context header + debt-ranked feed (heat edges, monograms, debt lines, triage verbs). Author ONE card pre-fanned showing the full keepsake stack with a glowing personal memento; others collapsed to their peeking-stack state, tappable via :checked. Lean hard into the physicality — rotations, shadows, paper — while staying within the warm Tend palette. This is the most material/sentimental of the 5 variants.<br><br>HONEST PROOF STATE: hero card checkbox checked by default to show the fanned stack; others show the collapsed peeking-stack affordance.<br><br>PALETTE (scope to .tnd-app, NOT :root): --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7; --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed. Fonts: Fraunces + Inter via Google Fonts. Deliver one self-contained HTML file.
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-section">
+      <h2>Versions</h2>
+      <div class="exp-versions-card">
+        <a href="tend-warmth-threads.html" class="exp-vc-origin">Origination Prompt →</a>
+        <a href="tend-warmth-threads-v1.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v1</span>
+          <span class="exp-vc-desc">Pull-Down Thread</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v2.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v2</span>
+          <span class="exp-vc-desc">Thread Flip</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v3.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v3</span>
+          <span class="exp-vc-desc">Memory Lane</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v4.html" class="exp-vc-entry">
+          <span class="exp-vc-v">v4</span>
+          <span class="exp-vc-desc">Warmth Ledger</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+        <a href="tend-warmth-threads-v5.html" class="exp-vc-entry current">
+          <span class="exp-vc-v">v5</span>
+          <span class="exp-vc-desc">Keepsake Stack</span>
+          <span class="exp-vc-model opus">Opus</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════ EXPERIMENT CONTENT (device preview) ════════════════════ -->
+  <div class="experiment-content">
+    <!-- Device preview state -->
+    <input type="radio" name="preview" id="preview-web">
+    <input type="radio" name="preview" id="preview-mobile" checked>
+    <input type="radio" name="preview" id="preview-full">
+
+    <div class="preview-bar">
+      <label for="preview-web" class="preview-btn" title="Desktop view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </label>
+      <label for="preview-mobile" class="preview-btn" title="Mobile view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2"/>
+          <line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/>
+        </svg>
+      </label>
+      <label for="preview-full" class="preview-btn" title="Fullscreen view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </label>
+    </div>
+
+    <div class="window">
+      <style>
+.tnd-app {
+  --bg:#faf7f2; --bg2:#f4eee4; --card:#fffdf9; --ink:#2b2622; --ink2:#6f675e; --ink3:#9b9288; --line:#ece4d7;
+  --cold:#6b8cae; --warm:#e0a23b; --urgent:#e06a5b; --green:#3da06b; --accent:#2f9e8f; --accent-soft:#dff0ed;
+  --parch:#f7efe0; --parch2:#f2e7d2; --amber:#f6e2b8; --cool:#eef1f4;
+  width:100%; height:100%; position:relative; overflow:hidden;
+  background:var(--bg); color:var(--ink);
+  font-family:'Inter',-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
+}
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+.tnd-app *{box-sizing:border-box; margin:0; padding:0;}
+
+/* ── header ── */
+.tnd-head{
+  position:sticky; top:0; z-index:20; flex-shrink:0;
+  background:linear-gradient(180deg,var(--card),#fffdf9f0);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+  padding:13px 16px 11px;
+}
+.tnd-head-top{display:flex; align-items:baseline; justify-content:space-between;}
+.tnd-title{font-family:'Fraunces',serif; font-size:20px; font-weight:600; letter-spacing:-.01em;}
+.tnd-title span{color:var(--accent);}
+.tnd-count{font-size:11px; color:var(--ink3); font-weight:600;}
+.tnd-pressure{
+  margin-top:8px; display:flex; align-items:center; gap:7px;
+  background:var(--bg2); border:1px solid var(--line);
+  border-radius:9px; padding:7px 10px;
+}
+.tnd-pdot{width:7px; height:7px; border-radius:50%; background:var(--urgent); flex-shrink:0; box-shadow:0 0 0 3px #e06a5b22;}
+.tnd-ptext{font-size:11.5px; color:var(--ink2); line-height:1.3;}
+.tnd-ptext b{color:var(--ink); font-weight:600;}
+
+/* ── feed ── */
+.tnd-feed{flex:1; overflow-y:auto; padding:12px 14px 80px; display:flex; flex-direction:column; gap:13px;}
+.tnd-feed::-webkit-scrollbar{display:none;}
+
+.tnd-pcard{
+  position:relative; background:var(--card);
+  border:1px solid var(--line); border-radius:15px;
+  padding:13px 14px 12px;
+  box-shadow:0 2px 10px #2b262208;
+  overflow:hidden;
+}
+.tnd-heat{position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:15px 0 0 15px;}
+.tnd-heat.hot{background:linear-gradient(180deg,var(--urgent),var(--warm));}
+.tnd-heat.warm{background:linear-gradient(180deg,var(--warm),#f0c97a);}
+.tnd-heat.cool{background:linear-gradient(180deg,var(--cold),#a9c0d6);}
+
+.tnd-row{display:flex; align-items:center; gap:11px;}
+.tnd-mono{
+  width:42px; height:42px; border-radius:13px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:#fff;
+}
+.tnd-mono.m1{background:linear-gradient(135deg,#e06a5b,#e0a23b);}
+.tnd-mono.m2{background:linear-gradient(135deg,#e0a23b,#3da06b);}
+.tnd-mono.m3{background:linear-gradient(135deg,#6b8cae,#2f9e8f);}
+.tnd-mono.m4{background:linear-gradient(135deg,#2f9e8f,#6b8cae);}
+
+.tnd-info{flex:1; min-width:0;}
+.tnd-name{font-size:14.5px; font-weight:600; color:var(--ink); letter-spacing:-.01em;}
+.tnd-debt{font-size:11.5px; color:var(--ink2); margin-top:1px; line-height:1.3;}
+.tnd-debt b{color:var(--urgent); font-weight:600;}
+.tnd-debt.w b{color:var(--warm);}
+.tnd-debt.c b{color:var(--cold);}
+
+.tnd-verb{
+  flex-shrink:0; font-size:12px; font-weight:600; color:var(--accent);
+  background:var(--accent-soft); border:1px solid #2f9e8f33;
+  padding:8px 13px; border-radius:11px; white-space:nowrap;
+}
+
+/* ── stack toggle ── */
+.feat-toggle{position:absolute; opacity:0; pointer-events:none;}
+
+/* peeking stack (collapsed) */
+.feat-peek{
+  position:relative; height:30px; margin-top:11px;
+  display:flex; align-items:center; justify-content:center;
+}
+.feat-peek-edge{
+  position:absolute; bottom:0; width:60%; height:22px;
+  background:var(--parch); border:1px solid #e3d6bf;
+  border-radius:5px 5px 3px 3px;
+  box-shadow:0 -1px 4px #2b262210;
+}
+.feat-peek-edge.e1{transform:translateX(-14px) rotate(-4deg); background:var(--cool); border-color:#dde3ea; z-index:1;}
+.feat-peek-edge.e2{transform:translateX(8px) rotate(3deg); background:var(--parch2); z-index:2; bottom:2px;}
+.feat-peek-edge.e3{transform:translateX(-2px) rotate(-1deg); background:var(--amber); border-color:#ecd9a8; z-index:3; bottom:4px;}
+.feat-peek-label{
+  position:relative; z-index:5; font-family:'Fraunces',serif;
+  font-size:11.5px; font-style:italic; color:var(--ink3);
+  background:#fffdf9cc; padding:1px 8px; border-radius:8px;
+}
+.feat-peek .feat-cue{margin-left:4px; transition:transform .3s;}
+.feat-stack-label{cursor:pointer; display:block;}
+
+.feat-stack{
+  max-height:0; overflow:hidden; opacity:0;
+  transition:max-height .55s cubic-bezier(.4,0,.2,1), opacity .45s ease, margin .4s;
+  margin-top:0;
+}
+.feat-toggle:checked ~ .feat-peek{display:none;}
+.feat-toggle:checked ~ .feat-stack{
+  max-height:600px; opacity:1; margin-top:13px;
+}
+
+/* box label */
+.feat-boxlabel{
+  font-family:'Fraunces',serif; font-style:italic;
+  font-size:12px; color:var(--green); text-align:center;
+  margin-bottom:11px; letter-spacing:.005em;
+}
+
+/* keepsake mementos */
+.feat-mementos{display:flex; flex-direction:column; gap:10px; padding:2px 6px;}
+.feat-memo{
+  position:relative; padding:11px 13px 12px;
+  border-radius:4px;
+  box-shadow:0 3px 9px #2b262218, 0 1px 2px #2b262214;
+  background:var(--parch);
+}
+.feat-memo::after{
+  content:''; position:absolute; inset:0; border-radius:4px; pointer-events:none;
+  background:
+    linear-gradient(115deg,#ffffff22,transparent 40%),
+    repeating-linear-gradient(0deg,#0000000a 0 1px,transparent 1px 3px);
+  opacity:.5;
+}
+/* tape */
+.feat-memo::before{
+  content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%) rotate(-2deg);
+  width:46px; height:15px;
+  background:linear-gradient(180deg,#ffffff55,#e8dcc555);
+  border:1px solid #ffffff44;
+  box-shadow:0 1px 2px #2b262214;
+}
+.feat-memo.r1{transform:rotate(-1.5deg);}
+.feat-memo.r2{transform:rotate(1deg);}
+.feat-memo.r3{transform:rotate(-.8deg);}
+
+.feat-memo.t-call{background:var(--parch); border:1px solid #e6dac2;}
+.feat-memo.t-mail{background:var(--cool); border:1px solid #dde3ea;}
+.feat-memo.t-meet{background:var(--parch2); border:1px solid #e3d4b8;}
+
+/* personal — the proudest polaroid */
+.feat-memo.t-heart{
+  background:linear-gradient(160deg,#fbeecb,var(--amber));
+  border:1px solid #ecd29a;
+  box-shadow:0 5px 18px #e0a23b3a, 0 2px 6px #2b262218;
+  transform:rotate(-1.2deg) scale(1.015);
+  padding-top:13px;
+}
+.feat-memo.t-heart::before{
+  width:50px; background:linear-gradient(180deg,#fff7e4aa,#f4e2b8aa);
+}
+.feat-heart-sticker{
+  position:absolute; top:8px; right:9px; z-index:3;
+  width:22px; height:22px; border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#f0a8a0,#e06a5b);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:11px;
+  box-shadow:0 2px 5px #e06a5b55, inset 0 1px 1px #ffffff66;
+}
+
+.feat-memo-head{display:flex; align-items:baseline; gap:8px; position:relative; z-index:2;}
+.feat-glyph{font-size:13px; color:var(--ink2);}
+.feat-memo.t-heart .feat-glyph{color:var(--urgent);}
+.feat-date{font-family:'Fraunces',serif; font-size:13px; font-weight:600; color:var(--ink);}
+.feat-memo-body{
+  position:relative; z-index:2; margin-top:5px;
+  font-size:12.5px; line-height:1.42; color:var(--ink2);
+}
+.feat-memo.t-heart .feat-memo-body{color:#5a4a2c;}
+.feat-memo-body em{font-family:'Fraunces',serif; font-style:italic; color:var(--ink); font-weight:500;}
+
+/* footer hint */
+.tnd-footnote{
+  text-align:center; font-family:'Fraunces',serif; font-style:italic;
+  font-size:11px; color:var(--ink3); padding:4px 0 2px;
+}
+</style>
+
+<div class="tnd-app">
+  <div class="tnd-head">
+    <div class="tnd-head-top">
+      <div class="tnd-title">Warmth <span>Threads</span></div>
+      <div class="tnd-count">9 owed</div>
+    </div>
+    <div class="tnd-pressure">
+      <span class="tnd-pdot"></span>
+      <div class="tnd-ptext"><b>3 people</b> slipping past their rhythm. The shoebox remembers what the inbox forgets.</div>
+    </div>
+  </div>
+
+  <div class="tnd-feed">
+
+    <!-- HERO: pre-fanned keepsake stack -->
+    <div class="tnd-pcard">
+      <div class="tnd-heat hot"></div>
+      <input type="checkbox" id="feat-stk-maria" class="feat-toggle" checked>
+      <label class="feat-stack-label" for="feat-stk-maria">
+        <div class="tnd-row">
+          <div class="tnd-mono m1">M</div>
+          <div class="tnd-info">
+            <div class="tnd-name">Maria Okonkwo</div>
+            <div class="tnd-debt">owed a reply <b>9 days</b> · usual rhythm 4d</div>
+          </div>
+          <div class="tnd-verb">Reply</div>
+        </div>
+      </label>
+
+      <div class="feat-peek">
+        <div class="feat-peek-edge e1"></div>
+        <div class="feat-peek-edge e2"></div>
+        <div class="feat-peek-edge e3"></div>
+        <div class="feat-peek-label">tap to remember</div>
+      </div>
+
+      <div class="feat-stack">
+        <div class="feat-boxlabel">You've tended Maria for 14 months.</div>
+        <div class="feat-mementos">
+
+          <div class="feat-memo t-heart r1">
+            <div class="feat-heart-sticker">♡</div>
+            <div class="feat-memo-head">
+              <span class="feat-glyph">♡</span>
+              <span class="feat-date">Mar 2</span>
+            </div>
+            <div class="feat-memo-body">She mailed you the <em>marigold seeds</em> from her mother's garden. You promised to send a photo when they bloom.</div>
+          </div>
+
+          <div class="feat-memo t-call r2">
+            <div class="feat-memo-head">
+              <span class="feat-glyph">☎</span>
+              <span class="feat-date">Feb 11</span>
+            </div>
+            <div class="feat-memo-body">40-min call — talked through her sister's move to Lisbon. She sounded lighter by the end.</div>
+          </div>
+
+          <div class="feat-memo t-mail r3">
+            <div class="feat-memo-head">
+              <span class="feat-glyph">✉</span>
+              <span class="feat-date">Jan 18</span>
+            </div>
+            <div class="feat-memo-body">She forwarded the grant link "before anyone else sees it." You haven't said thanks.</div>
+          </div>
+
+          <div class="feat-memo t-meet r1">
+            <div class="feat-memo-head">
+              <span class="feat-glyph">◆</span>
+              <span class="feat-date">Dec 4</span>
+            </div>
+            <div class="feat-memo-body">Coffee at Verde. Where this all started.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- collapsed peeking stacks -->
+    <div class="tnd-pcard">
+      <div class="tnd-heat warm"></div>
+      <input type="checkbox" id="feat-stk-devon" class="feat-toggle">
+      <label class="feat-stack-label" for="feat-stk-devon">
+        <div class="tnd-row">
+          <div class="tnd-mono m2">D</div>
+          <div class="tnd-info">
+            <div class="tnd-name">Devon Reyes</div>
+            <div class="tnd-debt w">drifting <b>6 days</b> · usual rhythm 5d</div>
+          </div>
+          <div class="tnd-verb">Check in</div>
+        </div>
+      </label>
+      <div class="feat-peek">
+        <div class="feat-peek-edge e1"></div>
+        <div class="feat-peek-edge e2"></div>
+        <div class="feat-peek-edge e3"></div>
+        <div class="feat-peek-label">tap to remember</div>
+      </div>
+      <div class="feat-stack">
+        <div class="feat-boxlabel">You've tended Devon for 8 months.</div>
+        <div class="feat-mementos">
+          <div class="feat-memo t-heart r1">
+            <div class="feat-heart-sticker">♡</div>
+            <div class="feat-memo-head"><span class="feat-glyph">♡</span><span class="feat-date">May 9</span></div>
+            <div class="feat-memo-body">He named you first when his startup closed its seed round. <em>"Couldn't have done the deck without you."</em></div>
+          </div>
+          <div class="feat-memo t-call r2">
+            <div class="feat-memo-head"><span class="feat-glyph">☎</span><span class="feat-date">Apr 20</span></div>
+            <div class="feat-memo-body">Late call — talked him off the ledge about the co-founder split.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tnd-pcard">
+      <div class="tnd-heat cool"></div>
+      <input type="checkbox" id="feat-stk-aiko" class="feat-toggle">
+      <label class="feat-stack-label" for="feat-stk-aiko">
+        <div class="tnd-row">
+          <div class="tnd-mono m3">A</div>
+          <div class="tnd-info">
+            <div class="tnd-name">Aiko Tanaka</div>
+            <div class="tnd-debt c">cooling <b>21 days</b> · usual rhythm 14d</div>
+          </div>
+          <div class="tnd-verb">Reach out</div>
+        </div>
+      </label>
+      <div class="feat-peek">
+        <div class="feat-peek-edge e1"></div>
+        <div class="feat-peek-edge e2"></div>
+        <div class="feat-peek-edge e3"></div>
+        <div class="feat-peek-label">tap to remember</div>
+      </div>
+      <div class="feat-stack">
+        <div class="feat-boxlabel">You've tended Aiko for 2 years.</div>
+        <div class="feat-mementos">
+          <div class="feat-memo t-mail r1">
+            <div class="feat-memo-head"><span class="feat-glyph">✉</span><span class="feat-date">Mar 26</span></div>
+            <div class="feat-memo-body">Sent the book recommendation you forgot to follow up on.</div>
+          </div>
+          <div class="feat-memo t-meet r2">
+            <div class="feat-memo-head"><span class="feat-glyph">◆</span><span class="feat-date">Feb 2</span></div>
+            <div class="feat-memo-body">Conference in Kyoto — she introduced you to her whole table.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tnd-pcard">
+      <div class="tnd-heat cool"></div>
+      <input type="checkbox" id="feat-stk-sam" class="feat-toggle">
+      <label class="feat-stack-label" for="feat-stk-sam">
+        <div class="tnd-row">
+          <div class="tnd-mono m4">S</div>
+          <div class="tnd-info">
+            <div class="tnd-name">Sam Whitfield</div>
+            <div class="tnd-debt c">cooling <b>18 days</b> · usual rhythm 10d</div>
+          </div>
+          <div class="tnd-verb">Reach out</div>
+        </div>
+      </label>
+      <div class="feat-peek">
+        <div class="feat-peek-edge e1"></div>
+        <div class="feat-peek-edge e2"></div>
+        <div class="feat-peek-edge e3"></div>
+        <div class="feat-peek-label">tap to remember</div>
+      </div>
+      <div class="feat-stack">
+        <div class="feat-boxlabel">You've tended Sam for 11 months.</div>
+        <div class="feat-mementos">
+          <div class="feat-memo t-call r1">
+            <div class="feat-memo-head"><span class="feat-glyph">☎</span><span class="feat-date">Mar 30</span></div>
+            <div class="feat-memo-body">He called to wish you luck before the pitch. Remembered the date.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tnd-footnote">A shoebox of nine. Open one.</div>
+  </div>
+</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

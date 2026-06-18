@@ -34,6 +34,8 @@ Create `{family}.html` using the standard sidebar pattern but with an **"Origin"
 
 If `templates/origin-template.html` exists, base the origin page on it.
 
+Fill the origin page `exp-runmeta` chips (`exp-effort`/`exp-harness`) with the actual recorded provenance; the origin template ships a hardcoded effort value — replace it with the real effort/class. Verify no placeholders or stale defaults remain.
+
 ## Step 3 — Fan out N parallel Builders ([Builder×N], model: opus)
 
 Spawn N **Builder** sub-agents IN PARALLEL (one message, multiple Agent/Task tool calls), each `model: opus`, each producing one `{family}-v{K}.html` from `templates/origin-template.html` (fallback: standard variant pattern). For EACH variant agent:
@@ -41,6 +43,8 @@ Spawn N **Builder** sub-agents IN PARALLEL (one message, multiple Agent/Task too
 - Constraints: pure HTML/CSS, no JS, no deps beyond Google Fonts, standalone-renderable.
 - Each variant uses the **Origination Variant Sidebar** pattern: green `exp-variant` badge, always-present `exp-autonomous` badge, **Variant Focus** section, **Prompt** section prefixed with *"This version was generated autonomously by a sub-agent. The prompt below is the exact prompt given to the build agent…"* followed by the FULL build prompt, an **Origination Prompt** section linking to `{family}.html`, and a **Versions** card listing the `exp-vc-origin` link plus all sibling variants (current one marked `current`).
 - Include the Agent Trace in each variant sidebar (Lead → Researcher → Builder → Sidebar/Validator) with durations, timestamps, and full-prompt toggles.
+- Fill each variant sidebar's `exp-runmeta` row (`exp-effort`/`exp-harness`) with the actual recorded provenance; the variant template ships a hardcoded effort value — replace it with the real effort/class. Verify no placeholders or stale defaults remain.
+- Populate the per-agent `exp-at-effort` chips in every Agent Trace entry with that agent's actual effort — do not leave the template defaults.
 
 Record start/end times for each parallel Builder.
 

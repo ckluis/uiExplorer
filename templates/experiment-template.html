@@ -5,21 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{EXPERIMENT_NAME}} — {{VERSION}} · The UI Lab</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg:#0a0c10; --surface-1:#0f1217; --surface-2:#141821; --surface-3:#1a1f2a;
-  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.13);
-  --ink:#e6e9ef; --ink-dim:#9aa4b2; --ink-faint:#6b7480;
-  --accent:#2ee6c6; --accent-2:#38bdf8; --accent-dim:rgba(46,230,198,0.12); --accent-line:rgba(46,230,198,0.30);
-  --opus:#e5a63b; --sonnet:#8b9cf7; --haiku:#5ec4d4; --auto:#f5a623; --orig:#2ecc71;
-  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
-  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+body { background: var(--bg); color: var(--ink-soft); font-family: var(--sans); }
+
+/* ─── Accessibility ─── */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ─── Frame ─── */
 .experiment-frame {
@@ -28,13 +72,13 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   overflow: hidden;
 }
 
-/* ─── Experiment Info Sidebar — Lab Instrument ─── */
+/* ─── Experiment Info Sidebar — Paper ─── */
 .experiment-sidebar {
   width: 300px;
   min-width: 300px;
-  background: var(--surface-1);
-  border-right: 1px solid var(--line);
-  color: var(--ink);
+  background: var(--bg-elev);
+  border-right: 1px solid var(--rule);
+  color: var(--ink-soft);
   padding: 24px 20px;
   overflow-y: auto;
   font-family: var(--sans);
@@ -46,10 +90,10 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 }
 .experiment-sidebar::-webkit-scrollbar { width: 6px; }
 .experiment-sidebar::-webkit-scrollbar-track { background: transparent; }
-.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+.experiment-sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 
 .experiment-sidebar a {
-  color: var(--accent);
+  color: var(--accent-lo);
   text-decoration: none;
 }
 .experiment-sidebar a:hover { text-decoration: underline; }
@@ -58,7 +102,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: var(--accent);
+  color: var(--accent-lo);
   display: block;
   margin-bottom: 12px;
   opacity: 0.85;
@@ -77,7 +121,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   display: inline-block;
   font-family: var(--mono);
   background: var(--accent-dim);
-  color: var(--accent);
+  color: var(--accent-lo);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
@@ -89,12 +133,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 .experiment-sidebar .exp-autonomous {
   display: inline-block;
   font-family: var(--mono);
-  background: rgba(245,166,35,0.12);
+  background: var(--auto-bg);
   color: var(--auto);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 8px;
-  border: 1px solid rgba(245,166,35,0.3);
+  border: 1px solid rgba(154,85,0,0.3);
   border-radius: 4px;
   margin-top: 4px;
   margin-left: 6px;
@@ -110,11 +154,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   border-radius: 4px;
   margin-top: 4px;
   margin-left: 6px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-soft);
 }
-.experiment-sidebar .exp-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus);   }
-.experiment-sidebar .exp-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
-.experiment-sidebar .exp-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku);  }
+.experiment-sidebar .exp-model.opus   { background: var(--opus-bg);   color: var(--opus);   }
+.experiment-sidebar .exp-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-model.haiku  { background: var(--haiku-bg);  color: var(--haiku);  }
 
 /* ─── Run-metadata row (effort + harness chips) ─── */
 .experiment-sidebar .exp-runmeta {
@@ -124,15 +168,16 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   margin-top: 12px;
 }
 .experiment-sidebar .exp-effort,
-.experiment-sidebar .exp-harness {
+.experiment-sidebar .exp-harness,
+.experiment-sidebar .exp-autonomy {
   font-family: var(--mono);
   font-size: 9px;
   font-weight: 500;
   padding: 2px 7px;
   border-radius: 3px;
-  border: 1px solid var(--line);
-  color: var(--ink-faint);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-sunken);
   letter-spacing: 0.02em;
 }
 .experiment-sidebar .exp-effort::before {
@@ -142,15 +187,38 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   border-radius: 50%;
   margin-right: 5px;
   vertical-align: baseline;
-  background: var(--ink-faint);
+  background: var(--ink-dim);
 }
-.experiment-sidebar .exp-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-effort.high::before   { background: var(--accent); }
 .experiment-sidebar .exp-effort.medium::before { background: var(--accent-2); }
-.experiment-sidebar .exp-effort.low::before    { background: var(--ink-faint); }
+.experiment-sidebar .exp-effort.low::before    { background: var(--ink-dim); }
+
+/* Autonomy axis chip (collaborative · autonomous) */
+.experiment-sidebar .exp-autonomy::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: baseline;
+  background: var(--ink-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative {
+  color: var(--accent-lo);
+  border-color: var(--accent-line);
+  background: var(--accent-dim);
+}
+.experiment-sidebar .exp-autonomy.collaborative::before { background: var(--accent); }
+.experiment-sidebar .exp-autonomy.autonomous {
+  color: var(--auto);
+  border-color: rgba(154,85,0,0.3);
+  background: var(--auto-bg);
+}
+.experiment-sidebar .exp-autonomy.autonomous::before { background: var(--auto); }
 
 /* ─── Sections ─── */
 .experiment-sidebar .exp-section {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--rule-soft);
   padding-top: 16px;
 }
 
@@ -160,32 +228,32 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-faint);
+  color: var(--ink-mute);
   margin: 0 0 10px 0;
 }
 
 .experiment-sidebar .exp-section p {
   margin: 0;
-  color: var(--ink-dim);
+  color: var(--ink-soft);
   font-family: var(--sans);
 }
 
 .experiment-sidebar .exp-prompt {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
   border-radius: 6px;
   padding: 12px;
   font-size: 12px;
-  color: var(--ink-dim);
+  color: var(--ink-soft);
   line-height: 1.6;
 }
 
 .experiment-sidebar .exp-prev { font-size: 12px; }
 
-/* ─── AskUserQuestion Visualization — Lab Instrument ─── */
+/* ─── AskUserQuestion Visualization — Paper ─── */
 .experiment-sidebar .exp-ask {
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-line);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
   border-radius: 6px;
   padding: 10px 12px;
   margin-top: 10px;
@@ -196,7 +264,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--accent);
+  color: var(--accent-lo);
   margin-bottom: 6px;
 }
 .experiment-sidebar .exp-ask-question {
@@ -214,11 +282,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 .experiment-sidebar .exp-ask-option {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--ink-faint);
+  color: var(--ink-mute);
   padding: 3px 8px;
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-elev);
   border-radius: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-soft);
 }
 .experiment-sidebar .exp-ask-option.selected {
   color: var(--ink);
@@ -228,23 +296,23 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 }
 .experiment-sidebar .exp-ask-answer {
   font-size: 11px;
-  color: var(--ink-dim);
+  color: var(--ink-soft);
   padding: 6px 8px;
-  background: rgba(46,204,113,0.08);
-  border: 1px solid rgba(46,204,113,0.2);
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
   border-radius: 4px;
   line-height: 1.4;
 }
 .experiment-sidebar .exp-ask-answer strong { color: var(--orig); font-weight: 600; }
 
-/* ─── Agent Trace — Lab Instrument ─── */
+/* ─── Agent Trace — Paper ─── */
 .experiment-sidebar .exp-at-workflow {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--ink-faint);
+  color: var(--ink-mute);
   padding: 6px 10px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
   border-radius: 4px;
   margin-bottom: 10px;
   letter-spacing: 0.02em;
@@ -257,11 +325,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
 }
 
 .experiment-sidebar .exp-at-entry {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
   border-radius: 6px;
   padding: 8px 10px;
-  border-left: 3px solid var(--line-strong);
+  border-left: 3px solid var(--rule);
 }
 .experiment-sidebar .exp-at-entry.opus   { border-left-color: var(--opus); }
 .experiment-sidebar .exp-at-entry.sonnet { border-left-color: var(--sonnet); }
@@ -291,21 +359,21 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   padding: 1px 5px;
   border-radius: 3px;
   margin-left: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-soft);
 }
-.experiment-sidebar .exp-at-model.opus   { background: rgba(229,166,59,0.15);  color: var(--opus); }
-.experiment-sidebar .exp-at-model.sonnet { background: rgba(139,156,247,0.15); color: var(--sonnet); }
-.experiment-sidebar .exp-at-model.haiku  { background: rgba(94,196,212,0.15);  color: var(--haiku); }
+.experiment-sidebar .exp-at-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-at-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-at-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
 
 .experiment-sidebar .exp-at-action {
   font-size: 11px;
-  color: var(--ink-dim);
+  color: var(--ink-soft);
   line-height: 1.4;
 }
 
 .experiment-sidebar .exp-at-arrow {
   text-align: center;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
   font-size: 10px;
   line-height: 1;
 }
@@ -317,9 +385,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(255,255,255,0.05);
-  color: var(--ink-faint);
-  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink-mute);
+  border: 1px solid var(--rule-soft);
   font-variant-numeric: tabular-nums;
 }
 
@@ -330,9 +398,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 500;
   padding: 1px 6px;
   border-radius: 3px;
-  border: 1px solid var(--line);
-  color: var(--ink-faint);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--rule-soft);
+  color: var(--ink-mute);
+  background: var(--bg-elev);
   letter-spacing: 0.02em;
 }
 .experiment-sidebar .exp-at-effort::before {
@@ -342,11 +410,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   border-radius: 50%;
   margin-right: 4px;
   vertical-align: baseline;
-  background: var(--ink-faint);
+  background: var(--ink-dim);
 }
-.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.experiment-sidebar .exp-at-effort.high::before   { background: var(--accent); }
 .experiment-sidebar .exp-at-effort.medium::before { background: var(--accent-2); }
-.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-faint); }
+.experiment-sidebar .exp-at-effort.low::before    { background: var(--ink-dim); }
 
 /* ─── Agent Trace: Hover Timestamps ─── */
 .experiment-sidebar .exp-at-times {
@@ -367,11 +435,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-family: var(--mono);
   font-size: 9px;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-faint);
+  color: var(--ink-mute);
   padding: 3px 0;
 }
-.experiment-sidebar .exp-at-time-label { color: var(--ink-faint); opacity: 0.7; min-width: 32px; }
-.experiment-sidebar .exp-at-time-value { color: var(--ink-dim); }
+.experiment-sidebar .exp-at-time-label { color: var(--ink-mute); opacity: 0.7; min-width: 32px; }
+.experiment-sidebar .exp-at-time-value { color: var(--ink-soft); }
 
 /* ─── Agent Trace: Full Prompt Toggle ─── */
 .experiment-sidebar input[id^="at-prompt-"] {
@@ -386,7 +454,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--accent-lo);
   background: var(--accent-dim);
   border: 1px solid var(--accent-line);
   border-radius: 3px;
@@ -397,12 +465,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   user-select: none;
 }
 .experiment-sidebar .exp-at-prompt-toggle:hover {
-  background: rgba(46,230,198,0.2);
-  color: var(--ink);
+  background: rgba(255,98,0,0.2);
+  color: var(--accent-shade);
 }
 .experiment-sidebar input[id^="at-prompt-"]:checked + .exp-at-prompt-toggle {
-  background: rgba(46,230,198,0.25);
-  color: var(--ink);
+  background: rgba(255,98,0,0.22);
+  color: var(--accent-shade);
   border-color: var(--accent);
 }
 .experiment-sidebar .exp-at-prompt-panel {
@@ -418,13 +486,13 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   padding-top: 6px;
 }
 .experiment-sidebar .exp-at-prompt-panel-inner {
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-line);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule-soft);
   border-radius: 6px;
   padding: 10px 12px;
   font-size: 10px;
   line-height: 1.55;
-  color: var(--ink-dim);
+  color: var(--ink-soft);
   max-height: 300px;
   overflow-y: auto;
 }
@@ -437,11 +505,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--accent-lo);
   margin-bottom: 4px;
 }
 
-/* ─── Sidebar Versions Card — Lab Instrument ─── */
+/* ─── Sidebar Versions Card — Paper ─── */
 .experiment-sidebar .exp-versions-card {
   display: flex;
   flex-direction: column;
@@ -455,12 +523,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   color: var(--orig);
   text-decoration: none;
   padding: 6px 10px;
-  background: rgba(46,204,113,0.08);
-  border: 1px solid rgba(46,204,113,0.2);
+  background: var(--orig-bg);
+  border: 1px solid rgba(31,122,77,0.2);
   border-radius: 6px;
   margin-bottom: 6px;
 }
-.experiment-sidebar .exp-vc-origin:hover { background: rgba(46,204,113,0.15); text-decoration: none; }
+.experiment-sidebar .exp-vc-origin:hover { background: rgba(31,122,77,0.18); text-decoration: none; }
 
 .experiment-sidebar .exp-vc-entry {
   display: flex;
@@ -473,7 +541,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   border: 1px solid transparent;
   transition: background 0.15s;
 }
-.experiment-sidebar .exp-vc-entry:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.experiment-sidebar .exp-vc-entry:hover { background: var(--bg-sunken); text-decoration: none; }
 .experiment-sidebar .exp-vc-entry.current {
   background: var(--accent-dim);
   border: 1px solid var(--accent-line);
@@ -482,18 +550,18 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-lo);
   min-width: 26px;
 }
 .experiment-sidebar .exp-vc-entry.current .exp-vc-v { color: var(--ink); }
 .experiment-sidebar .exp-vc-desc {
   font-size: 11px;
-  color: var(--ink-faint);
+  color: var(--ink-mute);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-dim); }
+.experiment-sidebar .exp-vc-entry.current .exp-vc-desc { color: var(--ink-soft); }
 
 /* Model indicator in versions card */
 .experiment-sidebar .exp-vc-model {
@@ -504,16 +572,16 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   border-radius: 3px;
   margin-left: auto;
   flex-shrink: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-soft);
 }
-.experiment-sidebar .exp-vc-model.opus   { background: rgba(229,166,59,0.12);  color: var(--opus); }
-.experiment-sidebar .exp-vc-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
-.experiment-sidebar .exp-vc-model.haiku  { background: rgba(94,196,212,0.12);  color: var(--haiku); }
+.experiment-sidebar .exp-vc-model.opus   { background: var(--opus-bg);   color: var(--opus); }
+.experiment-sidebar .exp-vc-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+.experiment-sidebar .exp-vc-model.haiku  { background: var(--haiku-bg);  color: var(--haiku); }
 
-/* ─── Experiment Content + Device Preview Switcher — Lab Instrument ─── */
+/* ─── Experiment Content + Device Preview Switcher — dark backdrop so the device floats ─── */
 .experiment-content {
   flex: 1;
-  background: linear-gradient(135deg,#0d1016,#121722);
+  background: linear-gradient(135deg,#100f0d,#171614);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -536,27 +604,27 @@ body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
   height: 36px;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--ink-faint);
+  color: rgba(255,255,255,0.5);
   transition: background 0.2s, color 0.2s;
 }
-.preview-btn:hover { color: var(--ink-dim); background: rgba(255,255,255,0.06); }
+.preview-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.1); }
 .preview-btn svg { width: 20px; height: 20px; }
 
 #preview-web:checked ~ .preview-bar label[for="preview-web"],
 #preview-mobile:checked ~ .preview-bar label[for="preview-mobile"],
 #preview-full:checked ~ .preview-bar label[for="preview-full"] {
-  background: var(--accent-dim);
-  color: var(--accent);
+  background: rgba(255,255,255,0.12);
+  color: var(--accent-hi);
 }
 
 .window {
   width: 1360px;
   height: 820px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-pop);
   position: relative;
   transition: width 0.4s cubic-bezier(0.4,0,0.2,1), height 0.4s cubic-bezier(0.4,0,0.2,1);
 }
@@ -596,10 +664,12 @@ input[name="preview"] { position: absolute; opacity: 0; pointer-events: none; }
       <!-- Add only if fully autonomous: -->
       <!-- <span class="exp-autonomous">Fully Autonomous</span> -->
 
-      <!-- Run metadata: effort dot (high/medium/low) + harness chip -->
+      <!-- Run metadata — all four provenance axes: model (above) · effort · harness · autonomy.
+           {{AUTONOMY_CLASS}} = collaborative | autonomous, {{AUTONOMY}} = label text. -->
       <div class="exp-runmeta">
         <span class="exp-effort {{EFFORT_CLASS}}">{{EFFORT}}</span>
         <span class="exp-harness">Claude Code</span>
+        <span class="exp-autonomy {{AUTONOMY_CLASS}}">{{AUTONOMY}}</span>
       </div>
     </div>
 

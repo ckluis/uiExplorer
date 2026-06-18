@@ -5,51 +5,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UI Explorations</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
   /* ═══════════════════════════════════════════════════════════
-     THE UI LAB — "Lab Instrument" design system
+     THE UI LAB — "Paper" design system (senkani-blended light theme)
      Shared tokens across index.html, experiments.html, changelog.html
      ═══════════════════════════════════════════════════════════ */
   :root {
-    --bg:        #0a0c10;
-    --surface-1: #0f1217;
-    --surface-2: #141821;
-    --surface-3: #1a1f2a;
-    --line:        rgba(255,255,255,0.07);
-    --line-strong: rgba(255,255,255,0.13);
-    --ink:       #e6e9ef;
-    --ink-dim:   #9aa4b2;
-    --ink-faint: #6b7480;
-    --accent:     #2ee6c6;   /* mint/cyan — the instrument signal */
-    --accent-2:   #38bdf8;   /* electric blue */
-    --accent-dim: rgba(46,230,198,0.12);
-    --accent-line:rgba(46,230,198,0.30);
-    --opus:   #e5a63b;
-    --sonnet: #8b9cf7;
-    --haiku:  #5ec4d4;
-    --auto:   #f5a623;
-    --orig:   #2ecc71;
-    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Paper (senkani-blended light theme) ── */
+  --bg:        #f5f1e8;   /* warm cream page */
+  --bg-elev:   #fbf8f1;   /* card / raised surface */
+  --bg-sunken: #ede8dc;   /* wells, code, inset */
+  --ink:       #1a1a1a;   /* 14.7:1 — headings */
+  --ink-soft:  #3a3a38;   /* 10.2:1 — body text */
+  --ink-mute:  #5a5652;   /*  6.1:1 — captions/meta (lowest for real text) */
+  --ink-dim:   #706c66;   /*  3.9:1 — UI decoration ONLY, never text */
+  --rule:      rgba(26,26,26,0.16);
+  --rule-soft: rgba(26,26,26,0.09);
+  --accent:    #ff6200;   /*  2.66:1 — DECORATION ONLY: bars, dots, fills, borders */
+  --accent-hi: #ff8534;
+  --accent-lo: #a63d00;   /*  4.7:1 — TEXT-SAFE: links, active nav, primary button bg */
+  --accent-shade:#c94a00;
+  --accent-dim:rgba(255,98,0,0.12);
+  --accent-line:rgba(255,98,0,0.32);
+  --secondary: #ffd4a8;
+  --secondary-ink:#6b2e00;
+  --focus:     #7a94ad;   /* focus ring */
+  /* dark "app" theme — used ONLY for the device-preview backdrop */
+  --app-bg:#0e0e0e; --app-panel:#131313; --app-elev:#1a1a1a; --app-rule:#2a2a2a; --app-text:#e0e0e0;
+  /* model badges — text-safe ink on a tinted chip */
+  --opus:#8a4b00;   --opus-bg:rgba(166,61,0,0.12);
+  --sonnet:#2f5fa6; --sonnet-bg:rgba(47,95,166,0.12);
+  --haiku:#1f7380;  --haiku-bg:rgba(31,115,128,0.12);
+  --auto:#9a5500;   --auto-bg:rgba(154,85,0,0.12);
+  --orig:#1f7a4d;   --orig-bg:rgba(31,122,77,0.12);
+  /* aliases so existing rules keep working on the light theme */
+  --surface-1:var(--bg-elev);
+  --surface-2:#f3eee3;
+  --surface-3:#ece6d8;
+  --line:var(--rule-soft);
+  --line-strong:var(--rule);
+  --ink-faint:var(--ink-mute);     /* faint→mute so old small text is readable (≥6:1) */
+  --accent-2:#2f5fa6;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --shadow-card:0 2px 4px rgba(26,26,26,.04), 0 12px 24px -12px rgba(26,26,26,.14);
+  --shadow-pop:0 16px 32px -12px rgba(26,26,26,.18), 0 40px 80px -24px rgba(26,26,26,.24);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* ─── Accessibility affordances ─── */
+  .skip-nav {
+    position: absolute;
+    left: 8px; top: -40px;
+    background: var(--accent-lo);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    z-index: 200;
+    transition: top .15s;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .skip-nav:focus { top: 8px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+  :focus:not(:focus-visible) { outline: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     font-family: var(--sans);
     background: var(--bg);
-    color: var(--ink);
+    color: var(--ink-soft);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    /* faint engineering grid */
-    background-image:
-      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-    background-size: 40px 40px;
   }
 
-  ::selection { background: var(--accent-dim); color: #fff; }
+  ::selection { background: var(--accent-dim); color: var(--ink); }
 
   /* ─── Top Nav (shared shell chrome) ─── */
   .lab-nav {
@@ -60,9 +100,9 @@
     align-items: center;
     gap: 24px;
     padding: 14px 28px;
-    background: rgba(10,12,16,0.82);
+    background: rgba(245,241,232,0.85);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--rule);
   }
   .lab-nav .brand {
     display: flex;
@@ -72,7 +112,7 @@
     font-weight: 600;
     font-size: 13px;
     letter-spacing: 0.04em;
-    color: #fff;
+    color: var(--ink);
     text-decoration: none;
   }
   .lab-nav .brand .blip {
@@ -92,14 +132,14 @@
     font-size: 12px;
   }
   .lab-nav .nav-links a {
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     text-decoration: none;
     padding: 6px 12px;
     border-radius: 6px;
     transition: color 0.15s, background 0.15s;
   }
-  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
-  .lab-nav .nav-links a.current { color: var(--accent); }
+  .lab-nav .nav-links a:hover { color: var(--ink); background: rgba(26,26,26,0.05); }
+  .lab-nav .nav-links a.current { color: var(--accent-lo); }
   .lab-nav .nav-links a.ext::after { content: ' ↗'; opacity: 0.5; }
 
   /* ─── Hero ─── */
@@ -115,7 +155,7 @@
     top: -50%; left: 50%;
     transform: translateX(-50%);
     width: 720px; height: 420px;
-    background: radial-gradient(ellipse, rgba(46,230,198,0.10) 0%, rgba(56,189,248,0.05) 40%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(255,98,0,0.10) 0%, rgba(255,133,52,0.06) 40%, transparent 70%);
     pointer-events: none;
   }
   .hero .eyebrow {
@@ -125,22 +165,22 @@
     font-size: 11px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--accent-lo);
     margin-bottom: 16px;
   }
-  .hero .eyebrow::before { content: '┌ '; color: var(--ink-faint); }
-  .hero .eyebrow::after  { content: ' ┐'; color: var(--ink-faint); }
+  .hero .eyebrow::before { content: '┌ '; color: var(--ink-mute); }
+  .hero .eyebrow::after  { content: ' ┐'; color: var(--ink-mute); }
   .hero h1 {
     font-size: 46px;
     font-weight: 800;
-    color: #fff;
+    color: var(--ink);
     letter-spacing: -0.03em;
     position: relative;
     line-height: 1.02;
   }
   .hero .tagline {
     font-size: 15px;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     margin-top: 14px;
     line-height: 1.6;
     position: relative;
@@ -154,7 +194,7 @@
     margin-top: 28px;
     font-family: var(--mono);
     font-size: 12px;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     position: relative;
     flex-wrap: wrap;
     justify-content: center;
@@ -164,9 +204,10 @@
     align-items: center;
     gap: 7px;
     padding: 5px 12px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--rule-soft);
     border-radius: 6px;
-    background: var(--surface-1);
+    background: var(--bg-elev);
+    box-shadow: var(--shadow-card);
   }
   .hero .stats .dot {
     width: 6px; height: 6px;
@@ -207,11 +248,12 @@
   .card {
     break-inside: avoid;
     position: relative;
-    background: var(--surface-1);
-    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule-soft);
     border-radius: 10px;
     overflow: hidden;
     margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
     transition: transform 0.25s cubic-bezier(0.4,0,0.2,1),
                 box-shadow 0.25s cubic-bezier(0.4,0,0.2,1),
                 border-color 0.25s;
@@ -232,20 +274,20 @@
   .card:hover::before, .card:hover::after { opacity: 1; }
   .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 14px 36px rgba(0,0,0,0.4), 0 0 0 1px var(--accent-line);
+    box-shadow: var(--shadow-pop);
     border-color: var(--accent-line);
   }
 
-  /* Accent bar — auto-colored via nth-child */
+  /* Accent bar — auto-colored via nth-child (warm palette, decoration only) */
   .card-accent { height: 3px; }
-  .card:nth-child(8n+1) .card-accent { background: linear-gradient(90deg, #2ee6c6, #38bdf8); }
-  .card:nth-child(8n+2) .card-accent { background: linear-gradient(90deg, #8b9cf7, #c084fc); }
-  .card:nth-child(8n+3) .card-accent { background: linear-gradient(90deg, #38bdf8, #2ee6c6); }
-  .card:nth-child(8n+4) .card-accent { background: linear-gradient(90deg, #2ecc71, #2ee6c6); }
-  .card:nth-child(8n+5) .card-accent { background: linear-gradient(90deg, #e5a63b, #f5a623); }
-  .card:nth-child(8n+6) .card-accent { background: linear-gradient(90deg, #5ec4d4, #38bdf8); }
-  .card:nth-child(8n+7) .card-accent { background: linear-gradient(90deg, #f093fb, #8b9cf7); }
-  .card:nth-child(8n+8) .card-accent { background: linear-gradient(90deg, #fa709a, #e5a63b); }
+  .card:nth-child(8n+1) .card-accent { background: linear-gradient(90deg, #ff6200, #ff8534); }
+  .card:nth-child(8n+2) .card-accent { background: linear-gradient(90deg, #ffd4a8, #ff8534); }
+  .card:nth-child(8n+3) .card-accent { background: linear-gradient(90deg, #ff8534, #ff6200); }
+  .card:nth-child(8n+4) .card-accent { background: linear-gradient(90deg, #2f5fa6, #ff8534); }
+  .card:nth-child(8n+5) .card-accent { background: linear-gradient(90deg, #ff6200, #ffd4a8); }
+  .card:nth-child(8n+6) .card-accent { background: linear-gradient(90deg, #ffd4a8, #2f5fa6); }
+  .card:nth-child(8n+7) .card-accent { background: linear-gradient(90deg, #ff8534, #2f5fa6); }
+  .card:nth-child(8n+8) .card-accent { background: linear-gradient(90deg, #2f5fa6, #ff6200); }
 
   /* Card body */
   .card-body { padding: 16px 18px 18px; }
@@ -260,7 +302,7 @@
   .card-body h3 {
     font-size: 15px;
     font-weight: 700;
-    color: #fff;
+    color: var(--ink);
     letter-spacing: -0.01em;
   }
 
@@ -273,12 +315,12 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .badge-updated { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-line); }
-  .badge-versions { background: rgba(255,255,255,0.06); color: var(--ink-dim); }
+  .badge-updated { background: var(--accent-lo); color: #fff; border: 1px solid var(--accent-lo); }
+  .badge-versions { background: var(--bg-sunken); color: var(--ink-mute); border: 1px solid var(--rule-soft); }
 
   .card-body .desc {
     font-size: 12px;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     line-height: 1.55;
     margin-bottom: 12px;
   }
@@ -291,9 +333,9 @@
     font-weight: 500;
     padding: 2px 8px;
     border-radius: 4px;
-    background: rgba(255,255,255,0.04);
-    color: var(--ink-faint);
-    border: 1px solid var(--line);
+    background: var(--bg-sunken);
+    color: var(--ink-mute);
+    border: 1px solid var(--rule-soft);
   }
   .tag::before { content: '#'; opacity: 0.5; }
 
@@ -310,14 +352,14 @@
     align-items: baseline;
     gap: 8px;
     padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid var(--rule-soft);
     text-decoration: none;
     color: inherit;
     position: relative;
   }
   .changelog-entry:last-of-type { border-bottom: none; }
   .changelog-entry:hover {
-    background: rgba(46,230,198,0.04);
+    background: var(--accent-dim);
     margin: 0 -8px;
     padding-left: 8px;
     padding-right: 8px;
@@ -327,27 +369,27 @@
     font-family: var(--mono);
     font-size: 11px;
     font-weight: 700;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     min-width: 26px;
     flex-shrink: 0;
   }
   .changelog-time {
     font-family: var(--mono);
     font-size: 10px;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
     min-width: 76px;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
   .changelog-desc {
     font-size: 11px;
-    color: var(--accent);
+    color: var(--ink-soft);
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .changelog-entry.latest .changelog-v { color: #fff; font-weight: 800; }
+  .changelog-entry.latest .changelog-v { color: var(--accent-lo); font-weight: 800; }
 
   /* Hover tooltip for changelog details */
   .changelog-detail {
@@ -356,15 +398,15 @@
     bottom: 100%;
     left: 0; right: 0;
     margin-bottom: 4px;
-    background: var(--surface-3);
-    border: 1px solid var(--accent-line);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
     border-radius: 6px;
     padding: 10px 12px;
     font-size: 11px;
-    color: var(--ink-dim);
+    color: var(--ink-soft);
     line-height: 1.5;
     z-index: 10;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow-pop);
     white-space: normal;
     pointer-events: none;
   }
@@ -377,11 +419,12 @@
     font-family: var(--mono);
     font-size: 11px;
     font-weight: 600;
-    color: var(--accent);
+    color: var(--accent-lo);
     text-decoration: none;
     margin-top: 10px;
     transition: gap 0.2s;
   }
+  .view-latest:hover { text-decoration: underline; }
   .card:hover .view-latest { gap: 8px; }
 
   /* ─── Footer ─── */
@@ -396,11 +439,12 @@
     gap: 8px;
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
     padding: 8px 16px;
     border-radius: 6px;
-    border: 1px solid var(--line);
-    background: var(--surface-1);
+    border: 1px solid var(--rule-soft);
+    background: var(--bg-elev);
+    box-shadow: var(--shadow-card);
   }
   .site-footer .craft-dot {
     width: 5px; height: 5px;
@@ -408,7 +452,7 @@
     background: var(--accent);
   }
   .site-footer a {
-    color: var(--accent);
+    color: var(--accent-lo);
     text-decoration: none;
     margin-left: 16px;
     font-family: var(--mono);
@@ -417,14 +461,14 @@
   .site-footer a:hover { text-decoration: underline; }
 
   /* ─── Autonomous Badge ─── */
-  .badge-autonomous { background: rgba(245,166,35,0.12); color: var(--auto); border: 1px solid rgba(245,166,35,0.25); }
+  .badge-autonomous { background: var(--auto-bg); color: var(--auto); border: 1px solid var(--auto-bg); }
   .changelog-entry.autonomous .changelog-v { color: var(--auto); }
-  .changelog-entry.autonomous.latest .changelog-v { color: #fff; }
+  .changelog-entry.autonomous.latest .changelog-v { color: var(--auto); }
   .changelog-desc.autonomous { color: var(--auto); }
 
   /* ─── Collaborative (default) ─── */
-  .changelog-entry.collaborative .changelog-v { color: var(--accent); }
-  .changelog-entry.collaborative.latest .changelog-v { color: #fff; }
+  .changelog-entry.collaborative .changelog-v { color: var(--ink-mute); }
+  .changelog-entry.collaborative.latest .changelog-v { color: var(--accent-lo); }
 
   /* ─── Model Indicator in Changelog ─── */
   .changelog-model {
@@ -436,9 +480,9 @@
     flex-shrink: 0;
     margin-left: auto;
   }
-  .changelog-model.opus   { background: rgba(229,166,59,0.12); color: var(--opus); }
-  .changelog-model.sonnet { background: rgba(139,156,247,0.12); color: var(--sonnet); }
-  .changelog-model.haiku  { background: rgba(94,196,212,0.12); color: var(--haiku); }
+  .changelog-model.opus   { background: var(--opus-bg); color: var(--opus); }
+  .changelog-model.sonnet { background: var(--sonnet-bg); color: var(--sonnet); }
+  .changelog-model.haiku  { background: var(--haiku-bg); color: var(--haiku); }
 
   /* ─── Page Layout with About Sidebar ─── */
   .page-frame { display: flex; min-height: 100vh; }
@@ -446,14 +490,15 @@
   .about-sidebar {
     width: 320px;
     min-width: 320px;
-    background: var(--surface-1);
-    color: var(--ink);
+    background: var(--bg-elev);
+    color: var(--ink-soft);
     padding: 36px 26px;
     font-family: var(--sans);
     font-size: 14px;
     line-height: 1.7;
     overflow-y: auto;
-    border-right: 1px solid var(--line);
+    border-right: 1px solid var(--rule);
+    box-shadow: var(--shadow-card);
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -461,22 +506,22 @@
   .about-sidebar h2 {
     font-size: 20px;
     font-weight: 700;
-    color: #fff;
+    color: var(--ink);
     margin: 0;
     letter-spacing: -0.01em;
   }
   .about-sidebar .about-subtitle {
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--accent);
+    color: var(--accent-lo);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 500;
     margin-bottom: -12px;
   }
-  .about-sidebar p { margin: 0; color: var(--ink-dim); }
+  .about-sidebar p { margin: 0; color: var(--ink-mute); }
   .about-sidebar .about-section {
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--rule-soft);
     padding-top: 20px;
   }
   .about-sidebar .about-section h3 {
@@ -485,10 +530,10 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--ink-faint);
+    color: var(--ink-mute);
     margin: 0 0 12px 0;
   }
-  .about-sidebar .about-section a { color: var(--accent); text-decoration: none; }
+  .about-sidebar .about-section a { color: var(--accent-lo); text-decoration: none; }
   .about-sidebar .about-section a:hover { text-decoration: underline; }
   .about-legend { display: flex; flex-direction: column; gap: 10px; }
   .about-legend-item {
@@ -496,19 +541,19 @@
     align-items: center;
     gap: 10px;
     font-size: 12px;
-    color: var(--ink-dim);
+    color: var(--ink-mute);
   }
   .about-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
   .about-legend-swatch.collaborative { background: var(--accent); }
   .about-legend-swatch.autonomous { background: var(--auto); }
   .about-legend-swatch.origination { background: var(--orig); }
-  .about-legend-swatch.latest-swatch { background: #fff; }
+  .about-legend-swatch.latest-swatch { background: var(--accent-lo); }
   .about-sidebar .about-footer {
     margin-top: auto;
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--ink-faint);
-    border-top: 1px solid var(--line);
+    color: var(--ink-mute);
+    border-top: 1px solid var(--rule-soft);
     padding-top: 20px;
     line-height: 1.7;
   }
@@ -518,20 +563,20 @@
   code {
     font-family: var(--mono);
     font-size: 0.9em;
-    background: var(--accent-dim);
-    color: var(--accent);
+    background: var(--bg-sunken);
+    color: var(--accent-lo);
     padding: 1px 5px;
     border-radius: 4px;
   }
 
   /* ─── Origination Series Styling ─── */
-  .badge-origination { background: rgba(46,204,113,0.12); color: var(--orig); border: 1px solid rgba(46,204,113,0.25); }
-  .card-origination { border-color: rgba(46,204,113,0.18); }
+  .badge-origination { background: var(--orig-bg); color: var(--orig); border: 1px solid var(--orig-bg); }
+  .card-origination { border-color: var(--orig-bg); }
 
   /* ─── Multi-Origination Changelog Dividers ─── */
   .changelog-origination-divider {
-    background: rgba(46,204,113,0.07);
-    border: 1px solid rgba(46,204,113,0.2);
+    background: var(--orig-bg);
+    border: 1px solid var(--orig-bg);
     border-radius: 6px;
     padding: 10px 14px;
     margin: 6px 0;
@@ -585,6 +630,8 @@
 </style>
 </head>
 <body>
+
+<a href="#main" class="skip-nav">Skip to content</a>
 
 <div class="page-frame">
 
@@ -643,7 +690,7 @@
   </div>
 </aside>
 
-<div class="page-main">
+<div class="page-main" id="main">
 
 <nav class="lab-nav">
   <a href="index.html" class="brand"><span class="blip"></span>THE UI LAB</a>
@@ -660,9 +707,9 @@
   <h1>UI Explorations</h1>
   <p class="tagline">A showcase of what the framework produces — provenance-first interface experiments in pure HTML/CSS. No JavaScript. Every prompt preserved.</p>
   <div class="stats">
-    <span><span class="dot"></span> 22 experiments</span>
-    <span><span class="dot"></span> 132 versions</span>
-    <span><span class="dot"></span> 3 origination series</span>
+    <span><span class="dot"></span> 25 experiments</span>
+    <span><span class="dot"></span> 138 versions</span>
+    <span><span class="dot"></span> 4 origination series</span>
   </div>
 </div>
 
@@ -670,13 +717,98 @@
   <div class="section-label">Experiments · the showcase</div>
   <div class="grid">
 
+    <!-- Warmth Threads (Origination Series) -->
+    <div class="card card-origination">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Warmth Threads</h3>
+          <span class="badge badge-updated">Latest</span>
+          <span class="badge badge-origination">Origination Series</span>
+          <span class="badge badge-autonomous">Autonomous</span>
+          <span class="badge badge-versions">5 variants</span>
+        </div>
+        <p class="desc">An autonomous origination round exploring one new Tend feature — <strong>Warmth Threads</strong>: the warm history of past touches beneath each contact's debt line, so you remember who they are before you triage. Five distinct CSS-only interpretations from one OG master prompt.</p>
+        <div class="tags">
+          <span class="tag">tend</span>
+          <span class="tag">mobile-only</span>
+          <span class="tag">research-series</span>
+        </div>
+        <div class="changelog">
+          <a href="tend-warmth-threads-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">6/18 11:10pm</span>
+            <span class="changelog-desc autonomous">Pull-Down Thread — The thread lives INSIDE the card and grows downward in place via a checkbox toggle — the card expands to ~3x height, pushing the feed below it, exactly mirroring the diff-flip pattern</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">An in-feed accordion where tapping a card's warmth strip expands it downward into a full chat-bubble memory thread without leaving the inbox.</span>
+          </a>
+          <a href="tend-warmth-threads-v2.html" class="changelog-entry">
+            <span class="changelog-v">v2</span>
+            <span class="changelog-time">6/18 11:10pm</span>
+            <span class="changelog-desc autonomous">Thread Flip — The thread is the BACK of the card — a 3D flip reveals it</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">A 3D card-flip where the debt face turns over to reveal the warmth thread on its reverse side, making 'what you owe' and 'why they matter' two faces of one object.</span>
+          </a>
+          <a href="tend-warmth-threads-v3.html" class="changelog-entry">
+            <span class="changelog-v">v3</span>
+            <span class="changelog-time">6/18 11:10pm</span>
+            <span class="changelog-desc autonomous">Memory Lane — Full-screen immersive thread via :target — tapping a card slides up a dedicated full-bleed 375×720 'memory view' for that one person, an emotional reading room rather than an inline accordion</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">A full-screen immersive memory view that slides up per person via :target, turning the thread into a quiet reading room for reminiscing rather than an inline list.</span>
+          </a>
+          <a href="tend-warmth-threads-v4.html" class="changelog-entry">
+            <span class="changelog-v">v4</span>
+            <span class="changelog-time">6/18 11:10pm</span>
+            <span class="changelog-desc autonomous">Warmth Ledger — Reframes the thread as a two-column 'balance sheet of the relationship' — warm/personal memories on one rail, transactional touches on another — so the thread literally visualizes warmth-vs-business balance</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">A two-rail ledger that splits the thread into a glowing personal-memory column and a muted transactional column, visualizing the warmth-versus-business balance of the relationship.</span>
+          </a>
+          <a href="tend-warmth-threads-v5.html" class="changelog-entry">
+            <span class="changelog-v">v5</span>
+            <span class="changelog-time">6/18 11:10pm</span>
+            <span class="changelog-desc autonomous">Keepsake Stack — Memories are physical keepsakes — a peelable stack of layered note-cards / polaroids that fan out when opened, with slight rotations, paper texture, and tape</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">A tactile keepsake stack where memories are layered, slightly-rotated paper note-cards that fan open like a shoebox of mementos rather than a digital timeline.</span>
+          </a>
+          <a href="tend-warmth-threads.html" class="view-latest">View origination prompt →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tend (mobile-only CRM) -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Tend</h3>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">A mobile-only CRM reimagined as a relationship inbox — every contact is an unread message, ranked by “relational debt” and triaged to inbox zero. Swipe-to-triage, a diff-confirm micro-beat, an inbox-zero celebration, and a one-handed grip mirror. Pure CSS.</p>
+        <div class="tags">
+          <span class="tag">mobile-only</span>
+          <span class="tag">crm</span>
+          <span class="tag">inbox-zero</span>
+          <span class="tag">css-only</span>
+        </div>
+        <div class="changelog">
+          <a href="tend-relationship-inbox-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">6/18 9:52pm</span>
+            <span class="changelog-desc">Initial — relationship-inbox CRM, mobile-only</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">A fresh mobile-only CRM that reframes contacts as unread messages in a debt-ranked feed (Overdue / Today / Cooling / Warm &amp; Quiet). Swipe-to-triage, diff-confirm card flip, inbox-zero celebration, and a one-handed L/R grip mirror. Prompt dynamically generated by a judge-panel workflow. Pure HTML/CSS.</span>
+          </a>
+          <a href="tend-relationship-inbox-v1.html" class="view-latest">View latest →</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Everything App -->
     <div class="card">
       <div class="card-accent"></div>
       <div class="card-body">
         <div class="card-meta">
           <h3>Everything App</h3>
-          <span class="badge badge-updated">Latest</span>
           <span class="badge badge-versions">21 versions</span>
         </div>
         <p class="desc">A complete company operating system in a single CSS-only file — 22 modules spanning chat, email, forums, wiki, CRM, projects, calendar, HR, support, analytics, finance, dev IDE, office/drive, recruitment, LMS, ITSM, RSS, time tracking, calls, marketing, and settings. ~58K lines of pure HTML/CSS.</p>
@@ -1950,6 +2082,33 @@
             <span class="changelog-detail">Dual-panel flight tracker with CSS-only world map (clip-path continents, glowing airports), 6 selectable flights, monospace departure board, conic-gradient altitude/speed/heading gauges, and weather panels.</span>
           </a>
           <a href="flight-tracker-v1.html" class="view-latest">View latest &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dual Sidebar -->
+    <div class="card">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <h3>Dual Sidebar</h3>
+          <span class="badge badge-versions">1 version</span>
+        </div>
+        <p class="desc">A Salesforce-style enterprise shell with nested navigation columns — Products, Modules, and Pages — plus a focus mode that collapses the chrome. Pure CSS-only switching across six products and dozens of modules, with a mobile drill-down view.</p>
+        <div class="tags">
+          <span class="tag">navigation</span>
+          <span class="tag">enterprise</span>
+          <span class="tag">sidebar</span>
+        </div>
+        <div class="changelog">
+          <a href="dual-sidebar-v1.html" class="changelog-entry latest">
+            <span class="changelog-v">v1</span>
+            <span class="changelog-time">6/17 5:30pm</span>
+            <span class="changelog-desc">Initial — nested multi-level enterprise navigation</span>
+            <span class="changelog-model opus">Opus</span>
+            <span class="changelog-detail">Salesforce-inspired three-column nav (Products &rarr; Modules &rarr; Pages) with CSS-only product/module switching, a collapsible focus mode, and a responsive mobile drill-down across six product suites.</span>
+          </a>
+          <a href="dual-sidebar-v1.html" class="view-latest">View latest &rarr;</a>
         </div>
       </div>
     </div>
